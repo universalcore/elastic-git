@@ -1,7 +1,7 @@
 Elastic Git
 ===========
 
-Adventures in an declerative object-y thing backed by Git and using Elastic
+Adventures in an declarative object-y thing backed by Git and using Elastic
 Search as a query backend.
 
 .. note:: Here be massive dragons.
@@ -10,4 +10,4 @@ Search as a query backend.
     :target: https://travis-ci.org/smn/elastic-git
 
 .. image:: https://coveralls.io/repos/smn/elastic-git/badge.png
-  :target: https://coveralls.io/r/smn/elastic-git
+    :target: https://coveralls.io/r/smn/elastic-git
