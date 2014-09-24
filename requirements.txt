@@ -1,0 +1,2 @@
+confmodel==0.2.0
+elasticutils==0.10.1
