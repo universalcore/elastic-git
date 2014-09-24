@@ -6,5 +6,5 @@ Search as a query backend.
 
 .. note:: Here be massive dragons.
 
-.. image:: https://travis-ci.org/smn/elastic-git.svg
+.. image:: https://travis-ci.org/smn/elastic-git.svg?branch=develop
     :target: https://travis-ci.org/smn/elastic-git
