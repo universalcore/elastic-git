@@ -41,11 +41,21 @@ class TestModel(ModelBaseTest):
         model = model_class(data)
         self.assertEqual(dict(model), data)
 
-    def test_uuids(self):
+    def test_creating_uuids(self):
         model_class = self.mk_model({
             'age': IntegerField('An age'),
             'name': TextField('A name'),
         })
         data = {'age': 1, 'name': 'foo'}
         model = model_class(data)
-        print model.uuid
+        self.assertTrue(model.uuid)
+
+    def test_respecting_uuids(self):
+        model_class = self.mk_model({
+            'uuid': 'foo',
+            'age': IntegerField('An age'),
+            'name': TextField('A name'),
+        })
+        data = {'age': 1, 'name': 'foo'}
+        model = model_class(data)
+        self.assertEqual(model.uuid, 'foo')
