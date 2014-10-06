@@ -138,7 +138,11 @@ class Workspace(object):
         return any([self.index.exists(), self.storage.exists()])
 
     def destroy(self):
-        return (self.index.destroy(), self.storage.destroy())
+        if self.index.exists():
+            self.index.destroy()
+
+        if self.storage.exists():
+            self.storage.destroy()
 
 
 class EG(object):

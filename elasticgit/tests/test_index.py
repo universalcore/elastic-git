@@ -9,11 +9,8 @@ class TestIndex(ModelBaseTest):
         self.storage = self.workspace.storage
 
     def tearDown(self):
-        if self.storage.exists():
-            self.storage.destroy()
-
-        if self.index.exists():
-            self.index.destroy()
+        if self.workspace.exists():
+            self.workspace.destroy()
 
     def test_exists(self):
         self.assertFalse(self.index.exists())
