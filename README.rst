@@ -9,5 +9,5 @@ Search as a query backend.
 .. image:: https://travis-ci.org/smn/elastic-git.svg?branch=develop
     :target: https://travis-ci.org/smn/elastic-git
 
-.. image:: https://coveralls.io/repos/smn/elastic-git/badge.png
-    :target: https://coveralls.io/r/smn/elastic-git
+.. image:: https://coveralls.io/repos/smn/elastic-git/badge.png?branch=develop
+  :target: https://coveralls.io/r/smn/elastic-git?branch=develop
