@@ -32,13 +32,14 @@ class TestManager(ModelBaseTest):
         self.assertEqual(mapping_type.get_es(), workspace.im.es)
         self.assertEqual(mapping_type.get_mapping(), {
             'properties': {
-                'age': {'type': 'integer'}
+                'age': {'type': 'integer'},
+                'uuid': {'type': 'string'},
             }
         })
         model_instance = model_class({'age': 1})
         self.assertEqual(
-            mapping_type.extract_document('foo', model_instance),
-            {'age': 1})
+            mapping_type.extract_document('foo', model_instance)['age'],
+            1)
 
     def test_get_indexable(self):
         workspace = self.mk_workspace()

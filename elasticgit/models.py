@@ -1,3 +1,4 @@
+import uuid
 from confmodel.config import Config
 from confmodel.errors import ConfigError
 from confmodel.fields import (
@@ -38,6 +39,12 @@ class RegexField(ConfigRegex):
 
 
 class Model(Config):
+
+    uuid = TextField('Unique Identifier')
+
+    def post_validate(self):
+        if not self.uuid:
+            self._config_data['uuid'] = uuid.uuid4().hex
 
     def __iter__(self):
         for field in self._get_fields():

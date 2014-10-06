@@ -10,7 +10,7 @@ class TestModel(ModelBaseTest):
         })
 
         model = model_class({'age': 1})
-        self.assertEqual(model._fields.keys(), ['age'])
+        self.assertEqual(model._fields.keys(), ['age', 'uuid'])
 
     def test_validation(self):
         model_class = self.mk_model({
@@ -40,3 +40,12 @@ class TestModel(ModelBaseTest):
         data = {'age': 1, 'name': 'foo'}
         model = model_class(data)
         self.assertEqual(dict(model), data)
+
+    def test_uuids(self):
+        model_class = self.mk_model({
+            'age': IntegerField('An age'),
+            'name': TextField('A name'),
+        })
+        data = {'age': 1, 'name': 'foo'}
+        model = model_class(data)
+        print model.uuid
