@@ -1,13 +1,8 @@
-from unittest import TestCase
-import json
-
-from elasticgit.models import Model, ConfigError, IntegerField, TextField
+from elasticgit.tests.base import ModelBaseTest
+from elasticgit.models import ConfigError, IntegerField, TextField
 
 
-class TestModel(TestCase):
-
-    def mk_model(self, fields):
-        return type('TempModel', (Model,), fields)
+class TestModel(ModelBaseTest):
 
     def test_model(self):
         model_class = self.mk_model({

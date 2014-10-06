@@ -43,5 +43,4 @@ class Model(Config):
         for field in self._get_fields():
             yield field.name, field.get_value(self)
 
-
 ConfigError
