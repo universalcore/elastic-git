@@ -8,7 +8,7 @@ class TestManager(ModelBaseTest):
 
     def test_workspace(self):
         workspace = self.mk_workspace()
-        self.assertTrue(isinstance(workspace.index.es, Elasticsearch))
+        self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
         self.assertEqual(workspace.workdir, '.test_repo')
 
     def test_mapping_type(self):
@@ -16,7 +16,7 @@ class TestManager(ModelBaseTest):
             'age': IntegerField('An age')
         })
         workspace = self.mk_workspace()
-        mapping_type = workspace.index.get_mapping_type(model_class)
+        mapping_type = workspace.im.get_mapping_type(model_class)
         self.assertEqual(mapping_type.get_index(), 'test-repo-index')
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
@@ -28,8 +28,8 @@ class TestManager(ModelBaseTest):
         model_class = self.mk_model({
             'age': IntegerField('An age')
         })
-        mapping_type = workspace.index.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_es(), workspace.index.es)
+        mapping_type = workspace.im.get_mapping_type(model_class)
+        self.assertEqual(mapping_type.get_es(), workspace.im.es)
         self.assertEqual(mapping_type.get_mapping(), {
             'properties': {
                 'age': {'type': 'integer'}
@@ -45,5 +45,5 @@ class TestManager(ModelBaseTest):
         model_class = self.mk_model({
             'age': IntegerField('An age')
         })
-        mapping_type = workspace.index.get_mapping_type(model_class)
+        mapping_type = workspace.im.get_mapping_type(model_class)
         self.assertEqual(list(mapping_type.get_indexable()), [])

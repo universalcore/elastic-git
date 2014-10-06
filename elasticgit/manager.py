@@ -31,7 +31,7 @@ class ModelMappingType(MappingType, Indexable):
 
     @classmethod
     def get_es(cls):
-        return cls.workspace.index.es
+        return cls.workspace.im.es
 
     @classmethod
     def get_mapping(cls):
@@ -47,7 +47,7 @@ class ModelMappingType(MappingType, Indexable):
 
     @classmethod
     def get_indexable(cls):
-        return cls.workspace.storage.load_all(cls.model)
+        return cls.workspace.sm.load_all(cls.model)
 
 
 class ESManager(object):
@@ -65,17 +65,17 @@ class ESManager(object):
                 'model': model_class,
             })
 
-    def exists(self):
+    def index_exists(self):
         return self.es.indices.exists(index=self.workspace.index_name)
 
-    def create(self):
+    def create_index(self):
         return self.es.indices.create(index=self.workspace.index_name)
 
-    def destroy(self):
+    def destroy_index(self):
         return self.es.indices.delete(index=self.workspace.index_name)
 
 
-class GitManager(object):
+class StorageManager(object):
 
     def __init__(self, workspace):
         self.workspace = workspace
@@ -93,11 +93,11 @@ class GitManager(object):
             '*.json')
         return glob.iglob(path)
 
-    def exists(self):
+    def storage_exists(self):
         return os.path.isdir(self.workdir)
 
-    def create(self, name, email, bare=False,
-               commit_message='Initialize repository.'):
+    def create_storage(self, name, email, bare=False,
+                       commit_message='Initialize repository.'):
         repo = pygit2.init_repository(
             os.path.join(self.workdir, '.git'), bare)
         author = pygit2.Signature(name, email)
@@ -107,7 +107,7 @@ class GitManager(object):
             author, author, commit_message, tree, [])
         return repo
 
-    def destroy(self):
+    def destroy_storage(self):
         return shutil.rmtree(self.workdir)
 
 
@@ -115,34 +115,34 @@ class Workspace(object):
 
     """
     I'm thinking this should have two different kinds of managers
-    one a `.index` which provides an interface to all things ES
-    and another `.storage` which provides an interface to all things Git
+    one a `.im` which provides an interface to all things ES
+    and another `.sm` which provides an interface to all things Git
     """
 
     def __init__(self, workdir, es, index_name):
         self.workdir = workdir
         self.index_name = index_name
 
-        self.index = ESManager(self, es)
-        self.storage = GitManager(self)
+        self.im = ESManager(self, es)
+        self.sm = StorageManager(self)
 
     def setup(self, name, email):
-        if not self.index.exists():
-            self.index.create()
+        if not self.im.index_exists():
+            self.im.create_index()
 
-        if not self.storage.exists():
-            self.storage.create(name, email)
-        return (self.index, self.storage)
+        if not self.sm.storage_exists():
+            self.sm.create_storage(name, email)
+        return (self.im, self.sm)
 
     def exists(self):
-        return any([self.index.exists(), self.storage.exists()])
+        return any([self.im.index_exists(), self.sm.storage_exists()])
 
     def destroy(self):
-        if self.index.exists():
-            self.index.destroy()
+        if self.im.index_exists():
+            self.im.destroy_index()
 
-        if self.storage.exists():
-            self.storage.destroy()
+        if self.sm.storage_exists():
+            self.sm.destroy_storage()
 
 
 class EG(object):

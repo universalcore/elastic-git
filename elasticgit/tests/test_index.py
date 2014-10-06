@@ -5,22 +5,21 @@ class TestIndex(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-        self.index = self.workspace.index
-        self.storage = self.workspace.storage
+        self.im = self.workspace.im
 
     def tearDown(self):
         if self.workspace.exists():
             self.workspace.destroy()
 
     def test_exists(self):
-        self.assertFalse(self.index.exists())
+        self.assertFalse(self.im.index_exists())
 
     def test_create(self):
-        self.index.create()
-        self.assertTrue(self.index.exists())
+        self.im.create_index()
+        self.assertTrue(self.im.index_exists())
 
     def test_destroy(self):
-        self.index.create()
-        self.assertTrue(self.index.exists())
-        self.index.destroy()
-        self.assertFalse(self.index.exists())
+        self.im.create_index()
+        self.assertTrue(self.im.index_exists())
+        self.im.destroy_index()
+        self.assertFalse(self.im.index_exists())

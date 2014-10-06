@@ -5,22 +5,21 @@ class TestStorage(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-        self.index = self.workspace.index
-        self.storage = self.workspace.storage
+        self.sm = self.workspace.sm
 
     def tearDown(self):
         if self.workspace.exists():
             self.workspace.destroy()
 
     def test_exists(self):
-        self.assertFalse(self.storage.exists())
+        self.assertFalse(self.sm.storage_exists())
 
     def test_create(self):
-        self.storage.create('Test Kees', 'kees@example.org')
-        self.assertTrue(self.storage.exists())
+        self.sm.create_storage('Test Kees', 'kees@example.org')
+        self.assertTrue(self.sm.storage_exists())
 
     def test_destroy(self):
-        self.storage.create('Test Kees', 'kees@example.org')
-        self.assertTrue(self.storage.exists())
-        self.storage.destroy()
-        self.assertFalse(self.storage.exists())
+        self.sm.create_storage('Test Kees', 'kees@example.org')
+        self.assertTrue(self.sm.storage_exists())
+        self.sm.destroy_storage()
+        self.assertFalse(self.sm.storage_exists())
