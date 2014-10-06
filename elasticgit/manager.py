@@ -1,7 +1,12 @@
-from elasticutils import get_es
-from elasticgit.utils import introspect_properties
+import glob
+import shutil
+import os.path
+import pygit2
 
+from elasticutils import get_es
 from elasticutils import MappingType, Indexable
+
+from elasticgit.utils import introspect_properties
 
 
 class ModelMappingType(MappingType, Indexable):
@@ -60,18 +65,50 @@ class ESManager(object):
                 'model': model_class,
             })
 
+    def exists(self):
+        return self.es.indices.exists(index=self.workspace.index_name)
+
+    def create(self):
+        return self.es.indices.create(index=self.workspace.index_name)
+
+    def destroy(self):
+        return self.es.indices.delete(index=self.workspace.index_name)
+
 
 class GitManager(object):
 
     def __init__(self, workspace):
         self.workspace = workspace
+        self.workdir = self.workspace.workdir
 
     def load_all(self, model_class):
         """
         This should load all known instances of this model from disk
         because we need to know how to re-populate ES
         """
-        return []
+        path = os.path.join(
+            self.workdir,
+            model_class.__module__,
+            model_class.__class__.__name__,
+            '*.json')
+        return glob.iglob(path)
+
+    def exists(self):
+        return os.path.isdir(self.workdir)
+
+    def create(self, name, email, bare=False,
+               commit_message='Initialize repository.'):
+        repo = pygit2.init_repository(
+            os.path.join(self.workdir, '.git'), bare)
+        author = pygit2.Signature(name, email)
+        tree = repo.TreeBuilder().write()
+        repo.create_commit(
+            'refs/heads/master',
+            author, author, commit_message, tree, [])
+        return repo
+
+    def destroy(self):
+        return shutil.rmtree(self.workdir)
 
 
 class Workspace(object):
@@ -83,10 +120,25 @@ class Workspace(object):
     """
 
     def __init__(self, workdir, es, index_name):
-        self.index = ESManager(self, es)
-        self.storage = GitManager(self)
         self.workdir = workdir
         self.index_name = index_name
+
+        self.index = ESManager(self, es)
+        self.storage = GitManager(self)
+
+    def setup(self, name, email):
+        if not self.index.exists():
+            self.index.create()
+
+        if not self.storage.exists():
+            self.storage.create(name, email)
+        return (self.index, self.storage)
+
+    def exists(self):
+        return any([self.index.exists(), self.storage.exists()])
+
+    def destroy(self):
+        return (self.index.destroy(), self.storage.destroy())
 
 
 class EG(object):

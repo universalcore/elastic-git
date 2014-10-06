@@ -1,22 +1,15 @@
 from elasticgit.tests.base import ModelBaseTest
 
-from elasticgit.manager import EG
 from elasticgit.models import IntegerField
 from elasticsearch.client import Elasticsearch
 
 
-class TestEG(ModelBaseTest):
-
-    def mk_workspace(self, repo='foo/repo', url='https://localhost',
-                     index_name='test-index'):
-        return EG.workspace(repo, es={
-            'urls': [url],
-        }, index_name=index_name)
+class TestManager(ModelBaseTest):
 
     def test_workspace(self):
         workspace = self.mk_workspace()
         self.assertTrue(isinstance(workspace.index.es, Elasticsearch))
-        self.assertEqual(workspace.workdir, 'foo/repo')
+        self.assertEqual(workspace.workdir, '.test_repo')
 
     def test_mapping_type(self):
         model_class = self.mk_model({
@@ -24,7 +17,7 @@ class TestEG(ModelBaseTest):
         })
         workspace = self.mk_workspace()
         mapping_type = workspace.index.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_index(), 'test-index')
+        self.assertEqual(mapping_type.get_index(), 'test-repo-index')
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
             mapping_type.get_mapping_type_name(),
@@ -53,4 +46,4 @@ class TestEG(ModelBaseTest):
             'age': IntegerField('An age')
         })
         mapping_type = workspace.index.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_indexable(), [])
+        self.assertEqual(list(mapping_type.get_indexable()), [])
