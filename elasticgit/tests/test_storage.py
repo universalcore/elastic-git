@@ -1,8 +1,13 @@
 from elasticgit.tests.base import ModelBaseTest
-from elasticgit.models import IntegerField, TextField
+from elasticgit.models import IntegerField, TextField, Model
 from elasticgit.manager import StorageException
 
 from git import Repo, GitCommandError
+
+
+class TestPerson(Model):
+    age = IntegerField('The Age')
+    name = TextField('The name')
 
 
 class TestStorage(ModelBaseTest):
@@ -30,18 +35,18 @@ class TestStorage(ModelBaseTest):
 
     def test_save(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
-        p = self.mk_instance([
-            ('age', IntegerField, 1),
-            ('name', TextField, 'Test Kees'),
-        ])
+        p = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
         self.sm.save(p, 'Saving a person.')
 
     def test_delete(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
-        p = self.mk_instance([
-            ('age', IntegerField, 1),
-            ('name', TextField, 'Test Kees'),
-        ])
+        p = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
 
         self.sm.save(p, 'Saving a person.')
         self.sm.delete(p, 'Deleting a person.')
@@ -57,10 +62,10 @@ class TestStorage(ModelBaseTest):
     def test_delete_non_existent(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
 
-        person = self.mk_instance([
-            ('age', IntegerField, 1),
-            ('name', TextField, 'Test Kees'),
-        ])
+        person = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
 
         self.assertRaises(
             GitCommandError,
@@ -68,22 +73,53 @@ class TestStorage(ModelBaseTest):
 
     def test_get(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
-
-        person = self.mk_instance([
-            ('age', IntegerField, 1),
-            ('name', TextField, 'Test Kees'),
-        ])
+        person = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
         self.sm.save(person, 'Saving a person.')
         self.assertEqual(
             self.sm.get(person.__class__, person.uuid), person)
 
     def test_get_non_existent(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
+        person = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
 
-        person = self.mk_instance([
-            ('age', IntegerField, 1),
-            ('name', TextField, 'Test Kees'),
-        ])
         self.assertRaises(
             StorageException,
             self.sm.get, person.__class__, person.uuid)
+
+    def test_iterate(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+
+        person1 = TestPerson({
+            'age': 1,
+            'name': 'Test Kees 1'
+        })
+        person2 = TestPerson({
+            'age': 2,
+            'name': 'Test Kees 2'
+        })
+
+        self.sm.save(person1, 'Saving person 1')
+        self.sm.save(person2, 'Saving person 2')
+        reloaded_person1, reloaded_person2 = self.sm.iterate(TestPerson)
+        self.assertEqual(
+            set([reloaded_person1.uuid, reloaded_person2.uuid]),
+            set([person1.uuid, person2.uuid]))
+
+    def test_load(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+        person = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
+        self.sm.save(person, 'Saving a person')
+        reloaded_person = self.sm.load(
+            Repo(self.workspace.workdir),
+            self.sm.git_path(
+                person.__class__, '%s.json' % (person.uuid,)))
+        self.assertEqual(person, reloaded_person)

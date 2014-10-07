@@ -6,6 +6,14 @@ from elasticsearch.client import Elasticsearch
 
 class TestManager(ModelBaseTest):
 
+    def setUp(self):
+        self.workspace = self.mk_workspace()
+        self.workspace.setup('Test Kees', 'kees@example.org')
+
+    def tearDown(self):
+        if self.workspace.exists():
+            self.workspace.destroy()
+
     def test_workspace(self):
         workspace = self.mk_workspace('.foo')
         self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
@@ -15,8 +23,7 @@ class TestManager(ModelBaseTest):
         model_class = self.mk_model({
             'age': IntegerField('An age')
         })
-        workspace = self.mk_workspace()
-        mapping_type = workspace.im.get_mapping_type(model_class)
+        mapping_type = self.workspace.im.get_mapping_type(model_class)
         self.assertEqual(mapping_type.get_index(), 'test-repo-index')
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
@@ -24,12 +31,11 @@ class TestManager(ModelBaseTest):
             'confmodel.config.TempModel-type')
 
     def test_indexable(self):
-        workspace = self.mk_workspace()
         model_class = self.mk_model({
             'age': IntegerField('An age')
         })
-        mapping_type = workspace.im.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_es(), workspace.im.es)
+        mapping_type = self.workspace.im.get_mapping_type(model_class)
+        self.assertEqual(mapping_type.get_es(), self.workspace.im.es)
         self.assertEqual(mapping_type.get_mapping(), {
             'properties': {
                 'age': {'type': 'integer'},
@@ -42,9 +48,8 @@ class TestManager(ModelBaseTest):
             1)
 
     def test_get_indexable(self):
-        workspace = self.mk_workspace()
         model_class = self.mk_model({
             'age': IntegerField('An age')
         })
-        mapping_type = workspace.im.get_mapping_type(model_class)
+        mapping_type = self.workspace.im.get_mapping_type(model_class)
         self.assertEqual(list(mapping_type.get_indexable()), [])

@@ -48,7 +48,7 @@ class ModelMappingType(MappingType, Indexable):
 
     @classmethod
     def get_indexable(cls):
-        return cls.workspace.sm.load_all(cls.model)
+        return cls.workspace.sm.iterate(cls.model)
 
 
 class ESManager(object):
@@ -104,12 +104,22 @@ class StorageManager(object):
     def file_name(self, model):
         return self.file_path(model.__class__, '%s.json' % (model.uuid,))
 
-    def load_all(self, model_class):
+    def iterate(self, model_class):
         """
         This should load all known instances of this model from disk
         because we need to know how to re-populate ES
         """
-        return glob.iglob(self.file_path(model_class, '*.json'))
+        repo = Repo(self.workdir)
+        list_of_files = repo.git.ls_files(self.git_path(model_class, '*.json'))
+        for file_path in filter(None, list_of_files.split('\n')):
+            yield self.load(repo, file_path)
+
+    def load(self, repo, file_path):
+        module_name, class_name, file_name = file_path.split('/', 3)
+        uuid, suffix = file_name.split('.', 2)
+        mod = __import__(module_name, fromlist=[class_name])
+        model_class = getattr(mod, class_name)
+        return self.get(model_class, uuid)
 
     def get(self, model_class, uuid):
         file_path = self.file_path(model_class, '%s.json' % (uuid,))
@@ -131,7 +141,10 @@ class StorageManager(object):
 
         # ensure the directory exists
         dirname = self.file_path(model.__class__)
-        os.makedirs(dirname)
+        try:
+            os.makedirs(dirname)
+        except OSError:
+            pass
 
         # write the json
         with open(self.file_name(model), 'w') as fp:
