@@ -1,8 +1,6 @@
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.models import IntegerField, TextField
 
-import pytest
-
 
 class TestStorage(ModelBaseTest):
 
@@ -18,25 +16,24 @@ class TestStorage(ModelBaseTest):
         self.assertFalse(self.sm.storage_exists())
 
     def test_create_storage(self):
-        self.sm.create_storage('Test Kees', 'kees@example.org')
+        self.sm.create_storage()
         self.assertTrue(self.sm.storage_exists())
 
     def test_destroy_storage(self):
-        self.sm.create_storage('Test Kees', 'kees@example.org')
+        self.sm.create_storage()
         self.assertTrue(self.sm.storage_exists())
         self.sm.destroy_storage()
         self.assertFalse(self.sm.storage_exists())
 
-    # @pytest.mark.skip
-    # def test_save(self):
-    #     self.workspace.setup('Test Kees', 'kees@example.org')
-    #     Person = self.mk_model({
-    #         'age': IntegerField('An age'),
-    #         'name': TextField('A name'),
-    #     })
+    def test_save(self):
+        self.workspace.setup()
+        Person = self.mk_model({
+            'age': IntegerField('An age'),
+            'name': TextField('A name'),
+        })
 
-    #     p = Person({
-    #         'age': 1,
-    #         'name': 'Test Kees',
-    #     })
-    #     self.sm.save(p, 'Test Kees', 'kees@example.org', 'Saving a person')
+        p = Person({
+            'age': 1,
+            'name': 'Test Kees',
+        })
+        self.sm.save(p, 'Test Kees', 'kees@example.org', 'Saving a person')

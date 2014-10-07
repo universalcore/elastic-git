@@ -1,8 +1,8 @@
 import glob
 import shutil
-import os.path
+import os
 import json
-import pygit2
+from git import Repo
 
 from elasticutils import get_es
 from elasticutils import MappingType, Indexable
@@ -82,21 +82,20 @@ class StorageManager(object):
         self.workspace = workspace
         self.workdir = self.workspace.workdir
         self.gitdir = os.path.join(self.workdir, '.git')
-        self._repo = None
 
-    @property
-    def repo(self):
-        if self._repo is not None:
-            return self._repo
-        self._repo = pygit2.Repository(self.gitdir)
-        return self._repo
+    def git_path(self, model_class, *args):
+        return os.path.join(
+            model_class.__module__,
+            model_class.__name__,
+            *args)
 
     def file_path(self, model_class, *args):
         return os.path.join(
             self.workdir,
-            model_class.__module__,
-            model_class.__class__.__name__,
-            *args)
+            self.git_path(model_class, *args))
+
+    def git_name(self, model):
+        return self.git_path(model.__class__, '%s.json' % (model.uuid,))
 
     def file_name(self, model):
         return self.file_path(model.__class__, '%s.json' % (model.uuid,))
@@ -109,29 +108,28 @@ class StorageManager(object):
         return glob.iglob(self.file_path(model_class, '*.json'))
 
     def save(self, model, name, email, message):
-        oid = self.repo.write(
-            pygit2.GIT_OBJ_BLOB, json.dumps(dict(model), indent=2))
-        tree = pygit2.TreeBuilder()
-        tree.insert(self.file_name(model), oid, 100644)
-        signature = pygit2.Signature(name, email)
-        reference = 'refs/heads/master'
-        parent_ref = self.repo.lookup_reference(reference)
-        self.repo.create_commit(
-            reference, signature, signature, message, tree.write(),
-            [parent_ref.oid])
+        repo = Repo(self.workdir)
+        index = repo.index
+
+        # ensure the directory exists
+        dirname = self.file_path(model.__class__)
+        os.makedirs(dirname)
+
+        # write the json
+        with open(self.file_name(model), 'w') as fp:
+            json.dump(dict(model), fp, indent=2)
+
+        # add to the git index
+        print index.add([self.git_name(model)])
+        index.commit(message)
 
     def storage_exists(self):
         return os.path.isdir(self.workdir)
 
-    def create_storage(self, name, email, bare=False,
-                       commit_message='Initialize repository.'):
-        repo = pygit2.init_repository(self.gitdir, bare)
-        author = pygit2.Signature(name, email)
-        tree = repo.TreeBuilder().write()
-        repo.create_commit(
-            'refs/heads/master',
-            author, author, commit_message, tree, [])
-        return repo
+    def create_storage(self, bare=False):
+        if not os.path.isdir(self.workdir):
+            os.makedirs(self.workdir)
+        return Repo.init(self.workdir, bare)
 
     def destroy_storage(self):
         return shutil.rmtree(self.workdir)
@@ -152,12 +150,12 @@ class Workspace(object):
         self.im = ESManager(self, es)
         self.sm = StorageManager(self)
 
-    def setup(self, name, email):
+    def setup(self):
         if not self.im.index_exists():
             self.im.create_index()
 
         if not self.sm.storage_exists():
-            self.sm.create_storage(name, email)
+            self.sm.create_storage()
         return (self.im, self.sm)
 
     def exists(self):
