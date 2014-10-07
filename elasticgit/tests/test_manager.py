@@ -7,9 +7,9 @@ from elasticsearch.client import Elasticsearch
 class TestManager(ModelBaseTest):
 
     def test_workspace(self):
-        workspace = self.mk_workspace()
+        workspace = self.mk_workspace('.foo')
         self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
-        self.assertEqual(workspace.workdir, '.test_repo')
+        self.assertEqual(workspace.workdir, '.foo')
 
     def test_mapping_type(self):
         model_class = self.mk_model({

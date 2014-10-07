@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 
 from elasticgit.models import Model
@@ -10,12 +9,9 @@ class ModelBaseTest(TestCase):
     def mk_model(self, fields):
         return type('TempModel', (Model,), fields)
 
-    def mk_workspace(self, repo='.test_repo/', url='https://localhost',
-                     index_name='test-repo-index', setup=False,
-                     name='Test Kees', email='kees@example.org'):
-        workspace = EG.workspace(os.path.join(os.getcwd(), repo), es={
+    def mk_workspace(self, repo='../.test_repo/', url='https://localhost',
+                     index_name='test-repo-index'):
+        workspace = EG.workspace(repo, es={
             'urls': [url],
         }, index_name=index_name)
-        if setup:
-            workspace.setup(name, email)
         return workspace

@@ -120,7 +120,7 @@ class StorageManager(object):
             json.dump(dict(model), fp, indent=2)
 
         # add to the git index
-        print index.add([self.git_name(model)])
+        index.add([self.git_name(model)])
         index.commit(message)
 
     def storage_exists(self):

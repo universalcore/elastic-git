@@ -1,6 +1,3 @@
 confmodel==0.2.0
 elasticutils==0.10.1
-# Needing to install off of GitHub because the version on Pypi
-# is not compatible with Pypy
-git+https://github.com/Byron/smmap#egg=smmap
 GitPython==0.3.2.RC1
