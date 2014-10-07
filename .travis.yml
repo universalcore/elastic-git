@@ -1,5 +1,6 @@
 language: python
 python:
+  - "py2.7"
   - "pypy"
 install:
   - curl https://raw.githubusercontent.com/praekelt/unicore-cms/develop/utils/install_libgit2.sh | sh
