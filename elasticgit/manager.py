@@ -126,10 +126,13 @@ class StorageManager(object):
     def storage_exists(self):
         return os.path.isdir(self.workdir)
 
-    def create_storage(self, bare=False):
+    def create_storage(self, name, email, bare=False):
         if not os.path.isdir(self.workdir):
             os.makedirs(self.workdir)
-        return Repo.init(self.workdir, bare)
+        repo = Repo.init(self.workdir, bare)
+        config = repo.config_writer()
+        config.set_value("user", "name", name)
+        config.set_value("user", "email", email)
 
     def destroy_storage(self):
         return shutil.rmtree(self.workdir)

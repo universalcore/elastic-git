@@ -3,7 +3,6 @@ python:
   - "2.7"
   - "pypy"
 install:
-  - curl https://raw.githubusercontent.com/praekelt/unicore-cms/develop/utils/install_libgit2.sh | sh
   - pip install -r requirements.txt --use-wheel
   - pip install -r requirements-dev.txt --use-wheel
   - pip install -e . --use-wheel
