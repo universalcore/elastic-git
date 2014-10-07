@@ -49,7 +49,7 @@ Usage
 
 Results in the following layout in the git repository::
 
-.. code-block:: diff
+::
 
     commit 89afa833e4c537293a5f21d4e867cd061ece82a9
     Author: Simon de Haan <simon@praekeltfoundation.org>
