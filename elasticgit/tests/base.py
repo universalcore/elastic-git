@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from elasticgit.models import Model
+from elasticgit.models import IntegerField, TextField, Model
 from elasticgit.manager import EG
 
 
@@ -15,3 +15,8 @@ class ModelBaseTest(TestCase):
             'urls': [url],
         }, index_name=index_name)
         return workspace
+
+
+class TestPerson(Model):
+    age = IntegerField('The Age')
+    name = TextField('The name')

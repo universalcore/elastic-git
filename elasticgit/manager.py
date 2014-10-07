@@ -1,11 +1,9 @@
-import glob
 import shutil
 import os
 import json
 from git import Repo
 
-from elasticutils import get_es
-from elasticutils import MappingType, Indexable
+from elasticutils import MappingType, Indexable, get_es, S
 
 from elasticgit.utils import introspect_properties
 
@@ -19,8 +17,8 @@ class ModelMappingType(MappingType, Indexable):
     @classmethod
     def get_mapping_type_name(cls):
         model = cls.model
-        return '%s.%s-type' % (
-            model.__module__,
+        return '%s___%sType' % (
+            model.__module__.replace(".", "__"),
             model.__name__)
 
     @classmethod
@@ -74,6 +72,22 @@ class ESManager(object):
 
     def destroy_index(self):
         return self.es.indices.delete(index=self.workspace.index_name)
+
+    def index(self, model, refresh_index=False):
+        model_class = model.__class__
+        MappingType = self.get_mapping_type(model_class)
+        MappingType.index(dict(model), id_=model.uuid)
+        if refresh_index:
+            MappingType.refresh_index()
+        return model
+
+    def unindex(self, model, refresh_index=False):
+        model_class = model.__class__
+        MappingType = self.get_mapping_type(model_class)
+        MappingType.unindex(model.uuid)
+        if refresh_index:
+            MappingType.refresh_index()
+        return model
 
 
 class StorageException(Exception):
@@ -138,7 +152,7 @@ class StorageManager(object):
                     data['uuid'], uuid))
         return model_class(data)
 
-    def save(self, model, message):
+    def store(self, model, message):
 
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
@@ -213,6 +227,10 @@ class Workspace(object):
 
         if self.sm.storage_exists():
             self.sm.destroy_storage()
+
+    def save(self, model, message):
+        self.sm.save(model, message)
+        self.im.index(model)
 
 
 class EG(object):

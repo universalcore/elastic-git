@@ -1,13 +1,6 @@
-from elasticgit.tests.base import ModelBaseTest
-from elasticgit.models import IntegerField, TextField, Model
-from elasticgit.manager import StorageException
+from elasticgit.tests.base import ModelBaseTest, TestPerson
 
 from git import Repo, GitCommandError
-
-
-class TestPerson(Model):
-    age = IntegerField('The Age')
-    name = TextField('The name')
 
 
 class TestStorage(ModelBaseTest):
@@ -33,13 +26,13 @@ class TestStorage(ModelBaseTest):
         self.sm.destroy_storage()
         self.assertFalse(self.sm.storage_exists())
 
-    def test_save(self):
+    def test_store(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
         p = TestPerson({
             'age': 1,
             'name': 'Test Kees'
         })
-        self.sm.save(p, 'Saving a person.')
+        self.sm.store(p, 'Saving a person.')
 
     def test_delete(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
@@ -48,7 +41,7 @@ class TestStorage(ModelBaseTest):
             'name': 'Test Kees'
         })
 
-        self.sm.save(p, 'Saving a person.')
+        self.sm.store(p, 'Saving a person.')
         self.sm.delete(p, 'Deleting a person.')
         repo = Repo(self.workspace.workdir)
         delete_person, save_person, init_repo = repo.iter_commits('master')
@@ -77,7 +70,7 @@ class TestStorage(ModelBaseTest):
             'age': 1,
             'name': 'Test Kees'
         })
-        self.sm.save(person, 'Saving a person.')
+        self.sm.store(person, 'Saving a person.')
         self.assertEqual(
             self.sm.get(person.__class__, person.uuid), person)
 
@@ -104,8 +97,8 @@ class TestStorage(ModelBaseTest):
             'name': 'Test Kees 2'
         })
 
-        self.sm.save(person1, 'Saving person 1')
-        self.sm.save(person2, 'Saving person 2')
+        self.sm.store(person1, 'Saving person 1')
+        self.sm.store(person2, 'Saving person 2')
         reloaded_person1, reloaded_person2 = self.sm.iterate(TestPerson)
         self.assertEqual(
             set([reloaded_person1.uuid, reloaded_person2.uuid]),
@@ -117,7 +110,7 @@ class TestStorage(ModelBaseTest):
             'age': 1,
             'name': 'Test Kees'
         })
-        self.sm.save(person, 'Saving a person')
+        self.sm.store(person, 'Saving a person')
         reloaded_person = self.sm.load(
             Repo(self.workspace.workdir),
             self.sm.git_path(

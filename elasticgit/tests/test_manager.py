@@ -28,7 +28,7 @@ class TestManager(ModelBaseTest):
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
             mapping_type.get_mapping_type_name(),
-            'confmodel.config.TempModel-type')
+            'confmodel__config___TempModelType')
 
     def test_indexable(self):
         model_class = self.mk_model({
