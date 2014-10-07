@@ -46,6 +46,9 @@ class Model(Config):
         if not self.uuid:
             self._config_data['uuid'] = uuid.uuid4().hex
 
+    def __eq__(self, other):
+        return self._config_data == other._config_data
+
     def __iter__(self):
         for field in self._get_fields():
             yield field.name, field.get_value(self)

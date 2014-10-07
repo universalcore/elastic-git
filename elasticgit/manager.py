@@ -76,6 +76,10 @@ class ESManager(object):
         return self.es.indices.delete(index=self.workspace.index_name)
 
 
+class StorageException(Exception):
+    pass
+
+
 class StorageManager(object):
 
     def __init__(self, workspace):
@@ -106,6 +110,21 @@ class StorageManager(object):
         because we need to know how to re-populate ES
         """
         return glob.iglob(self.file_path(model_class, '*.json'))
+
+    def get(self, model_class, uuid):
+        file_path = self.file_path(model_class, '%s.json' % (uuid,))
+        if not os.path.isfile(file_path):
+            raise StorageException('%s with %s does not exist.' % (
+                model_class, uuid))
+
+        with open(file_path, 'r') as fp:
+            data = json.load(fp)
+
+        if data['uuid'] != uuid:
+            raise StorageException(
+                'Data uuid (%s) does not match requested uuid (%s).' % (
+                    data['uuid'], uuid))
+        return model_class(data)
 
     def save(self, model, message):
         index = Repo(self.workdir).index

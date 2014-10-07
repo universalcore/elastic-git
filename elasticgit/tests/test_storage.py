@@ -1,5 +1,6 @@
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.models import IntegerField, TextField
+from elasticgit.manager import StorageException
 
 from git import Repo, GitCommandError
 
@@ -64,3 +65,25 @@ class TestStorage(ModelBaseTest):
         self.assertRaises(
             GitCommandError,
             self.sm.delete, person, 'Deleting a person.')
+
+    def test_get(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+
+        person = self.mk_instance([
+            ('age', IntegerField, 1),
+            ('name', TextField, 'Test Kees'),
+        ])
+        self.sm.save(person, 'Saving a person.')
+        self.assertEqual(
+            self.sm.get(person.__class__, person.uuid), person)
+
+    def test_get_non_existent(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+
+        person = self.mk_instance([
+            ('age', IntegerField, 1),
+            ('name', TextField, 'Test Kees'),
+        ])
+        self.assertRaises(
+            StorageException,
+            self.sm.get, person.__class__, person.uuid)
