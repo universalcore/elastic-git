@@ -198,12 +198,6 @@ class StorageManager(object):
 
 class Workspace(object):
 
-    """
-    I'm thinking this should have two different kinds of managers
-    one a `.im` which provides an interface to all things ES
-    and another `.sm` which provides an interface to all things Git
-    """
-
     def __init__(self, workdir, es, index_name):
         self.workdir = workdir
         self.index_name = index_name
