@@ -2,3 +2,4 @@
 /ve/
 *.pyc
 *.egg-info
+/dist/
