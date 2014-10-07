@@ -43,11 +43,26 @@ Usage
     person3 = Person({'age': 30, 'name': 'Baz'})
     workspace.save(person3, 'Saving Person 3')
 
-    for person in workspace.S(Person).query(name__match='Baz').filter(age__lte=20):
-        print person.get_object(), dict(person.get_object())
 
+Data is now persisted in a git repository and is queryable via elastic search:
 
-Results in the following layout in the git repository
+.. code-block:: python
+
+    >>> from elasticgit.manager import EG
+    >>> from elasticgit.tests.base import TestPerson as Person
+    >>> workspace = EG.workspace('/Users/sdehaan/Desktop/test-repo/')
+    >>> for person in workspace.S(Person).filter(age__gte=20):
+    ...     print person.get_object(), dict(person.get_object())
+    ...
+    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 20, 'uuid': u'9890c5813fc14fcd82a3ec3751a1b1fe', 'name': u'Bar'}
+    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 30, 'uuid': u'4b5c33de63034205ac23b746ee93344b', 'name': u'Baz'}
+    >>> for person in workspace.S(Person).query(name__match='Baz'):
+    ...     print person.get_object(), dict(person.get_object())
+    ...
+    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 30, 'uuid': u'4b5c33de63034205ac23b746ee93344b', 'name': u'Baz'}
+    >>>
+
+Git log output of the repository
 
 .. code-block:: diff
 

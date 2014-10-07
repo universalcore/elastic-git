@@ -3,7 +3,7 @@ import os
 import json
 from git import Repo
 
-from elasticutils import MappingType, Indexable, get_es, S
+from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
 from elasticgit.utils import introspect_properties
 
@@ -244,3 +244,6 @@ class EG(object):
     @classmethod
     def workspace(self, workdir, es={}, index_name='elastic-git'):
         return Workspace(workdir, get_es(**es), index_name)
+
+Q
+F
