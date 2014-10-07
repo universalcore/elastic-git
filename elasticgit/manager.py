@@ -107,7 +107,7 @@ class StorageManager(object):
         """
         return glob.iglob(self.file_path(model_class, '*.json'))
 
-    def save(self, model, name, email, message):
+    def save(self, model, message):
         repo = Repo(self.workdir)
         index = repo.index
 

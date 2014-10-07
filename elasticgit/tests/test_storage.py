@@ -36,4 +36,4 @@ class TestStorage(ModelBaseTest):
             'age': 1,
             'name': 'Test Kees',
         })
-        self.sm.save(p, 'Test Kees', 'kees@example.org', 'Saving a person')
+        self.sm.save(p, 'Saving a person.')
