@@ -153,12 +153,12 @@ class Workspace(object):
         self.im = ESManager(self, es)
         self.sm = StorageManager(self)
 
-    def setup(self):
+    def setup(self, name, email):
         if not self.im.index_exists():
             self.im.create_index()
 
         if not self.sm.storage_exists():
-            self.sm.create_storage()
+            self.sm.create_storage(name, email)
         return (self.im, self.sm)
 
     def exists(self):
