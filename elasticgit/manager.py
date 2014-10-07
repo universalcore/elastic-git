@@ -108,8 +108,7 @@ class StorageManager(object):
         return glob.iglob(self.file_path(model_class, '*.json'))
 
     def save(self, model, message):
-        repo = Repo(self.workdir)
-        index = repo.index
+        index = Repo(self.workdir).index
 
         # ensure the directory exists
         dirname = self.file_path(model.__class__)
@@ -121,7 +120,12 @@ class StorageManager(object):
 
         # add to the git index
         index.add([self.git_name(model)])
-        index.commit(message)
+        return index.commit(message)
+
+    def delete(self, model, message):
+        index = Repo(self.workdir).index
+        index.remove([self.git_name(model)])
+        return index.commit(message)
 
     def storage_exists(self):
         return os.path.isdir(self.workdir)
@@ -133,6 +137,7 @@ class StorageManager(object):
         config = repo.config_writer()
         config.set_value("user", "name", name)
         config.set_value("user", "email", email)
+        return repo.index.commit('Initialize repository.')
 
     def destroy_storage(self):
         return shutil.rmtree(self.workdir)
