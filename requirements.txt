@@ -1,3 +1,4 @@
 confmodel==0.2.0
 elasticutils==0.10.1
 GitPython==0.3.2.RC1
+-e .
