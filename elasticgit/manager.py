@@ -41,7 +41,7 @@ class ModelMappingType(MappingType, Indexable):
     @classmethod
     def extract_document(cls, obj_id, obj=None):
         if obj is None:
-            obj = cls.workspace.using(cls.model).get(obj_id)
+            obj = cls.workspace.sm.get(cls.model, obj_id)
         return dict(obj)
 
     @classmethod
@@ -76,7 +76,8 @@ class ESManager(object):
     def index(self, model, refresh_index=False):
         model_class = model.__class__
         MappingType = self.get_mapping_type(model_class)
-        MappingType.index(dict(model), id_=model.uuid)
+        MappingType.index(
+            MappingType.extract_document(model.uuid, model), id_=model.uuid)
         if refresh_index:
             MappingType.refresh_index()
         return model

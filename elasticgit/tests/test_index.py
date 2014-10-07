@@ -26,6 +26,36 @@ class TestIndex(ModelBaseTest):
         self.im.destroy_index()
         self.assertFalse(self.im.index_exists())
 
+    def test_extract_document_with_object(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+        person = TestPerson({
+            'age': 1,
+            'name': 'Kees',
+        })
+        self.workspace.save(person, 'Saving a person.')
+        MappingType = self.im.get_mapping_type(TestPerson)
+        data = MappingType.extract_document(person.uuid, person)
+        self.assertEqual(data, {
+            'age': 1,
+            'name': 'Kees',
+            'uuid': person.uuid,
+        })
+
+    def test_extract_document_with_object_id(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+        person = TestPerson({
+            'age': 1,
+            'name': 'Kees',
+        })
+        self.workspace.save(person, 'Saving a person.')
+        MappingType = self.im.get_mapping_type(TestPerson)
+        data = MappingType.extract_document(person.uuid)
+        self.assertEqual(data, {
+            'age': 1,
+            'name': 'Kees',
+            'uuid': person.uuid,
+        })
+
     def test_indexing(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
