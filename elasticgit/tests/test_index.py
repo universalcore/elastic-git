@@ -2,8 +2,6 @@ from elasticgit.tests.base import ModelBaseTest, TestPerson
 
 from elasticutils import S
 
-from unittest import skip
-
 
 class TestIndex(ModelBaseTest):
 
@@ -60,11 +58,3 @@ class TestIndex(ModelBaseTest):
             S(MappingType).query(name__match='Kees').count(), 0)
         self.assertEqual(
             S(MappingType).count(), 1)
-
-    @skip('work in progress')
-    def test_mapping_types(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
-        im = self.workspace.im
-        print im.get_mapping_type(TestModel)
-        query = S(im.get_mapping_type(TestModel)).filter(name='Simon')
-        print 'count?', repr(query.count())

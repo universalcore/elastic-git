@@ -1,4 +1,4 @@
-from elasticgit.tests.base import ModelBaseTest
+from elasticgit.tests.base import ModelBaseTest, TestPerson
 from git import Repo
 
 
@@ -42,3 +42,26 @@ class TestWorkspace(ModelBaseTest):
         self.assertTrue(self.workspace.exists())
         self.workspace.destroy()
         self.assertFalse(self.workspace.exists())
+
+
+class TestEG(ModelBaseTest):
+
+    def setUp(self):
+        self.workspace = self.mk_workspace()
+        self.workspace.setup('Test Kees', 'kees@example.org')
+
+    def tearDown(self):
+        if self.workspace.exists():
+            self.workspace.destroy()
+
+    def test_saving(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).query(name__match='Name').count(), 1)

@@ -17,8 +17,8 @@ class ModelMappingType(MappingType, Indexable):
     @classmethod
     def get_mapping_type_name(cls):
         model = cls.model
-        return '%s___%sType' % (
-            model.__module__.replace(".", "__"),
+        return '%s-%sType' % (
+            model.__module__.replace(".", "-"),
             model.__name__)
 
     @classmethod
@@ -26,7 +26,7 @@ class ModelMappingType(MappingType, Indexable):
         return self.model
 
     def get_object(self):
-        return self.workspace.using(self.model).get(self._id)
+        return self.workspace.sm.get(self.model, self._id)
 
     @classmethod
     def get_es(cls):
@@ -229,8 +229,14 @@ class Workspace(object):
             self.sm.destroy_storage()
 
     def save(self, model, message):
-        self.sm.save(model, message)
+        self.sm.store(model, message)
         self.im.index(model)
+
+    def refresh_index(self):
+        return self.im.es.indices.refresh(index=self.index_name)
+
+    def S(self, model_class):
+        return S(self.im.get_mapping_type(model_class))
 
 
 class EG(object):
