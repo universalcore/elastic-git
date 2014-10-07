@@ -1,0 +1,4 @@
+.coverage
+/ve/
+*.pyc
+*.egg-info
