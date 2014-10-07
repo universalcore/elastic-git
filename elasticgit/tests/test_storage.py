@@ -89,7 +89,7 @@ class TestStorage(ModelBaseTest):
         })
 
         self.assertRaises(
-            StorageException,
+            GitCommandError,
             self.sm.get, person.__class__, person.uuid)
 
     def test_iterate(self):

@@ -122,13 +122,15 @@ class StorageManager(object):
         return self.get(model_class, uuid)
 
     def get(self, model_class, uuid):
-        file_path = self.file_path(model_class, '%s.json' % (uuid,))
-        if not os.path.isfile(file_path):
-            raise StorageException('%s with %s does not exist.' % (
-                model_class, uuid))
+        repo = Repo(self.workdir)
+        current_branch = repo.head.reference
 
-        with open(file_path, 'r') as fp:
-            data = json.load(fp)
+        json_data = repo.git.show(
+            '%s:%s' % (
+                current_branch,
+                self.git_path(model_class, '%s.json' % (uuid,))))
+
+        data = json.loads(json_data)
 
         if data['uuid'] != uuid:
             raise StorageException(
