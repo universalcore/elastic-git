@@ -8,7 +8,7 @@ it via elastic search.
 >>> from elasticgit.manager import EG
 >>> from elasticgit.models import Model, IntegerField, TextField
 >>>
->>> workspace = EG.workspace('/Users/sdehaan/Desktop/test-repo/')
+>>> workspace = EG.workspace('.test_repo')
 >>> workspace.setup('Simon de Haan', 'simon@praekeltfoundation.org')
 >>>
 >>> class Person(Model):
