@@ -137,6 +137,10 @@ class StorageManager(object):
         return model_class(data)
 
     def save(self, model, message):
+
+        if model.uuid is None:
+            raise StorageException('Cannot save a model without a UUID set.')
+
         index = Repo(self.workdir).index
 
         # ensure the directory exists
