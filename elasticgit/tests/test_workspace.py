@@ -1,4 +1,5 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
+from elasticgit.manager import ModelMappingType
 from git import Repo
 
 
@@ -65,3 +66,18 @@ class TestEG(ModelBaseTest):
         workspace.refresh_index()
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
+
+    def test_get_object(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [result] = workspace.S(TestPerson).query(name__match='Name')
+        self.assertTrue(isinstance(result, ModelMappingType))
+        model = result.get_object()
+        self.assertTrue(isinstance(model, TestPerson))
+        self.assertEqual(model, person)
