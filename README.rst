@@ -12,6 +12,10 @@ Search as a query backend.
 .. image:: https://coveralls.io/repos/smn/elastic-git/badge.png?branch=develop
   :target: https://coveralls.io/r/smn/elastic-git?branch=develop
 
+.. image:: https://readthedocs.org/projects/elastic-git/badge/?version=latest
+  :target: https://readthedocs.org/projects/elastic-git/?badge=latest
+  :alt: Documentation Status
+
 Usage
 -----
 
