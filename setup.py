@@ -10,7 +10,7 @@ with open(os.path.join(here, 'requirements.txt')) as f:
     requires = filter(None, f.readlines())
 
 setup(name='elasticgit',
-      version='0.1.0',
+      version='0.1.1',
       description='JSON Object storage backed by Git & Elastic Search',
       long_description=README,
       classifiers=[
