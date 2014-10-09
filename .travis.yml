@@ -9,6 +9,6 @@ install:
   - pip install -e . --use-wheel
   - pip install coveralls --use-wheel
 script:
-  - py.test --doctest-modules --verbose --cov ./elasticgit elasticgit
+  - py.test elasticgit
 after_success:
   - coveralls
