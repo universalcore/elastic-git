@@ -28,13 +28,26 @@ it via elastic search.
 >>> # but not fast enough for unit tests.
 >>> workspace.refresh_index()
 >>>
->>> person1, person2 = workspace.S(
+>>> # Accessing the data ES knows about
+>>> es_person1, es_person2 = workspace.S(
 ...     Person).filter(age__gte=20).order_by('-name')
->>> person1.name
+>>> es_person1.name
 u'Baz'
->>> person2.name
+>>> es_person2.name
 u'Bar'
+>>>
+>>> # Accessing the actual Person object stored in Git
+>>> git_person1 = es_person1.get_object()
+>>> git_person1.name
+u'Baz'
+>>> git_person1.age
+30
+>>>
+>>> sorted(dict(git_person1).keys())
+['age', 'name', 'uuid']
+>>>
 >>> workspace.destroy()
+>>>
 
 """
 

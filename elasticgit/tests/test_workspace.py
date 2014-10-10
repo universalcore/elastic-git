@@ -81,3 +81,17 @@ class TestEG(ModelBaseTest):
         model = result.get_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
+
+    def test_access_elastic_search_data(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [result] = workspace.S(TestPerson).query(name__match='Name')
+        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertEqual(result.age, 1)
+        self.assertEqual(result.name, 'Name')
