@@ -5,7 +5,7 @@ Welcome to Elastic Git's documentation!
 Elastic Git is a library for modelling data, storing it in git and querying
 it via elastic search.
 
->>> from elasticgit.manager import EG
+>>> from elasticgit import EG
 >>> from elasticgit.models import Model, IntegerField, TextField
 >>>
 >>> workspace = EG.workspace('.test_repo')
@@ -37,3 +37,7 @@ u'Bar'
 >>> workspace.destroy()
 
 """
+
+from elasticgit.manager import EG
+
+__all__ = ['EG']
