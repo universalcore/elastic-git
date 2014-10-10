@@ -95,3 +95,18 @@ class TestEG(ModelBaseTest):
         self.assertTrue(isinstance(result, ModelMappingType))
         self.assertEqual(result.age, 1)
         self.assertEqual(result.name, 'Name')
+
+    def test_getting_back_same_uuids(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [es_person] = workspace.S(TestPerson).query(name__match='Name')
+        git_person = es_person.get_object()
+        self.assertTrue(
+            person.uuid == es_person.uuid == git_person.uuid)
+        self.assertEqual(dict(person), dict(git_person))
