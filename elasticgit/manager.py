@@ -145,9 +145,8 @@ class StorageManager(object):
         The workspace to operate on.
     """
 
-    def __init__(self, workspace):
-        self.workspace = workspace
-        self.workdir = self.workspace.workdir
+    def __init__(self, workdir):
+        self.workdir = workdir
         self.gitdir = os.path.join(self.workdir, '.git')
 
     def git_path(self, model_class, *args):
@@ -325,7 +324,7 @@ class Workspace(object):
         self.index_name = index_name
 
         self.im = ESManager(self, es)
-        self.sm = StorageManager(self)
+        self.sm = StorageManager(self.workdir)
 
     def setup(self, name, email):
         """
