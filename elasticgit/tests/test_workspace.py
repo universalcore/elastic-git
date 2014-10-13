@@ -1,5 +1,7 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
+import elasticgit
+
 from git import Repo
 
 
@@ -7,10 +9,6 @@ class TestWorkspace(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
 
     def test_exists(self):
         self.assertFalse(self.workspace.exists())
@@ -57,10 +55,6 @@ class TestEG(ModelBaseTest):
         self.workspace = self.mk_workspace()
         self.workspace.setup('Test Kees', 'kees@example.org')
 
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
-
     def test_saving(self):
         workspace = self.workspace
         person = TestPerson({
@@ -77,7 +71,8 @@ class TestEG(ModelBaseTest):
         workspace = self.workspace
         person = TestPerson({
             'age': 1,
-            'name': 'Name'
+            'name': 'Name',
+            'version': elasticgit.version_info,
         })
 
         workspace.save(person, 'Saving a person')

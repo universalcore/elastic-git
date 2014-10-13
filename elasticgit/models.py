@@ -1,9 +1,12 @@
 import uuid
+
 from confmodel.config import Config
 from confmodel.errors import ConfigError
 from confmodel.fields import (
     ConfigText, ConfigInt, ConfigFloat, ConfigBool, ConfigList,
     ConfigDict, ConfigUrl, ConfigRegex)
+
+import elasticgit
 
 
 class TextField(ConfigText):
@@ -105,6 +108,8 @@ class Model(Config):
         A dictionary with keys & values to populate this Model
         instance with.
     """
+    version = DictField(
+        'Model Version Identifier', default=elasticgit.version_info)
     uuid = TextField('Unique Identifier')
 
     def post_validate(self):

@@ -12,10 +12,6 @@ class TestManager(ModelBaseTest):
         self.workspace = self.mk_workspace()
         self.workspace.setup('Test Kees', 'kees@example.org')
 
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
-
     def test_workspace(self):
         workspace = self.mk_workspace(name='.foo')
         self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
@@ -42,6 +38,7 @@ class TestManager(ModelBaseTest):
             'properties': {
                 'age': {'type': 'integer'},
                 'uuid': {'type': 'string'},
+                'version': {'type': 'string'},
             }
         })
         model_instance = model_class({'age': 1})

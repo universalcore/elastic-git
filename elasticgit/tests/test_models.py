@@ -1,6 +1,8 @@
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.models import ConfigError, IntegerField, TextField
 
+import elasticgit
+
 
 class TestModel(ModelBaseTest):
 
@@ -10,7 +12,7 @@ class TestModel(ModelBaseTest):
         })
 
         model = model_class({'age': 1})
-        self.assertEqual(model._fields.keys(), ['age', 'uuid'])
+        self.assertEqual(model._fields.keys(), ['age', 'version', 'uuid'])
 
     def test_validation(self):
         model_class = self.mk_model({
@@ -37,7 +39,7 @@ class TestModel(ModelBaseTest):
             'age': IntegerField('An age'),
             'name': TextField('A name'),
         })
-        data = {'age': 1, 'name': 'foo'}
+        data = {'age': 1, 'name': 'foo', 'version': elasticgit.version_info}
         model = model_class(data)
         self.assertEqual(dict(model), data)
 

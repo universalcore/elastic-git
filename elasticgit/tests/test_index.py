@@ -2,6 +2,8 @@ from elasticgit.tests.base import ModelBaseTest, TestPerson
 
 from elasticutils import S
 
+import elasticgit
+
 
 class TestIndex(ModelBaseTest):
 
@@ -10,10 +12,6 @@ class TestIndex(ModelBaseTest):
         self.repo = self.workspace.repo
         self.branch = self.repo.active_branch
         self.im = self.workspace.im
-
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
 
     def test_exists(self):
         self.assertFalse(self.im.index_exists(self.branch.name))
@@ -41,6 +39,7 @@ class TestIndex(ModelBaseTest):
             'age': 1,
             'name': 'Kees',
             'uuid': person.uuid,
+            'version': elasticgit.version_info,
         })
 
     def test_extract_document_with_object_id(self):
@@ -56,6 +55,7 @@ class TestIndex(ModelBaseTest):
             'age': 1,
             'name': 'Kees',
             'uuid': person.uuid,
+            'version': elasticgit.version_info,
         })
 
     def test_indexing(self):

@@ -1,12 +1,12 @@
 import shutil
 import os
-import json
 from urllib import quote
 
 from git import Repo
 
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
+from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import introspect_properties
 
 
@@ -176,9 +176,12 @@ class StorageManager(object):
         The repository to operate on.
     """
 
+    serializer_class = JSONSerializer
+
     def __init__(self, repo):
         self.repo = repo
         self.workdir = self.repo.working_dir
+        self.serializer = self.serializer_class()
 
     def git_path(self, model_class, *args):
         """
@@ -224,7 +227,9 @@ class StorageManager(object):
         >>>
 
         """
-        return self.git_path(model.__class__, '%s.json' % (model.uuid,))
+        return self.git_path(
+            model.__class__,
+            '%s.%s' % (model.uuid, self.serializer.suffix))
 
     def iterate(self, model_class):
         """
@@ -236,7 +241,7 @@ class StorageManager(object):
 
         :returns: generator
         """
-        path = self.git_path(model_class, '*.json')
+        path = self.git_path(model_class, '*.%s' % (self.serializer.suffix,))
         list_of_files = self.repo.git.ls_files(path)
         for file_path in filter(None, list_of_files.split('\n')):
             yield self.load(file_path)
@@ -270,18 +275,20 @@ class StorageManager(object):
         """
         current_branch = self.repo.active_branch.name
 
-        json_data = self.repo.git.show(
+        object_data = self.repo.git.show(
             '%s:%s' % (
                 current_branch,
-                self.git_path(model_class, '%s.json' % (uuid,))))
+                self.git_path(
+                    model_class,
+                    '%s.%s' % (uuid, self.serializer.suffix,))))
 
-        data = json.loads(json_data)
+        model = self.serializer.deserialize_string(model_class, object_data)
 
-        if data['uuid'] != uuid:
+        if model.uuid != uuid:
             raise StorageException(
                 'Data uuid (%s) does not match requested uuid (%s).' % (
-                    data['uuid'], uuid))
-        return model_class(data)
+                    model.uuid, uuid))
+        return model
 
     def store(self, model, message):
         """
@@ -305,8 +312,8 @@ class StorageManager(object):
             os.makedirs(dir_name)
 
         with open(file_name, 'w') as fp:
-            # write the json
-            json.dump(dict(model), fp, indent=2)
+            # write the object data
+            self.serializer.serialize(model, fp)
 
         # add to the git index
         index = self.repo.index
@@ -411,7 +418,7 @@ class Workspace(object):
             The email address of the committer in this repository.
         """
         if not self.sm.storage_exists():
-            self.sm.create_storage(name, email)
+            self.sm.create_storage()
 
         self.sm.write_config('user', {
             'name': name,

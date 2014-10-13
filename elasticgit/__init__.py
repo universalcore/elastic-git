@@ -9,6 +9,8 @@ it via elastic search.
 >>> from elasticgit.models import Model, IntegerField, TextField
 >>>
 >>> workspace = EG.workspace('.test_repo')
+>>> # putting this here because doctests don't have support for tearDown()
+>>> workspace.destroy()
 >>> workspace.setup('Simon de Haan', 'simon@praekeltfoundation.org')
 >>>
 >>> class Person(Model):
@@ -44,13 +46,29 @@ u'Baz'
 30
 >>>
 >>> sorted(dict(git_person1).keys())
-['age', 'name', 'uuid']
+['age', 'name', 'uuid', 'version']
 >>>
 >>> workspace.destroy()
 >>>
 
 """
 
+import pkg_resources
+import sys
+
 from elasticgit.manager import EG
 
 __all__ = ['EG']
+__version__ = pkg_resources.require('elastic-git')[0].version
+
+version_info = {
+    'language': 'python',
+    'language_version_string': sys.version,
+    'language_version': '%d.%d.%d' % (
+        sys.version_info.major,
+        sys.version_info.minor,
+        sys.version_info.micro,
+    ),
+    'package': 'elastic-git',
+    'package_version': __version__
+}

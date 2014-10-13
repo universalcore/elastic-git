@@ -1,4 +1,5 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
+import elasticgit
 
 from git import Repo, GitCommandError
 
@@ -8,10 +9,6 @@ class TestStorage(ModelBaseTest):
     def setUp(self):
         self.workspace = self.mk_workspace()
         self.sm = self.workspace.sm
-
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
 
     def test_storage_exists(self):
         self.workspace.destroy()
@@ -69,7 +66,8 @@ class TestStorage(ModelBaseTest):
         self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
-            'name': 'Test Kees'
+            'name': 'Test Kees',
+            'version': elasticgit.version_info,
         })
         self.sm.store(person, 'Saving a person.')
         self.assertEqual(
@@ -109,7 +107,8 @@ class TestStorage(ModelBaseTest):
         self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
-            'name': 'Test Kees'
+            'name': 'Test Kees',
+            'version': elasticgit.version_info,
         })
         self.sm.store(person, 'Saving a person')
         reloaded_person = self.sm.load(
