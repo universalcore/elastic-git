@@ -14,14 +14,15 @@ class TestStorage(ModelBaseTest):
             self.workspace.destroy()
 
     def test_storage_exists(self):
+        self.workspace.destroy()
         self.assertFalse(self.sm.storage_exists())
 
     def test_create_storage(self):
-        self.sm.create_storage('Test Kees', 'kees@example.org')
+        self.sm.create_storage()
         self.assertTrue(self.sm.storage_exists())
 
     def test_destroy_storage(self):
-        self.sm.create_storage('Test Kees', 'kees@example.org')
+        self.sm.create_storage()
         self.assertTrue(self.sm.storage_exists())
         self.sm.destroy_storage()
         self.assertFalse(self.sm.storage_exists())
@@ -43,8 +44,8 @@ class TestStorage(ModelBaseTest):
 
         self.sm.store(p, 'Saving a person.')
         self.sm.delete(p, 'Deleting a person.')
-        repo = Repo(self.workspace.workdir)
-        delete_person, save_person, init_repo = repo.iter_commits('master')
+        repo = Repo(self.workspace.repo.working_dir)
+        delete_person, save_person = repo.iter_commits('master')
         self.assertEqual(save_person.message, 'Saving a person.')
         self.assertEqual(save_person.author.name, 'Test Kees')
         self.assertEqual(save_person.author.email, 'kees@example.org')
@@ -112,7 +113,6 @@ class TestStorage(ModelBaseTest):
         })
         self.sm.store(person, 'Saving a person')
         reloaded_person = self.sm.load(
-            Repo(self.workspace.workdir),
             self.sm.git_path(
                 person.__class__, '%s.json' % (person.uuid,)))
         self.assertEqual(person, reloaded_person)
