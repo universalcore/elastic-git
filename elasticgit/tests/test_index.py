@@ -11,10 +11,6 @@ class TestIndex(ModelBaseTest):
         self.branch = self.repo.active_branch
         self.im = self.workspace.im
 
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
-
     def test_exists(self):
         self.assertFalse(self.im.index_exists(self.branch.name))
 

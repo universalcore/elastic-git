@@ -1,6 +1,7 @@
 import shutil
 import os
 import json
+import yaml
 from urllib import quote
 
 from git import Repo
@@ -167,6 +168,37 @@ class StorageException(Exception):
     pass
 
 
+class JSONSerializer(object):
+
+    suffix = 'json'
+    encoding = 'utf-8'
+
+    def dump(self, data, fp):
+        return json.dump(data, fp=fp, indent=2, encoding=self.encoding)
+
+    def load(self, fp):
+        return json.load(fp, encoding=self.encoding)
+
+    def loads(self, data):
+        return json.loads(data, encoding=self.encoding)
+
+
+class YAMLSerializer(object):
+
+    suffix = 'yaml'
+    encoding = 'utf-8'
+
+    def dump(self, data, fp):
+        return yaml.safe_dump(
+            data, stream=fp, encoding=self.encoding, default_flow_style=False)
+
+    def load(self, fp):
+        return yaml.safe_load(fp)
+
+    def loads(self, data):
+        return yaml.safe_load(data)
+
+
 class StorageManager(object):
     """
     An interface to :py:class:`elasticgit.models.Model` instances stored
@@ -176,9 +208,12 @@ class StorageManager(object):
         The repository to operate on.
     """
 
+    serializer_class = JSONSerializer
+
     def __init__(self, repo):
         self.repo = repo
         self.workdir = self.repo.working_dir
+        self.serializer = self.serializer_class()
 
     def git_path(self, model_class, *args):
         """
@@ -224,7 +259,9 @@ class StorageManager(object):
         >>>
 
         """
-        return self.git_path(model.__class__, '%s.json' % (model.uuid,))
+        return self.git_path(
+            model.__class__,
+            '%s.%s' % (model.uuid, self.serializer.suffix))
 
     def iterate(self, model_class):
         """
@@ -236,7 +273,7 @@ class StorageManager(object):
 
         :returns: generator
         """
-        path = self.git_path(model_class, '*.json')
+        path = self.git_path(model_class, '*.%s' % (self.serializer.suffix,))
         list_of_files = self.repo.git.ls_files(path)
         for file_path in filter(None, list_of_files.split('\n')):
             yield self.load(file_path)
@@ -270,12 +307,14 @@ class StorageManager(object):
         """
         current_branch = self.repo.active_branch.name
 
-        json_data = self.repo.git.show(
+        object_data = self.repo.git.show(
             '%s:%s' % (
                 current_branch,
-                self.git_path(model_class, '%s.json' % (uuid,))))
+                self.git_path(
+                    model_class,
+                    '%s.%s' % (uuid, self.serializer.suffix,))))
 
-        data = json.loads(json_data)
+        data = self.serializer.loads(object_data)
 
         if data['uuid'] != uuid:
             raise StorageException(
@@ -305,8 +344,8 @@ class StorageManager(object):
             os.makedirs(dir_name)
 
         with open(file_name, 'w') as fp:
-            # write the json
-            json.dump(dict(model), fp, indent=2)
+            # write the object data
+            self.serializer.dump(dict(model), fp)
 
         # add to the git index
         index = self.repo.index
@@ -411,7 +450,7 @@ class Workspace(object):
             The email address of the committer in this repository.
         """
         if not self.sm.storage_exists():
-            self.sm.create_storage(name, email)
+            self.sm.create_storage()
 
         self.sm.write_config('user', {
             'name': name,

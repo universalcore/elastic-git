@@ -8,10 +8,6 @@ class TestWorkspace(ModelBaseTest):
     def setUp(self):
         self.workspace = self.mk_workspace()
 
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
-
     def test_exists(self):
         self.assertFalse(self.workspace.exists())
 
@@ -56,10 +52,6 @@ class TestEG(ModelBaseTest):
     def setUp(self):
         self.workspace = self.mk_workspace()
         self.workspace.setup('Test Kees', 'kees@example.org')
-
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
 
     def test_saving(self):
         workspace = self.workspace

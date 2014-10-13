@@ -9,10 +9,6 @@ class TestStorage(ModelBaseTest):
         self.workspace = self.mk_workspace()
         self.sm = self.workspace.sm
 
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
-
     def test_storage_exists(self):
         self.workspace.destroy()
         self.assertFalse(self.sm.storage_exists())

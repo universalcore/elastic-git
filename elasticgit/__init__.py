@@ -9,6 +9,8 @@ it via elastic search.
 >>> from elasticgit.models import Model, IntegerField, TextField
 >>>
 >>> workspace = EG.workspace('.test_repo')
+>>> # putting this here because doctests don't have support for tearDown()
+>>> workspace.destroy()
 >>> workspace.setup('Simon de Haan', 'simon@praekeltfoundation.org')
 >>>
 >>> class Person(Model):

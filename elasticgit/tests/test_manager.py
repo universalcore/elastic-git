@@ -12,10 +12,6 @@ class TestManager(ModelBaseTest):
         self.workspace = self.mk_workspace()
         self.workspace.setup('Test Kees', 'kees@example.org')
 
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
-
     def test_workspace(self):
         workspace = self.mk_workspace(name='.foo')
         self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
