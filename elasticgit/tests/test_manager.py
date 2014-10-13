@@ -38,6 +38,7 @@ class TestManager(ModelBaseTest):
             'properties': {
                 'age': {'type': 'integer'},
                 'uuid': {'type': 'string'},
+                'version': {'type': 'string'},
             }
         })
         model_instance = model_class({'age': 1})

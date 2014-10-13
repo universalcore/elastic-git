@@ -1,5 +1,7 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
+import elasticgit
+
 from git import Repo
 
 
@@ -69,7 +71,8 @@ class TestEG(ModelBaseTest):
         workspace = self.workspace
         person = TestPerson({
             'age': 1,
-            'name': 'Name'
+            'name': 'Name',
+            'version': elasticgit.version_info,
         })
 
         workspace.save(person, 'Saving a person')

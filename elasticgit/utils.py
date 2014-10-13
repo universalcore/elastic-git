@@ -11,8 +11,8 @@ def introspect_properties(model_class):
     ...     field = TextField('A text field')
     ...
     >>>
-    >>> introspect_properties(TestModel)
-    {'field': {'type': 'string'}, 'uuid': {'type': 'string'}}
+    >>> introspect_properties(TestModel) # doctest: +ELLIPSIS
+    {'field': {'type': 'string'}, 'version': {'type': 'string'}, ...}
     >>>
     """
     return dict([

@@ -1,13 +1,12 @@
 import shutil
 import os
-import json
-import yaml
 from urllib import quote
 
 from git import Repo
 
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
+from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import introspect_properties
 
 
@@ -168,37 +167,6 @@ class StorageException(Exception):
     pass
 
 
-class JSONSerializer(object):
-
-    suffix = 'json'
-    encoding = 'utf-8'
-
-    def dump(self, data, fp):
-        return json.dump(data, fp=fp, indent=2, encoding=self.encoding)
-
-    def load(self, fp):
-        return json.load(fp, encoding=self.encoding)
-
-    def loads(self, data):
-        return json.loads(data, encoding=self.encoding)
-
-
-class YAMLSerializer(object):
-
-    suffix = 'yaml'
-    encoding = 'utf-8'
-
-    def dump(self, data, fp):
-        return yaml.safe_dump(
-            data, stream=fp, encoding=self.encoding, default_flow_style=False)
-
-    def load(self, fp):
-        return yaml.safe_load(fp)
-
-    def loads(self, data):
-        return yaml.safe_load(data)
-
-
 class StorageManager(object):
     """
     An interface to :py:class:`elasticgit.models.Model` instances stored
@@ -314,13 +282,13 @@ class StorageManager(object):
                     model_class,
                     '%s.%s' % (uuid, self.serializer.suffix,))))
 
-        data = self.serializer.loads(object_data)
+        model = self.serializer.deserialize_string(model_class, object_data)
 
-        if data['uuid'] != uuid:
+        if model.uuid != uuid:
             raise StorageException(
                 'Data uuid (%s) does not match requested uuid (%s).' % (
-                    data['uuid'], uuid))
-        return model_class(data)
+                    model.uuid, uuid))
+        return model
 
     def store(self, model, message):
         """
@@ -345,7 +313,7 @@ class StorageManager(object):
 
         with open(file_name, 'w') as fp:
             # write the object data
-            self.serializer.dump(dict(model), fp)
+            self.serializer.serialize(model, fp)
 
         # add to the git index
         index = self.repo.index
