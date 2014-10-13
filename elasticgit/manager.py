@@ -16,7 +16,7 @@ class ModelMappingType(MappingType, Indexable):
     def get_index(cls):
         im = cls.im
         repo = cls.sm.repo
-        return im.index_name(repo.active_branch)
+        return im.index_name(repo.active_branch.name)
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -77,27 +77,30 @@ class ESManager(object):
                 'model_class': model_class,
             })
 
-    def index_exists(self, branch):
+    def index_exists(self, name):
         """
         Check if the index already exists in Elasticsearch
+
+        :param str name:
         :returns: bool
         """
-        return self.es.indices.exists(
-            index=self.index_name(branch))
+        return self.es.indices.exists(index=self.index_name(name))
 
-    def create_index(self, branch):
+    def create_index(self, name):
         """
         Creates the index in Elasticsearch
-        """
-        return self.es.indices.create(
-            index=self.index_name(branch))
 
-    def destroy_index(self, branch):
+        :param str name:
+        """
+        return self.es.indices.create(index=self.index_name(name))
+
+    def destroy_index(self, name):
         """
         Destroys the index in Elasticsearch
+
+        :param str name:
         """
-        return self.es.indices.delete(
-            index=self.index_name(branch))
+        return self.es.indices.delete(index=self.index_name(name))
 
     def index(self, model, refresh_index=False):
         """
@@ -139,16 +142,25 @@ class ESManager(object):
             MappingType.refresh_index()
         return model
 
-    def index_name(self, branch):
-        return '-'.join(map(quote, [
-            self.index_prefix, branch.name]))
+    def index_name(self, name):
+        """
+        Generate an Elasticsearch index name using given name and prefixing
+        it with the ``index_prefix``. The resulting generated index name
+        is URL quoted.
 
-    def refresh_indices(self, branch):
+        :param str name:
+            The name to use for the index.
+        """
+        return '-'.join(map(quote, [self.index_prefix, name]))
+
+    def refresh_indices(self, name):
         """
         Manually refresh the Elasticsearch index. In production this is
         not necessary but it is useful when running tests.
+
+        :param str name:
         """
-        return self.es.indices.refresh(index=self.index_name(branch))
+        return self.es.indices.refresh(index=self.index_name(name))
 
 
 class StorageException(Exception):
@@ -160,8 +172,8 @@ class StorageManager(object):
     An interface to :py:class:`elasticgit.models.Model` instances stored
     in Git.
 
-    :param elasticgit.manager.Workspace workspace:
-        The workspace to operate on.
+    :param git.Repo repo:
+        The repository to operate on.
     """
 
     def __init__(self, repo):
@@ -169,12 +181,49 @@ class StorageManager(object):
         self.workdir = self.repo.working_dir
 
     def git_path(self, model_class, *args):
+        """
+        Return the path of a model_class when layed out in the git
+        repository.
+
+        :param class model_class:
+            The class to map to a path
+        :param tuple args:
+            Optional bits to join together after the path.
+        :returns: str
+
+        >>> from git import Repo
+        >>> from elasticgit.tests.base import TestPerson
+        >>> sm = StorageManager(Repo('.'))
+        >>> sm.git_path(TestPerson)
+        'elasticgit.tests.base/TestPerson'
+        >>> sm.git_path(TestPerson, 'some-uuid.json')
+        'elasticgit.tests.base/TestPerson/some-uuid.json'
+        >>>
+
+        """
         return os.path.join(
             model_class.__module__,
             model_class.__name__,
             *args)
 
     def git_name(self, model):
+        """
+        Return the file path to where the data for a
+        :py:class:`elasticgit.models.Model` lives.
+
+        :param elasticgit.models.Model model:
+            The model instance
+        :returns: str
+
+        >>> from git import Repo
+        >>> from elasticgit.tests.base import TestPerson
+        >>> person = TestPerson({'age': 1, 'name': 'Foo', 'uuid': 'the-uuid'})
+        >>> sm = StorageManager(Repo('.'))
+        >>> sm.git_name(person)
+        'elasticgit.tests.base/TestPerson/the-uuid.json'
+        >>>
+
+        """
         return self.git_path(model.__class__, '%s.json' % (model.uuid,))
 
     def iterate(self, model_class):
@@ -283,6 +332,8 @@ class StorageManager(object):
         """
         Check if the storage exists. Returns ``True`` if the directory
         exists, it does not check if it is an actual :py:class:`git.Repo`.
+
+        :returns: bool
         """
         return os.path.isdir(self.workdir)
 
@@ -300,9 +351,29 @@ class StorageManager(object):
         return repo.index.commit('Initialize repository.')
 
     def write_config(self, section, data):
+        """
+        Write a config block for a git repository.
+
+        :param str section:
+            The section to write the data for.
+        :param dict data:
+            The keys & values of data to write
+
+        """
         config = self.repo.config_writer()
         for key, value in data.items():
             config.set_value(section, key, value)
+
+    def read_config(self, section):
+        """
+        Read a config block for a git repository.
+
+        :param str section:
+            The section to read.
+        :returns: dict
+        """
+        config = self.repo.config_reader()
+        return dict(config.items(section))
 
     def destroy_storage(self):
         """
@@ -347,8 +418,8 @@ class Workspace(object):
             'email': email,
         })
 
-        if not self.im.index_exists(self.repo.active_branch):
-            self.im.create_index(self.repo.active_branch)
+        if not self.im.index_exists(self.repo.active_branch.name):
+            self.im.create_index(self.repo.active_branch.name)
 
     def exists(self):
         """
@@ -359,7 +430,7 @@ class Workspace(object):
         """
         if self.sm.storage_exists():
             branch = self.sm.repo.active_branch
-            return self.im.index_exists(branch)
+            return self.im.index_exists(branch.name)
 
         return False
 
@@ -370,8 +441,8 @@ class Workspace(object):
         """
         if self.sm.storage_exists():
             branch = self.sm.repo.active_branch
-            if self.im.index_exists(branch):
-                self.im.destroy_index(branch)
+            if self.im.index_exists(branch.name):
+                self.im.destroy_index(branch.name)
             self.sm.destroy_storage()
 
     def save(self, model, message):
@@ -390,7 +461,7 @@ class Workspace(object):
         Manually refresh the Elasticsearch index. In production this is
         not necessary but it is useful when running tests.
         """
-        self.im.refresh_indices(self.repo.active_branch)
+        self.im.refresh_indices(self.repo.active_branch.name)
 
     def S(self, model_class):
         """

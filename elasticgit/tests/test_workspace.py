@@ -18,7 +18,7 @@ class TestWorkspace(ModelBaseTest):
     def test_storage_exists(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
         repo = self.workspace.repo
-        self.workspace.im.destroy_index(repo.active_branch)
+        self.workspace.im.destroy_index(repo.active_branch.name)
         self.assertTrue(self.workspace.sm.storage_exists())
         self.assertFalse(self.workspace.exists())
 
@@ -27,14 +27,14 @@ class TestWorkspace(ModelBaseTest):
         repo = self.workspace.sm.repo
         branch = repo.active_branch
         self.workspace.sm.destroy_storage()
-        self.assertTrue(self.workspace.im.index_exists(branch))
+        self.assertTrue(self.workspace.im.index_exists(branch.name))
 
     def test_setup(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
         self.assertTrue(self.workspace.sm.storage_exists())
         repo = self.workspace.sm.repo
         branch = repo.active_branch
-        self.assertTrue(self.workspace.im.index_exists(branch))
+        self.assertTrue(self.workspace.im.index_exists(branch.name))
         self.assertTrue(self.workspace.exists())
 
         repo = Repo(repo.working_dir)

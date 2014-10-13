@@ -55,3 +55,9 @@ class TestManager(ModelBaseTest):
         })
         mapping_type = self.workspace.im.get_mapping_type(model_class)
         self.assertEqual(list(mapping_type.get_indexable()), [])
+
+    def test_write_config(self):
+        sm = self.workspace.sm
+        user_data = {'name': 'test', 'email': 'email@example.org'}
+        sm.write_config('user', user_data)
+        self.assertEqual(sm.read_config('user'), user_data)

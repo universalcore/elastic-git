@@ -16,17 +16,17 @@ class TestIndex(ModelBaseTest):
             self.workspace.destroy()
 
     def test_exists(self):
-        self.assertFalse(self.im.index_exists(self.branch))
+        self.assertFalse(self.im.index_exists(self.branch.name))
 
     def test_create(self):
-        self.im.create_index(self.branch)
-        self.assertTrue(self.im.index_exists(self.branch))
+        self.im.create_index(self.branch.name)
+        self.assertTrue(self.im.index_exists(self.branch.name))
 
     def test_destroy(self):
-        self.im.create_index(self.branch)
-        self.assertTrue(self.im.index_exists(self.branch))
-        self.im.destroy_index(self.branch)
-        self.assertFalse(self.im.index_exists(self.branch))
+        self.im.create_index(self.branch.name)
+        self.assertTrue(self.im.index_exists(self.branch.name))
+        self.im.destroy_index(self.branch.name)
+        self.assertFalse(self.im.index_exists(self.branch.name))
 
     def test_extract_document_with_object(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
