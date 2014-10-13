@@ -54,5 +54,7 @@ u'Baz'
 """
 
 from elasticgit.manager import EG
+import pkg_resources
 
 __all__ = ['EG']
+__version__ = pkg_resources.require('elastic-git')[0].version
