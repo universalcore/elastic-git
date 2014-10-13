@@ -484,10 +484,6 @@ class EG(object):
     """
     A helper function for things in ElasticGit.
 
-    .. note::
-        Very likely to get deprecated as it's not adding all
-        that much value at the moment.
-
     """
     @classmethod
     def workspace(cls, workdir, es={}, index_prefix='elastic-git'):
