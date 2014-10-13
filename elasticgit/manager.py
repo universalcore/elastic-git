@@ -520,16 +520,10 @@ class EG(object):
         return Repo(workdir)
 
     @classmethod
-    def init_repo(cls, workdir, bare=False, name=None, email=None):
-        if not os.path.isdir(workdir):
+    def init_repo(cls, workdir, bare=False):
+        if not cls.is_repo(workdir):
             os.makedirs(workdir)
-        repo = Repo.init(workdir, bare)
-        if name and email:
-            config = repo.config_writer()
-            config.set_value("user", "name", name)
-            config.set_value("user", "email", email)
-            repo.index.commit('Initialize repository.')
-        return repo
+        return Repo.init(workdir, bare)
 
 Q
 F
