@@ -63,6 +63,7 @@ __version__ = pkg_resources.require('elastic-git')[0].version
 
 version_info = {
     'language': 'python',
+    'language_version_string': sys.version,
     'language_version': '%d.%d.%d' % (
         sys.version_info.major,
         sys.version_info.minor,
