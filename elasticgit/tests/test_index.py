@@ -7,6 +7,8 @@ class TestIndex(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
+        self.repo = self.workspace.repo
+        self.branch = self.repo.active_branch
         self.im = self.workspace.im
 
     def tearDown(self):
@@ -14,17 +16,17 @@ class TestIndex(ModelBaseTest):
             self.workspace.destroy()
 
     def test_exists(self):
-        self.assertFalse(self.im.index_exists())
+        self.assertFalse(self.im.index_exists(self.branch))
 
     def test_create(self):
-        self.im.create_index()
-        self.assertTrue(self.im.index_exists())
+        self.im.create_index(self.branch)
+        self.assertTrue(self.im.index_exists(self.branch))
 
     def test_destroy(self):
-        self.im.create_index()
-        self.assertTrue(self.im.index_exists())
-        self.im.destroy_index()
-        self.assertFalse(self.im.index_exists())
+        self.im.create_index(self.branch)
+        self.assertTrue(self.im.index_exists(self.branch))
+        self.im.destroy_index(self.branch)
+        self.assertFalse(self.im.index_exists(self.branch))
 
     def test_extract_document_with_object(self):
         self.workspace.setup('Test Kees', 'kees@example.org')

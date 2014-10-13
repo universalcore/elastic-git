@@ -1,6 +1,8 @@
-from elasticgit.tests.base import ModelBaseTest
+import os
 
 from elasticgit.models import IntegerField
+from elasticgit.tests.base import ModelBaseTest
+
 from elasticsearch.client import Elasticsearch
 
 
@@ -15,16 +17,16 @@ class TestManager(ModelBaseTest):
             self.workspace.destroy()
 
     def test_workspace(self):
-        workspace = self.mk_workspace('.foo')
+        workspace = self.mk_workspace(name='.foo')
         self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
-        self.assertEqual(workspace.workdir, '.foo')
+        self.assertEqual(os.path.basename(workspace.repo.working_dir), '.foo')
 
     def test_mapping_type(self):
         model_class = self.mk_model({
             'age': IntegerField('An age')
         })
         mapping_type = self.workspace.im.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_index(), 'test-repo-index')
+        self.assertEqual(mapping_type.get_index(), 'test-repo-index-master')
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
             mapping_type.get_mapping_type_name(),

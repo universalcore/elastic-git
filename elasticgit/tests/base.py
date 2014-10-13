@@ -1,3 +1,5 @@
+import os
+
 from unittest import TestCase
 
 from elasticgit.models import IntegerField, TextField, Model
@@ -9,11 +11,14 @@ class ModelBaseTest(TestCase):
     def mk_model(self, fields):
         return type('TempModel', (Model,), fields)
 
-    def mk_workspace(self, repo='../.test_repo/', url='https://localhost',
-                     index_name='test-repo-index'):
-        workspace = EG.workspace(repo, es={
+    def mk_workspace(self, working_dir='.test_repos/',
+                     name=None,
+                     url='https://localhost',
+                     index_prefix='test-repo-index'):
+        name = name or self.id()
+        workspace = EG.workspace(os.path.join(working_dir, name), es={
             'urls': [url],
-        }, index_name=index_name)
+        }, index_prefix=index_prefix)
         return workspace
 
 

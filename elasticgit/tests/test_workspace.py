@@ -17,21 +17,27 @@ class TestWorkspace(ModelBaseTest):
 
     def test_storage_exists(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
-        self.workspace.im.destroy_index()
-        self.assertTrue(self.workspace.exists())
+        repo = self.workspace.repo
+        self.workspace.im.destroy_index(repo.active_branch)
+        self.assertTrue(self.workspace.sm.storage_exists())
+        self.assertFalse(self.workspace.exists())
 
     def test_index_exists(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
+        repo = self.workspace.sm.repo
+        branch = repo.active_branch
         self.workspace.sm.destroy_storage()
-        self.assertTrue(self.workspace.exists())
+        self.assertTrue(self.workspace.im.index_exists(branch))
 
     def test_setup(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
         self.assertTrue(self.workspace.sm.storage_exists())
-        self.assertTrue(self.workspace.im.index_exists())
+        repo = self.workspace.sm.repo
+        branch = repo.active_branch
+        self.assertTrue(self.workspace.im.index_exists(branch))
         self.assertTrue(self.workspace.exists())
 
-        repo = Repo(self.workspace.workdir)
+        repo = Repo(repo.working_dir)
         config = repo.config_reader()
         self.assertEqual(
             config.get_value('user', 'name'), 'Test Kees')
@@ -88,7 +94,6 @@ class TestEG(ModelBaseTest):
             'age': 1,
             'name': 'Name'
         })
-
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')

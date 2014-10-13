@@ -1,6 +1,8 @@
 import shutil
 import os
 import json
+from urllib import quote
+
 from git import Repo
 
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
@@ -12,41 +14,43 @@ class ModelMappingType(MappingType, Indexable):
 
     @classmethod
     def get_index(cls):
-        return cls.index_name
+        im = cls.im
+        repo = cls.sm.repo
+        return im.index_name(repo.active_branch)
 
     @classmethod
     def get_mapping_type_name(cls):
-        model = cls.model
+        model_class = cls.model_class
         return '%s-%sType' % (
-            model.__module__.replace(".", "-"),
-            model.__name__)
+            model_class.__module__.replace(".", "-"),
+            model_class.__name__)
 
     @classmethod
     def get_model(self):
-        return self.model
+        return self.model_class
 
     def get_object(self):
-        return self.workspace.sm.get(self.model, self._id)
+        return self.sm.get(self.model_class, self._id)
 
     @classmethod
     def get_es(cls):
-        return cls.workspace.im.es
+        return cls.im.es
 
     @classmethod
     def get_mapping(cls):
         return {
-            'properties': introspect_properties(cls.model)
+            'properties': introspect_properties(cls.model_class)
         }
 
     @classmethod
     def extract_document(cls, obj_id, obj=None):
         if obj is None:
-            obj = cls.workspace.sm.get(cls.model, obj_id)
+            obj = cls.sm.get(cls.model_class, obj_id)
         return dict(obj)
 
     @classmethod
     def get_indexable(cls):
-        return cls.workspace.sm.iterate(cls.model)
+        return cls.sm.iterate(cls.model_class)
 
 
 class ESManager(object):
@@ -59,37 +63,41 @@ class ESManager(object):
     :param elasticsearch.Elasticsearch es:
         An Elasticsearch client instance.
     """
-    def __init__(self, workspace, es):
-        self.workspace = workspace
+    def __init__(self, storage_manager, es, index_prefix):
+        self.sm = storage_manager
         self.es = es
+        self.index_prefix = index_prefix
 
     def get_mapping_type(self, model_class):
         return type(
             '%sMappingType' % (model_class.__name__,),
             (ModelMappingType,), {
-                'workspace': self.workspace,
-                'index_name': self.workspace.index_name,
-                'model': model_class,
+                'im': self,
+                'sm': self.sm,
+                'model_class': model_class,
             })
 
-    def index_exists(self):
+    def index_exists(self, branch):
         """
         Check if the index already exists in Elasticsearch
         :returns: bool
         """
-        return self.es.indices.exists(index=self.workspace.index_name)
+        return self.es.indices.exists(
+            index=self.index_name(branch))
 
-    def create_index(self):
+    def create_index(self, branch):
         """
         Creates the index in Elasticsearch
         """
-        return self.es.indices.create(index=self.workspace.index_name)
+        return self.es.indices.create(
+            index=self.index_name(branch))
 
-    def destroy_index(self):
+    def destroy_index(self, branch):
         """
         Destroys the index in Elasticsearch
         """
-        return self.es.indices.delete(index=self.workspace.index_name)
+        return self.es.indices.delete(
+            index=self.index_name(branch))
 
     def index(self, model, refresh_index=False):
         """
@@ -131,6 +139,17 @@ class ESManager(object):
             MappingType.refresh_index()
         return model
 
+    def index_name(self, branch):
+        return '-'.join(map(quote, [
+            self.index_prefix, branch.name]))
+
+    def refresh_indices(self, branch):
+        """
+        Manually refresh the Elasticsearch index. In production this is
+        not necessary but it is useful when running tests.
+        """
+        return self.es.indices.refresh(index=self.index_name(branch))
+
 
 class StorageException(Exception):
     pass
@@ -145,9 +164,9 @@ class StorageManager(object):
         The workspace to operate on.
     """
 
-    def __init__(self, workdir):
-        self.workdir = workdir
-        self.gitdir = os.path.join(self.workdir, '.git')
+    def __init__(self, repo):
+        self.repo = repo
+        self.workdir = self.repo.working_dir
 
     def git_path(self, model_class, *args):
         return os.path.join(
@@ -155,16 +174,8 @@ class StorageManager(object):
             model_class.__name__,
             *args)
 
-    def file_path(self, model_class, *args):
-        return os.path.join(
-            self.workdir,
-            self.git_path(model_class, *args))
-
     def git_name(self, model):
         return self.git_path(model.__class__, '%s.json' % (model.uuid,))
-
-    def file_name(self, model):
-        return self.file_path(model.__class__, '%s.json' % (model.uuid,))
 
     def iterate(self, model_class):
         """
@@ -176,17 +187,15 @@ class StorageManager(object):
 
         :returns: generator
         """
-        repo = Repo(self.workdir)
-        list_of_files = repo.git.ls_files(self.git_path(model_class, '*.json'))
+        path = self.git_path(model_class, '*.json')
+        list_of_files = self.repo.git.ls_files(path)
         for file_path in filter(None, list_of_files.split('\n')):
-            yield self.load(repo, file_path)
+            yield self.load(file_path)
 
-    def load(self, repo, file_path):
+    def load(self, file_path):
         """
         Load a file from the repository and return it as a Model instance.
 
-        :param git.Repo repo:
-            The repository to load models from.
         :param str file_path:
             The path of the object we want a model instance for.
         :returns:
@@ -210,10 +219,9 @@ class StorageManager(object):
         :returns:
             :py:class:elasticgit.models.Model
         """
-        repo = Repo(self.workdir)
-        current_branch = repo.head.reference
+        current_branch = self.repo.active_branch.name
 
-        json_data = repo.git.show(
+        json_data = self.repo.git.show(
             '%s:%s' % (
                 current_branch,
                 self.git_path(model_class, '%s.json' % (uuid,))))
@@ -240,21 +248,20 @@ class StorageManager(object):
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
 
-        index = Repo(self.workdir).index
-
         # ensure the directory exists
-        dirname = self.file_path(model.__class__)
-        try:
-            os.makedirs(dirname)
-        except OSError:
-            pass
+        file_name = os.path.join(
+            self.repo.working_dir, self.git_name(model))
+        dir_name = os.path.dirname(file_name)
+        if not (os.path.isdir(dir_name)):
+            os.makedirs(dir_name)
 
-        # write the json
-        with open(self.file_name(model), 'w') as fp:
+        with open(file_name, 'w') as fp:
+            # write the json
             json.dump(dict(model), fp, indent=2)
 
         # add to the git index
-        index.add([self.git_name(model)])
+        index = self.repo.index
+        index.add([file_name])
         return index.commit(message)
 
     def delete(self, model, message):
@@ -268,7 +275,7 @@ class StorageManager(object):
         :returns:
             The commit.
         """
-        index = Repo(self.workdir).index
+        index = self.repo.index
         index.remove([self.git_name(model)])
         return index.commit(message)
 
@@ -279,23 +286,23 @@ class StorageManager(object):
         """
         return os.path.isdir(self.workdir)
 
-    def create_storage(self, name, email, bare=False):
+    def create_storage(self, bare=False):
         """
         Creates a new :py:class:`git.Repo` and sets the committers
         name & email.
 
-        :param str name:
-        :param str email:
         :param bool bare:
             Whether or not to create a bare repository. Defaults to ``False``.
         """
         if not os.path.isdir(self.workdir):
             os.makedirs(self.workdir)
         repo = Repo.init(self.workdir, bare)
-        config = repo.config_writer()
-        config.set_value("user", "name", name)
-        config.set_value("user", "email", email)
         return repo.index.commit('Initialize repository.')
+
+    def write_config(self, section, data):
+        config = self.repo.config_writer()
+        for key, value in data.items():
+            config.set_value(section, key, value)
 
     def destroy_storage(self):
         """
@@ -309,22 +316,18 @@ class Workspace(object):
     The main API exposing a model interface to both a Git repository
     and an Elasticsearch index.
 
-    :param str workdir:
-        The path to the directory where a git repository can
-        be found or needs to be created when
-        :py:meth:`.Workspace.setup` is called.
+    :param git.Repo repo:
+        A :py:class:`git.Repo` instance.
     :param elasticsearch.Elasticsearch es:
         An Elasticsearch object.
-    :param str index_name:
-        The index to store documents under in Elasticsearch
+    :param str index_prefix:
+        The prefix to use when generating index names for Elasticsearch
     """
 
-    def __init__(self, workdir, es, index_name):
-        self.workdir = workdir
-        self.index_name = index_name
-
-        self.im = ESManager(self, es)
-        self.sm = StorageManager(self.workdir)
+    def __init__(self, repo, es, index_prefix):
+        self.repo = repo
+        self.sm = StorageManager(repo)
+        self.im = ESManager(self.sm, es, index_prefix)
 
     def setup(self, name, email):
         """
@@ -336,11 +339,16 @@ class Workspace(object):
         :param str email:
             The email address of the committer in this repository.
         """
-        if not self.im.index_exists():
-            self.im.create_index()
-
         if not self.sm.storage_exists():
             self.sm.create_storage(name, email)
+
+        self.sm.write_config('user', {
+            'name': name,
+            'email': email,
+        })
+
+        if not self.im.index_exists(self.repo.active_branch):
+            self.im.create_index(self.repo.active_branch)
 
     def exists(self):
         """
@@ -349,17 +357,21 @@ class Workspace(object):
 
         :returns: bool
         """
-        return any([self.im.index_exists(), self.sm.storage_exists()])
+        if self.sm.storage_exists():
+            branch = self.sm.repo.active_branch
+            return self.im.index_exists(branch)
+
+        return False
 
     def destroy(self):
         """
         Removes an ES index and a Git repository completely.
         Guaranteed to remove things completely, use with caution.
         """
-        if self.im.index_exists():
-            self.im.destroy_index()
-
         if self.sm.storage_exists():
+            branch = self.sm.repo.active_branch
+            if self.im.index_exists(branch):
+                self.im.destroy_index(branch)
             self.sm.destroy_storage()
 
     def save(self, model, message):
@@ -378,7 +390,7 @@ class Workspace(object):
         Manually refresh the Elasticsearch index. In production this is
         not necessary but it is useful when running tests.
         """
-        self.im.es.indices.refresh(index=self.index_name)
+        self.im.refresh_indices(self.repo.active_branch)
 
     def S(self, model_class):
         """
@@ -392,7 +404,8 @@ class Workspace(object):
         :param elasticgit.models.Model model_class:
             The class to provide a search interface for.
         """
-        return S(self.im.get_mapping_type(model_class))
+        return S(
+            self.im.get_mapping_type(model_class))
 
 
 class EG(object):
@@ -406,7 +419,7 @@ class EG(object):
 
     """
     @classmethod
-    def workspace(self, workdir, es={}, index_name='elastic-git'):
+    def workspace(cls, workdir, es={}, index_prefix='elastic-git'):
         """
         Create a workspace
 
@@ -416,12 +429,36 @@ class EG(object):
             :py:meth:`.Workspace.setup` is called.
         :param dict es:
             The parameters to pass along to :func:`elasticutils.get_es`
-        :param str index_name:
-            The index to store things under in Elasticsearch.
+        :param str index_prefix:
+            The index_prefix use when generating index names for
+            Elasticsearch
         :returns:
             :py:class:`.Workspace`
         """
-        return Workspace(workdir, get_es(**es), index_name)
+        repo = (cls.read_repo(workdir)
+                if cls.is_repo(workdir)
+                else cls.init_repo(workdir))
+        return Workspace(repo, get_es(**es), index_prefix)
+
+    @classmethod
+    def is_repo(cls, workdir):
+        return os.path.isdir(os.path.join(workdir, '.git'))
+
+    @classmethod
+    def read_repo(cls, workdir):
+        return Repo(workdir)
+
+    @classmethod
+    def init_repo(cls, workdir, bare=False, name=None, email=None):
+        if not os.path.isdir(workdir):
+            os.makedirs(workdir)
+        repo = Repo.init(workdir, bare)
+        if name and email:
+            config = repo.config_writer()
+            config.set_value("user", "name", name)
+            config.set_value("user", "email", email)
+            repo.index.commit('Initialize repository.')
+        return repo
 
 Q
 F
