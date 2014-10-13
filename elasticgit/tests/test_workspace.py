@@ -17,21 +17,27 @@ class TestWorkspace(ModelBaseTest):
 
     def test_storage_exists(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
-        self.workspace.im.destroy_index()
-        self.assertTrue(self.workspace.exists())
+        repo = self.workspace.repo
+        self.workspace.im.destroy_index(repo.active_branch.name)
+        self.assertTrue(self.workspace.sm.storage_exists())
+        self.assertFalse(self.workspace.exists())
 
     def test_index_exists(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
+        repo = self.workspace.sm.repo
+        branch = repo.active_branch
         self.workspace.sm.destroy_storage()
-        self.assertTrue(self.workspace.exists())
+        self.assertTrue(self.workspace.im.index_exists(branch.name))
 
     def test_setup(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
         self.assertTrue(self.workspace.sm.storage_exists())
-        self.assertTrue(self.workspace.im.index_exists())
+        repo = self.workspace.sm.repo
+        branch = repo.active_branch
+        self.assertTrue(self.workspace.im.index_exists(branch.name))
         self.assertTrue(self.workspace.exists())
 
-        repo = Repo(self.workspace.workdir)
+        repo = Repo(repo.working_dir)
         config = repo.config_reader()
         self.assertEqual(
             config.get_value('user', 'name'), 'Test Kees')
@@ -81,3 +87,31 @@ class TestEG(ModelBaseTest):
         model = result.get_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
+
+    def test_access_elastic_search_data(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [result] = workspace.S(TestPerson).query(name__match='Name')
+        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertEqual(result.age, 1)
+        self.assertEqual(result.name, 'Name')
+
+    def test_getting_back_same_uuids(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [es_person] = workspace.S(TestPerson).query(name__match='Name')
+        git_person = es_person.get_object()
+        self.assertTrue(
+            person.uuid == es_person.uuid == git_person.uuid)
+        self.assertEqual(dict(person), dict(git_person))
