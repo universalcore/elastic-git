@@ -5,6 +5,8 @@ from confmodel.errors import ConfigError
 from confmodel.fields import (
     ConfigText, ConfigInt, ConfigFloat, ConfigBool, ConfigList,
     ConfigDict, ConfigUrl, ConfigRegex)
+from confmodel.fallbacks import SingleFieldFallback
+
 
 import elasticgit
 
@@ -112,8 +114,9 @@ class ModelVersionField(ConfigDict):
         }
     }
 
-    def get_value(self, ignored):
-        return elasticgit.version_info.copy()
+    def __init__(self, *args, **kwargs):
+        super(ModelVersionField, self).__init__(*args, **kwargs)
+        self.default = elasticgit.version_info.copy()
 
 
 class Model(Config):
@@ -153,3 +156,4 @@ class Model(Config):
             yield field.name, field.get_value(self)
 
 ConfigError
+SingleFieldFallback
