@@ -131,17 +131,13 @@ class SchemaDumper(object):
         }, indent=2)
 
     def get_field_info(self, name, field):
-        data = {
+        return {
             'name': name,
             'type': self.mapping[field.__class__],
             'doc': field.doc,
             'default': field.default,
+            'aliases': [fallback.field_name for fallback in field.fallbacks]
         }
-
-        if field.fallbacks:
-            data['aliases'] = [
-                fallback.field_name for fallback in field.fallbacks]
-        return data
 
 
 def add_command(subparsers, dispatcher_class):  # pragma: no cover

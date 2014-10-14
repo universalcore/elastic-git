@@ -303,3 +303,25 @@ class TestDumpAndLoad(ToolBaseTest):
         record1 = DumpAndLoadModel(data)
         record2 = GeneratedModel(data)
         self.assertEqual(record1, record2)
+
+    def test_write_old_read_new(self):
+        class Foo(models.Model):
+            field = models.TextField(
+                'the field',
+                fallbacks=[models.SingleFieldFallback('old_field')])
+            old_field = models.TextField(
+                'the old field', required=False)
+
+        schema_dumper = self.mk_schema_dumper()
+        schema_loader = self.mk_schema_loader()
+
+        schema = schema_dumper.dump_schema(Foo)
+        generated_code = schema_loader.generate_model(json.loads(schema))
+
+        GeneratedFoo = self.load_class(generated_code, 'Foo')
+        self.assertEqual(
+            GeneratedFoo({'old_field': 'the value'}).field,
+            'the value')
+        self.assertEqual(
+            GeneratedFoo({'field': 'the new value'}).field,
+            'the new value')
