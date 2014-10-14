@@ -3,10 +3,6 @@ import argparse
 from elasticgit.commands.avro import SchemaDumper, SchemaLoader
 
 
-class ArgumentParserError(Exception):
-    pass
-
-
 def add_command(subparsers, dispatcher_class):  # pragma: no cover
     command = subparsers.add_parser(
         dispatcher_class.command_name,
@@ -23,6 +19,7 @@ def get_parser():  # pragma: no cover
 
     add_command(subparsers, SchemaDumper)
     add_command(subparsers, SchemaLoader)
+    add_command(subparsers, MigrateGitModelRepo)
 
     return parser
 

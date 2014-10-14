@@ -1,6 +1,5 @@
 from jinja2 import Environment, PackageLoader
 import json
-import sys
 import pprint
 
 from datetime import datetime
@@ -9,8 +8,10 @@ from elasticgit.models import (
     Model, IntegerField, TextField, ModelVersionField, FloatField,
     BooleanField, ListField, DictField, UUIDField)
 
+from elasticgit.commands.base import ToolCommand, ToolCommandError
 
-class SchemaLoader(object):
+
+class SchemaLoader(ToolCommand):
     """
     Load an Avro_ JSON schema and generate Elasticgit Model python code.
 
@@ -29,8 +30,6 @@ class SchemaLoader(object):
         ('schema_file', 'path to Avro schema file.'),
     )
 
-    #: Where the write the output to, override for testing.
-    stdout = sys.stdout
     mapping = {
         'int': IntegerField,
         'string': TextField,
@@ -87,7 +86,7 @@ class SchemaLoader(object):
             schema=schema)
 
 
-class SchemaDumper(object):
+class SchemaDumper(ToolCommand):
     """
     Dump an Avro_ JSON schema for an Elasticgit Model.
 
@@ -104,9 +103,6 @@ class SchemaDumper(object):
     command_arguments = (
         ('class_path', 'python path to Class.'),
     )
-
-    #: Where the write the output to, override for testing.
-    stdout = sys.stdout
 
     mapping = {
         IntegerField: 'int',
@@ -158,7 +154,7 @@ class SchemaDumper(object):
         model_class = getattr(parent_module, name)
 
         if not issubclass(model_class, Model):
-            raise ArgumentParserError(
+            raise ToolCommandError(
                 '%r is not a subclass of %r' % (model_class, Model))
         return self.stdout.write(self.dump_schema(model_class))
 
