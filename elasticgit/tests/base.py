@@ -2,7 +2,8 @@ import os
 
 from unittest import TestCase
 
-from elasticgit.models import IntegerField, TextField, Model
+from elasticgit.models import (
+    IntegerField, TextField, Model, SingleFieldFallback)
 from elasticgit.manager import EG
 
 
@@ -28,3 +29,13 @@ class ModelBaseTest(TestCase):
 class TestPerson(Model):
     age = IntegerField('The Age')
     name = TextField('The name')
+
+
+class TestFallbackPerson(Model):
+    age = IntegerField('The Age')
+    name = TextField('The name', fallbacks=[
+        SingleFieldFallback('nick'),
+        SingleFieldFallback('obsolete'),
+    ])
+    nick = TextField('The nickname', required=False)
+    obsolete = TextField('Some obsolete field', required=False)

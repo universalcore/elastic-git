@@ -87,13 +87,16 @@ A sample model file:
 
     class TestPerson(Model):
         age = IntegerField('The Age')
-        name = TextField('The name')
+        name = TextField('The name',
+                         fallbacks=[SingleFieldFallback('nick')])
+        nick = TextField('The nickname', required=False)
+        obsolete = TextField('Some obsolete field', required=False)
 
 Generating the Avro_ spec file
 
 .. code-block:: bash
 
-    $ python -m elasticgit.tools dump-schema elasticgit.tests.base.TestPerson > avro.json
+    $ python -m elasticgit.tools dump-schema elasticgit.tests.base.TestFallbackPerson > avro.json
     $ python -m elasticgit.tools load-schema avro.json > models.py
 
 The generated model file:
@@ -106,19 +109,35 @@ The generated model file:
     #   from an Avro schema. Do not manually edit this file unless you
     #   absolutely know what you are doing.
     #
-    # timestamp: 2014-10-14T18:37:31.810492
+    # timestamp: 2014-10-14T18:51:23.916194
     # namespace: elasticgit.tests.base
     # type: record
-    # name: TestPerson
+    # name: TestFallbackPerson
     #
 
     from elasticgit import models
 
-    class TestPerson(models.Model):
+    class TestFallbackPerson(models.Model):
 
+        name = models.TextField(u"""The name""", fallbacks=[models.SingleFieldFallback('nick'),models.SingleFieldFallback('obsolete'),])
         age = models.IntegerField(u"""The Age""")
+        obsolete = models.TextField(u"""Some obsolete field""")
         _version = models.ModelVersionField(u"""Model Version Identifier""")
-        name = models.TextField(u"""The name""")
+        nick = models.TextField(u"""The nickname""")
         uuid = models.TextField(u"""Unique Identifier""")
+
+We're using ConfModel_'s fallbacks feature and encode this in Avro_'s
+Schema as ``aliases``. This allows you to fall back to older names for
+fields:
+
+.. code-block:: python
+
+    >>> TestPerson({'obsolete': 'oldest name', 'age': 10}).name
+    'oldest name'
+    >>> TestPerson({'nick': 'older name', 'age': 10}).name
+    'older name'
+    >>> TestPerson({'name': 'current name', 'age': 10}).name
+    'current name'
+
 
 .. _Avro: avro.apache.org/docs/1.7.7/spec.html
