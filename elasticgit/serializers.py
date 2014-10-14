@@ -33,18 +33,3 @@ class JSONSerializer(Serializer):
 
     def loads(self, data):
         return json.loads(data, encoding=self.encoding)
-
-
-class YAMLSerializer(Serializer):
-
-    suffix = 'yaml'
-
-    def dump(self, data, fp):
-        return yaml.safe_dump(
-            data, stream=fp, encoding=self.encoding, default_flow_style=False)
-
-    def load(self, fp):
-        return yaml.safe_load(fp)
-
-    def loads(self, data):
-        return yaml.safe_load(data)

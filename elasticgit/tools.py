@@ -11,7 +11,7 @@ class ArgumentParserError(Exception):
     pass
 
 
-class DumpSchema(object):
+class SchemaDumper(object):
 
     stdout = sys.stdout
     mapping = {
@@ -48,7 +48,7 @@ class DumpSchema(object):
         }
     }
 
-    def __init__(self, class_path):
+    def run(self, class_path):
         module_path, name = class_path.rsplit('.', 1)
         parent_module = __import__(module_path, fromlist=[name])
         model_class = getattr(parent_module, name)
@@ -56,24 +56,27 @@ class DumpSchema(object):
         if not issubclass(model_class, Model):
             raise ArgumentParserError(
                 '%r is not a subclass of %r' % (model_class, Model))
-        self.dump_schema(model_class)
+        return self.dump_schema(model_class)
 
     def dump_schema(self, model_class):
         json.dump({
             'type': 'record',
             'namespace': model_class.__module__,
             'name': model_class.__name__,
-            'fields': [self.get_field_info(name, value)
-                       for name, value in model_class._fields.items()],
-        }, fp=self.stdout, indent=2)
+            'fields': [self.get_field_info(name, field)
+                       for name, field in model_class._fields.items()],
+        }, self.stdout, indent=2)
 
-    def get_field_info(self, name, value):
+    def get_field_info(self, name, field):
         data = {
             'name': name,
-            'type': self.mapping[value.__class__],
+            'type': self.mapping[field.__class__],
         }
-        if value.default:
-            data['default'] = value.default
+        if field.default:
+            data['default'] = field.default
+        if field.fallbacks:
+            data['aliases'] = [
+                fallback.field_name for fallback in field.fallbacks]
         return data
 
 
@@ -85,7 +88,7 @@ def get_parser():
         'dump_schema', help='Dump model schema information.')
     dump_schema.add_argument(
         'class_path', help='python path to Class')
-    dump_schema.set_defaults(dispatcher=DumpSchema)
+    dump_schema.set_defaults(dispatcher=SchemaDumper)
     return parser
 
 
@@ -94,4 +97,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data = vars(args)
     dispatcher_class = data.pop('dispatcher')
-    dispatcher_class(**data)
+    dispatcher = dispatcher_class()
+    dispatcher.run(**data)

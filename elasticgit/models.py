@@ -5,6 +5,8 @@ from confmodel.errors import ConfigError
 from confmodel.fields import (
     ConfigText, ConfigInt, ConfigFloat, ConfigBool, ConfigList,
     ConfigDict, ConfigUrl, ConfigRegex)
+from confmodel.fallbacks import SingleFieldFallback
+
 
 import elasticgit
 
@@ -154,3 +156,4 @@ class Model(Config):
             yield field.name, field.get_value(self)
 
 ConfigError
+SingleFieldFallback
