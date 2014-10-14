@@ -46,7 +46,7 @@ u'Baz'
 30
 >>>
 >>> sorted(dict(git_person1).keys())
-['age', 'name', 'uuid', 'version']
+['_version', 'age', 'name', 'uuid']
 >>>
 >>> workspace.destroy()
 >>>

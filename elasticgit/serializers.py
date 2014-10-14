@@ -12,11 +12,7 @@ class Serializer(object):
         return elasticgit.version_info
 
     def serialize(self, model, fp):
-        data = dict(model)
-        data.update({
-            'version': self.version_meta()
-        })
-        return self.dump(data, fp)
+        return self.dump(dict(model), fp)
 
     def deserialize(self, model_class, fp):
         return model_class(self.load(fp))

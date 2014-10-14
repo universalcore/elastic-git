@@ -1,6 +1,6 @@
 import os
 
-from elasticgit.models import IntegerField
+from elasticgit.models import IntegerField, ModelVersionField
 from elasticgit.tests.base import ModelBaseTest
 
 from elasticsearch.client import Elasticsearch
@@ -38,7 +38,7 @@ class TestManager(ModelBaseTest):
             'properties': {
                 'age': {'type': 'integer'},
                 'uuid': {'type': 'string'},
-                'version': {'type': 'string'},
+                '_version': ModelVersionField.mapping,
             }
         })
         model_instance = model_class({'age': 1})

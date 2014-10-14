@@ -12,7 +12,7 @@ def introspect_properties(model_class):
     ...
     >>>
     >>> introspect_properties(TestModel) # doctest: +ELLIPSIS
-    {'field': {'type': 'string'}, 'version': {'type': 'string'}, ...}
+    {'field': {'type': 'string'}, '_version': {'type': 'nested', ...}
     >>>
     """
     return dict([

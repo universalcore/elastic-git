@@ -71,8 +71,8 @@ class TestEG(ModelBaseTest):
         workspace = self.workspace
         person = TestPerson({
             'age': 1,
-            'name': 'Name',
-            'version': elasticgit.version_info,
+            'name': u'Name',
+            'uuid': u'foo',
         })
 
         workspace.save(person, 'Saving a person')

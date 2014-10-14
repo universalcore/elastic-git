@@ -97,6 +97,25 @@ class RegexField(ConfigRegex):
     }
 
 
+class ModelVersionField(ConfigDict):
+    """
+    A field holding the version information for a model
+    """
+    mapping = {
+        'type': 'nested',
+        'properties': {
+            'language': {'type': 'string'},
+            'language_version_string': {'type': 'string'},
+            'language_version': {'type': 'string'},
+            'package': {'type': 'string'},
+            'package_version': {'type': 'string'}
+        }
+    }
+
+    def get_value(self, ignored):
+        return elasticgit.version_info.copy()
+
+
 class Model(Config):
     """
     Base model for all things stored in Git and Elasticsearch.
@@ -108,8 +127,7 @@ class Model(Config):
         A dictionary with keys & values to populate this Model
         instance with.
     """
-    version = DictField(
-        'Model Version Identifier', default=elasticgit.version_info)
+    _version = ModelVersionField('Model Version Identifier')
     uuid = TextField('Unique Identifier')
 
     def post_validate(self):
@@ -123,7 +141,12 @@ class Model(Config):
         """
 
     def __eq__(self, other):
-        return self._config_data == other._config_data
+        own_data = dict(self)
+        other_data = dict(other)
+        own_version_info = own_data.pop('_version')
+        other_version_info = other_data.pop('_version')
+        return (own_data == other_data and
+                own_version_info == other_version_info)
 
     def __iter__(self):
         for field in self._get_fields():

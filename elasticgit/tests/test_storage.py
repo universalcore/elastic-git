@@ -67,7 +67,6 @@ class TestStorage(ModelBaseTest):
         person = TestPerson({
             'age': 1,
             'name': 'Test Kees',
-            'version': elasticgit.version_info,
         })
         self.sm.store(person, 'Saving a person.')
         self.assertEqual(
@@ -108,10 +107,11 @@ class TestStorage(ModelBaseTest):
         person = TestPerson({
             'age': 1,
             'name': 'Test Kees',
-            'version': elasticgit.version_info,
         })
         self.sm.store(person, 'Saving a person')
+        print dict(person)
         reloaded_person = self.sm.load(
             self.sm.git_path(
                 person.__class__, '%s.json' % (person.uuid,)))
+        print dict(reloaded_person)
         self.assertEqual(person, reloaded_person)

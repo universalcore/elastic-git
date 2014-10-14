@@ -39,7 +39,7 @@ class TestIndex(ModelBaseTest):
             'age': 1,
             'name': 'Kees',
             'uuid': person.uuid,
-            'version': elasticgit.version_info,
+            '_version': elasticgit.version_info,
         })
 
     def test_extract_document_with_object_id(self):
@@ -55,7 +55,7 @@ class TestIndex(ModelBaseTest):
             'age': 1,
             'name': 'Kees',
             'uuid': person.uuid,
-            'version': elasticgit.version_info,
+            '_version': elasticgit.version_info,
         })
 
     def test_indexing(self):
