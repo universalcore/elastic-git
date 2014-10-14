@@ -74,4 +74,4 @@ Model definitions can be rebuilt from Avro JSON schema files.
 
     $ python -m elasticgit.tools dump-schema \
         elasticgit.tests.base.TestPerson > avro.json
-    $ python -m elasticgit.tools load-schema avron.json > models.py
+    $ python -m elasticgit.tools load-schema avro.json > models.py
