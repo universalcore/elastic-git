@@ -114,21 +114,13 @@ class ModelVersionField(DictField):
         }
     }
 
-    def __init__(self, doc, required=False, default=None, static=False,
-                 fallbacks=()):
-        default = default or elasticgit.version_info.copy()
-        super(ModelVersionField, self).__init__(
-            doc, required=required, default=default, static=static,
-            fallbacks=fallbacks)
+    def validate(self, config):
+        config._config_data.setdefault(
+            self.name, elasticgit.version_info.copy())
+        return super(ModelVersionField, self).validate(config)
 
 
 class UUIDField(TextField):
-
-    def __init__(self, doc, required=False, default=None, static=False,
-                 fallbacks=()):
-        super(UUIDField, self).__init__(
-            doc, required=required, default=default, static=static,
-            fallbacks=fallbacks)
 
     def validate(self, config):
         config._config_data.setdefault(self.name, uuid.uuid4().hex)

@@ -77,7 +77,7 @@ Schema Management
 -----------------
 
 We've followed the example of Apache Avro_ when it comes to schema evolution.
-Avro compatible schema's can be generated from the command line.
+Avro compatible schemas can be generated from the command line.
 
 Model definitions can be rebuilt from Avro_ JSON schema files.
 
