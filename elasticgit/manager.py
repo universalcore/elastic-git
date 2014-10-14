@@ -305,19 +305,38 @@ class StorageManager(object):
             raise StorageException('Cannot save a model without a UUID set.')
 
         # ensure the directory exists
-        file_name = os.path.join(
+        file_path = os.path.join(
             self.repo.working_dir, self.git_name(model))
-        dir_name = os.path.dirname(file_name)
+
+        return self.store_data(
+            file_path, self.serializer.serialize(model), message)
+
+    def store_data(self, file_path, data, message):
+        """
+        Store some data in a file
+
+        :param str file_path:
+            Where to store the file.
+        :param obj data:
+            The data to write in the file.
+        :param str message:
+            The commit mesasge.
+        :returns:
+            The commit
+        """
+
+        # ensure the directory exists
+        dir_name = os.path.dirname(file_path)
         if not (os.path.isdir(dir_name)):
             os.makedirs(dir_name)
 
-        with open(file_name, 'w') as fp:
+        with open(file_path, 'w') as fp:
             # write the object data
-            self.serializer.serialize(model, fp)
+            fp.write(data)
 
         # add to the git index
         index = self.repo.index
-        index.add([file_name])
+        index.add([file_path])
         return index.commit(message)
 
     def delete(self, model, message):
