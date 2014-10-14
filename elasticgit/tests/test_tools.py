@@ -304,7 +304,7 @@ class TestDumpAndLoad(ToolBaseTest):
         record2 = GeneratedModel(data)
         self.assertEqual(record1, record2)
 
-    def test_write_old_read_new(self):
+    def test_single_fallback(self):
         class Foo(models.Model):
             field = models.TextField(
                 'the field',
@@ -322,6 +322,35 @@ class TestDumpAndLoad(ToolBaseTest):
         self.assertEqual(
             GeneratedFoo({'old_field': 'the value'}).field,
             'the value')
+        self.assertEqual(
+            GeneratedFoo({'field': 'the new value'}).field,
+            'the new value')
+
+    def test_multiple_fallbacks(self):
+        class Foo(models.Model):
+            field = models.TextField(
+                'the field',
+                fallbacks=[
+                    models.SingleFieldFallback('old_field'),
+                    models.SingleFieldFallback('even_older_field')])
+            old_field = models.TextField(
+                'the old field', required=False)
+            even_older_field = models.TextField(
+                'the oldest field', required=False)
+
+        schema_dumper = self.mk_schema_dumper()
+        schema_loader = self.mk_schema_loader()
+
+        schema = schema_dumper.dump_schema(Foo)
+        generated_code = schema_loader.generate_model(json.loads(schema))
+
+        GeneratedFoo = self.load_class(generated_code, 'Foo')
+        self.assertEqual(
+            GeneratedFoo({'even_older_field': 'the original value'}).field,
+            'the original value')
+        self.assertEqual(
+            GeneratedFoo({'old_field': 'the old value'}).field,
+            'the old value')
         self.assertEqual(
             GeneratedFoo({'field': 'the new value'}).field,
             'the new value')

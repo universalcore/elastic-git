@@ -19,6 +19,5 @@ class {{schema.name}}(models.Model):
         {%- if field.default != None -%}, default={{ default_value(field) }}{% endif %}
         {%- if field.aliases -%}, fallbacks=[{% for alias in field.aliases -%}
             models.SingleFieldFallback('{{alias}}'),
-            ]{%- endfor %}
-        {% endif %}){% endfor %}
+            {%- endfor %}]{% endif %}){% endfor %}
 
