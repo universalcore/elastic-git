@@ -80,7 +80,7 @@ class SchemaDumper(object):
         return data
 
 
-def get_parser():
+def get_parser():  # pragma: no cover
     parser = argparse.ArgumentParser(
         description="Elasticgit command line tools.")
     subparsers = parser.add_subparsers(help='Commands')
@@ -92,7 +92,7 @@ def get_parser():
     return parser
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     parser = get_parser()
     args = parser.parse_args()
     data = vars(args)
