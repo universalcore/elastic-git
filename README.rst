@@ -85,7 +85,7 @@ A sample model file:
 
 .. code-block:: python
 
-    class TestPerson(Model):
+    class TestFallbackPerson(Model):
         age = IntegerField('The Age')
         name = TextField('The name',
                          fallbacks=[SingleFieldFallback('nick')])
@@ -133,11 +133,11 @@ fields:
 
 .. code-block:: python
 
-    >>> TestPerson({'obsolete': 'oldest name', 'age': 10}).name
+    >>> TestFallbackPerson({'obsolete': 'oldest name', 'age': 10}).name
     'oldest name'
-    >>> TestPerson({'nick': 'older name', 'age': 10}).name
+    >>> TestFallbackPerson({'nick': 'older name', 'age': 10}).name
     'older name'
-    >>> TestPerson({'name': 'current name', 'age': 10}).name
+    >>> TestFallbackPerson({'name': 'current name', 'age': 10}).name
     'current name'
 
 
