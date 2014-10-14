@@ -282,7 +282,7 @@ class StorageManager(object):
                     model_class,
                     '%s.%s' % (uuid, self.serializer.suffix,))))
 
-        model = self.serializer.deserialize_string(model_class, object_data)
+        model = self.serializer.deserialize(model_class, object_data)
 
         if model.uuid != uuid:
             raise StorageException(
