@@ -12,6 +12,21 @@ from elasticgit.manager import EG
 from elasticgit.commands.avro import SchemaDumper, SchemaLoader
 
 
+class TestPerson(Model):
+    age = IntegerField('The Age')
+    name = TextField('The name')
+
+
+class TestFallbackPerson(Model):
+    age = IntegerField('The Age')
+    name = TextField('The name', fallbacks=[
+        SingleFieldFallback('nick'),
+        SingleFieldFallback('obsolete'),
+    ])
+    nick = TextField('The nickname', required=False)
+    obsolete = TextField('Some obsolete field', required=False)
+
+
 class ModelBaseTest(TestCase):
 
     def mk_model(self, fields):
@@ -29,21 +44,6 @@ class ModelBaseTest(TestCase):
         if auto_destroy:
             self.addCleanup(workspace.destroy)
         return workspace
-
-
-class TestPerson(Model):
-    age = IntegerField('The Age')
-    name = TextField('The name')
-
-
-class TestFallbackPerson(Model):
-    age = IntegerField('The Age')
-    name = TextField('The name', fallbacks=[
-        SingleFieldFallback('nick'),
-        SingleFieldFallback('obsolete'),
-    ])
-    nick = TextField('The nickname', required=False)
-    obsolete = TextField('Some obsolete field', required=False)
 
 
 class ToolBaseTest(ModelBaseTest):
