@@ -92,9 +92,10 @@ class TestLoadSchemaTool(ModelBaseTest):
 
     def load_schema(self, data):
         loader = self.mk_schema_loader()
-        return loader.run(
+        loader.run(
             self.mk_tempfile(
                 json.dumps(data, indent=2)))
+        return loader.stdout.getvalue()
 
     def load_field(self, field, name):
         return self.load_schema({
@@ -127,7 +128,8 @@ class TestLoadSchemaTool(ModelBaseTest):
         if field_type is not None:
             self.assertTrue(
                 isinstance(fields[field_name], field_type),
-                'Field %s is not of type %r' % (field_name, field_type,))
+                'Field %s is of type %r, was expecting %r' % (
+                    field_name, type(fields[field_name]), field_type,))
 
     def assertFieldCreation(self, field, field_type):
         model_class = self.load_class_with_field(field)
@@ -174,10 +176,34 @@ class TestLoadSchemaTool(ModelBaseTest):
             'default': ['foo', 'bar', 'baz']
         }, models.ListField)
 
-    def test_record_field(self):
+    def test_dict_field(self):
+        self.assertFieldCreation({
+            'name': 'obj',
+            'type': 'record',
+            'doc': 'The Object',
+            'default': {'hello': 'world'},
+        }, models.DictField)
+
+    def test_complex_field(self):
+        self.assertFieldCreation({
+            'name': 'complex',
+            'type': {
+                'namespace': 'foo.bar',
+                'name': 'ItIsComplicated',
+                'type': 'record'
+            },
+            'doc': 'Super Complex',
+            'default': {},
+        }, models.DictField)
+
+    def test_version_field(self):
         self.assertFieldCreation({
             'name': 'version',
-            'type': 'record',
-            'doc': 'The Version',
+            'type': {
+                'namespace': 'elasticgit.models',
+                'name': 'ModelVersionField',
+                'type': 'record',
+            },
+            'doc': 'The Model Version',
             'default': elasticgit.version_info,
         }, models.ModelVersionField)

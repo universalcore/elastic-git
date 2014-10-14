@@ -1,14 +1,14 @@
 import argparse
-from jinja2 import Environment, PackageLoader, environmentfunction
+from jinja2 import Environment, PackageLoader
 import json
-import pkg_resources
 import sys
+import pprint
 
 from datetime import datetime
 
 from elasticgit.models import (
     Model, IntegerField, TextField, ModelVersionField, FloatField,
-    BooleanField, ListField)
+    BooleanField, ListField, DictField)
 
 
 class ArgumentParserError(Exception):
@@ -30,7 +30,7 @@ class SchemaLoader(object):
         'float': FloatField,
         'boolean': BooleanField,
         'array': ListField,
-        'record': ModelVersionField,
+        'record': DictField,
     }
 
     def __init__(self):
@@ -39,15 +39,25 @@ class SchemaLoader(object):
         self.env.globals['default_value'] = self.default_value
 
     def field_class_for(self, field):
-        return self.mapping[field['type']].__name__
+        field_type = field['type']
+        if isinstance(field_type, dict):
+            return self.field_class_for_complex_type(field)
+        return self.mapping[field_type].__name__
+
+    def field_class_for_complex_type(self, field):
+        field_type = field['type']
+        if (field_type['name'] == 'ModelVersionField' and
+                field_type['namespace'] == 'elasticgit.models'):
+            return ModelVersionField.__name__
+        return DictField.__name__
 
     def default_value(self, field):
-        return repr(field['default'])
+        return pprint.pformat(field['default'], indent=8)
 
     def run(self, schema_file):
         with open(schema_file, 'r') as fp:
             self.schema = json.load(fp)
-        return self.generate_model(self.schema)
+        self.stdout.write(self.generate_model(self.schema))
 
     def generate_model(self, schema):
         template = self.env.get_template('model_generator.jinja2')
@@ -74,6 +84,7 @@ class SchemaDumper(object):
         ModelVersionField: {
             'type': 'record',
             'name': 'ModelVersionField',
+            'namespace': 'elasticgit.models',
             'fields': [
                 {
                     'name': 'language',
@@ -123,9 +134,9 @@ class SchemaDumper(object):
             'name': name,
             'type': self.mapping[field.__class__],
             'doc': field.doc,
+            'default': field.default,
         }
-        if field.default:
-            data['default'] = field.default
+
         if field.fallbacks:
             data['aliases'] = [
                 fallback.field_name for fallback in field.fallbacks]
