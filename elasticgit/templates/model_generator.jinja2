@@ -1,0 +1,23 @@
+# NOTE:
+#
+#   This is an automatically generated Elasticgit Model definition
+#   from an Avro schema. Do not manually edit this file unless you
+#   absolutely know what you are doing.
+#
+# timestamp: {{datetime.isoformat()}}
+# namespace: {{schema.namespace}}
+# type: {{schema.type}}
+# name: {{schema.name}}
+#
+
+from elasticgit import models
+
+class {{schema.name}}(models.Model):
+    {% for field in schema.fields %}
+    {{field.name}} = models.{{ field_class_for(field) }}(
+        {%- if field.doc -%}u"""{{ field.doc }}"""{% else %}"""{{ field.name }}"""{% endif %}
+        {%- if field.default != None -%}, default={{ default_value(field) }}{% endif %}
+        {%- if field.aliases -%}, fallbacks=[{% for alias in field.aliases -%}
+            models.SingleFieldFallback('{{alias}}'),
+            {%- endfor %}]{% endif %}){% endfor %}
+
