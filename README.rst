@@ -65,19 +65,24 @@ Data is now persisted in a git repository and is queryable via elastic search:
 Schema Management
 -----------------
 
-We've followed the example of Apache Avro when it comes to schema evolution.
+We've followed the example of Apache Avro_ when it comes to schema evolution.
 Avro compatible schema's can be generated from the command line.
 
-Model definitions can be rebuilt from Avro JSON schema files.
+Model definitions can be rebuilt from Avro_ JSON schema files.
 
-.. code-block:: bash
+A sample model file:
 
-    $ tail -n 3 elasticgit/tests/base.py
+.. code-block:: python
+
     class TestPerson(Model):
         age = IntegerField('The Age')
         name = TextField('The name')
-    $ python -m elasticgit.tools dump-schema \
-        elasticgit.tests.base.TestPerson > avro.json
+
+Generating the Avro_ spec file
+
+.. code-block:: bash
+
+    $ python -m elasticgit.tools dump-schema models.TestPerson > avro.json
     $ python -m elasticgit.tools load-schema avro.json > models.py
 
 The generated model file:
@@ -108,3 +113,5 @@ The generated model file:
             u'package_version': u'0.1.3'})
         name = models.TextField(u"""The name""")
         uuid = models.TextField(u"""Unique Identifier""")
+
+.. _Avro: avro.apache.org/docs/1.7.7/spec.html
