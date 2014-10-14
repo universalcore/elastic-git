@@ -1,9 +1,14 @@
 import uuid
+
 from confmodel.config import Config
 from confmodel.errors import ConfigError
 from confmodel.fields import (
     ConfigText, ConfigInt, ConfigFloat, ConfigBool, ConfigList,
     ConfigDict, ConfigUrl, ConfigRegex)
+from confmodel.fallbacks import SingleFieldFallback
+
+
+import elasticgit
 
 
 class TextField(ConfigText):
@@ -94,6 +99,41 @@ class RegexField(ConfigRegex):
     }
 
 
+class ModelVersionField(DictField):
+    """
+    A field holding the version information for a model
+    """
+    mapping = {
+        'type': 'nested',
+        'properties': {
+            'language': {'type': 'string'},
+            'language_version_string': {'type': 'string'},
+            'language_version': {'type': 'string'},
+            'package': {'type': 'string'},
+            'package_version': {'type': 'string'}
+        }
+    }
+
+    def validate(self, config):
+        config._config_data.setdefault(
+            self.name, elasticgit.version_info.copy())
+        value = self.get_value(config)
+        current_version = elasticgit.version_info['package_version']
+        package_version = value['package_version']
+        if (current_version < package_version):
+            raise ConfigError(
+                'Got a version from the future, expecting: %r got %r' % (
+                    current_version, package_version))
+        return super(ModelVersionField, self).validate(config)
+
+
+class UUIDField(TextField):
+
+    def validate(self, config):
+        config._config_data.setdefault(self.name, uuid.uuid4().hex)
+        return super(UUIDField, self).validate(config)
+
+
 class Model(Config):
     """
     Base model for all things stored in Git and Elasticsearch.
@@ -105,23 +145,20 @@ class Model(Config):
         A dictionary with keys & values to populate this Model
         instance with.
     """
-    uuid = TextField('Unique Identifier')
-
-    def post_validate(self):
-        if not self.uuid:
-            self._config_data['uuid'] = uuid.uuid4().hex
-        self.validate()
-
-    def validate(self):
-        """
-        Subclasses can subclass this to perform more validation checks.
-        """
+    _version = ModelVersionField('Model Version Identifier')
+    uuid = UUIDField('Unique Identifier')
 
     def __eq__(self, other):
-        return self._config_data == other._config_data
+        own_data = dict(self)
+        other_data = dict(other)
+        own_version_info = own_data.pop('_version')
+        other_version_info = other_data.pop('_version')
+        return (own_data == other_data and
+                own_version_info == other_version_info)
 
     def __iter__(self):
         for field in self._get_fields():
             yield field.name, field.get_value(self)
 
 ConfigError
+SingleFieldFallback

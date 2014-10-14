@@ -8,13 +8,15 @@ Search as a query backend.
 
 .. image:: https://travis-ci.org/smn/elastic-git.svg?branch=develop
     :target: https://travis-ci.org/smn/elastic-git
+    :alt: Continuous Integration
 
 .. image:: https://coveralls.io/repos/smn/elastic-git/badge.png?branch=develop
-  :target: https://coveralls.io/r/smn/elastic-git?branch=develop
+    :target: https://coveralls.io/r/smn/elastic-git?branch=develop
+    :alt: Code Coverage
 
 .. image:: https://readthedocs.org/projects/elastic-git/badge/?version=latest
-  :target: https://readthedocs.org/projects/elastic-git/?badge=latest
-  :alt: Documentation Status
+    :target: https://elastic-git.readthedocs.org
+    :alt: Elastic-Git Documentation
 
 Usage
 -----
@@ -56,54 +58,90 @@ Data is now persisted in a git repository and is queryable via elastic search:
     >>> from elasticgit.tests.base import TestPerson as Person
     >>> workspace = EG.workspace('/Users/sdehaan/Desktop/test-repo/')
     >>> for person in workspace.S(Person).filter(age__gte=20):
-    ...     print person.get_object(), dict(person.get_object())
+    ...     print person.name, person.age
     ...
-    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 20, 'uuid': u'9890c5813fc14fcd82a3ec3751a1b1fe', 'name': u'Bar'}
-    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 30, 'uuid': u'4b5c33de63034205ac23b746ee93344b', 'name': u'Baz'}
-    >>> for person in workspace.S(Person).query(name__match='Baz'):
-    ...     print person.get_object(), dict(person.get_object())
-    ...
-    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 30, 'uuid': u'4b5c33de63034205ac23b746ee93344b', 'name': u'Baz'}
-    >>>
+    Bar 20
+    Baz 30
 
-Git log output of the repository
+Check the ``examples/`` directory for some more code samples.
 
-.. code-block:: diff
+.. code-block:: bash
 
-    commit 89afa833e4c537293a5f21d4e867cd061ece82a9
-    Author: Simon de Haan <simon@praekeltfoundation.org>
-    Date:   Tue Oct 7 15:23:30 2014 +0200
+    $ python -m examples.basic_usage
+    e6cb25f00870472fa5223d76dc361667 Baz 30
+    2bd470372243411c9abd8fdcb969dcf5 Bar 20
 
-        Saving Person 3
 
-    diff --git a/elasticgit.tests.base/TestPerson/4b5c33de63034205ac23b746ee93344b.json b/elasticgit.tests.base/TestPerson/4b5c33de63034205ac23b746ee93344b.json
-    new file mode 100644
-    index 0000000..03d55b8
-    --- /dev/null
-    +++ b/elasticgit.tests.base/TestPerson/4b5c33de63034205ac23b746ee93344b.json
-    @@ -0,0 +1,5 @@
-    +{
-    +  "age": 30,
-    +  "uuid": "4b5c33de63034205ac23b746ee93344b",
-    +  "name": "Baz"
-    +}
-    \ No newline at end of file
 
-    commit bc3b779ade98dacfdcb181dd6a24bc4c9350bdd3
-    Author: Simon de Haan <simon@praekeltfoundation.org>
-    Date:   Tue Oct 7 15:23:28 2014 +0200
+Schema Management
+-----------------
 
-        Saving Person 2
+We've followed the example of Apache Avro_ when it comes to schema evolution.
+Avro compatible schemas can be generated from the command line.
 
-    diff --git a/elasticgit.tests.base/TestPerson/9890c5813fc14fcd82a3ec3751a1b1fe.json b/elasticgit.tests.base/TestPerson/9890c5813fc14fcd82a3ec3751a1b1fe.json
-    new file mode 100644
-    index 0000000..3fb0070
-    --- /dev/null
-    +++ b/elasticgit.tests.base/TestPerson/9890c5813fc14fcd82a3ec3751a1b1fe.json
-    @@ -0,0 +1,5 @@
-    +{
-    +  "age": 20,
-    +  "uuid": "9890c5813fc14fcd82a3ec3751a1b1fe",
-    +  "name": "Bar"
-    +}
-    \ No newline at end of file
+Model definitions can be rebuilt from Avro_ JSON schema files.
+
+A sample model file:
+
+.. code-block:: python
+
+    class TestFallbackPerson(Model):
+        age = IntegerField('The Age')
+        name = TextField('The name', fallbacks=[
+            SingleFieldFallback('nick'),
+            SingleFieldFallback('obsolete'),
+        ])
+        nick = TextField('The nickname', required=False)
+        obsolete = TextField('Some obsolete field', required=False)
+
+Generating the Avro_ spec file
+
+.. code-block:: bash
+
+    $ python -m elasticgit.tools dump-schema \
+    >   elasticgit.tests.base.TestFallbackPerson > avro.json
+    $ python -m elasticgit.tools load-schema avro.json > models.py
+
+The generated model file:
+
+.. code-block:: python
+
+    # NOTE:
+    #
+    #   This is an automatically generated Elasticgit Model definition
+    #   from an Avro schema. Do not manually edit this file unless you
+    #   absolutely know what you are doing.
+    #
+    # timestamp: 2014-10-14T18:51:23.916194
+    # namespace: elasticgit.tests.base
+    # type: record
+    # name: TestFallbackPerson
+    #
+
+    from elasticgit import models
+
+    class TestFallbackPerson(models.Model):
+
+        name = models.TextField(u"""The name""", fallbacks=[models.SingleFieldFallback('nick'),models.SingleFieldFallback('obsolete'),])
+        age = models.IntegerField(u"""The Age""")
+        obsolete = models.TextField(u"""Some obsolete field""")
+        _version = models.ModelVersionField(u"""Model Version Identifier""")
+        nick = models.TextField(u"""The nickname""")
+        uuid = models.TextField(u"""Unique Identifier""")
+
+We're using ConfModel_'s fallbacks feature and encode this in Avro_'s
+Schema as ``aliases``. This allows you to fall back to older names for
+fields:
+
+.. code-block:: python
+
+    >>> TestFallbackPerson({'obsolete': 'oldest name', 'age': 10}).name
+    'oldest name'
+    >>> TestFallbackPerson({'nick': 'older name', 'age': 10}).name
+    'older name'
+    >>> TestFallbackPerson({'name': 'current name', 'age': 10}).name
+    'current name'
+
+
+.. _Avro: http://avro.apache.org/docs/1.7.7/spec.html
+.. _ConfModel: http://confmodel.rtfd.org/

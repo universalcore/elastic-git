@@ -1,6 +1,6 @@
 import os
 
-from elasticgit.models import IntegerField
+from elasticgit.models import IntegerField, ModelVersionField
 from elasticgit.tests.base import ModelBaseTest
 
 from elasticsearch.client import Elasticsearch
@@ -11,10 +11,6 @@ class TestManager(ModelBaseTest):
     def setUp(self):
         self.workspace = self.mk_workspace()
         self.workspace.setup('Test Kees', 'kees@example.org')
-
-    def tearDown(self):
-        if self.workspace.exists():
-            self.workspace.destroy()
 
     def test_workspace(self):
         workspace = self.mk_workspace(name='.foo')
@@ -42,6 +38,7 @@ class TestManager(ModelBaseTest):
             'properties': {
                 'age': {'type': 'integer'},
                 'uuid': {'type': 'string'},
+                '_version': ModelVersionField.mapping,
             }
         })
         model_instance = model_class({'age': 1})

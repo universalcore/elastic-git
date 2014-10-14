@@ -14,6 +14,7 @@
    managers
    models
    utils
+   tools
 
 
 Indices and tables
