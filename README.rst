@@ -56,54 +56,22 @@ Data is now persisted in a git repository and is queryable via elastic search:
     >>> from elasticgit.tests.base import TestPerson as Person
     >>> workspace = EG.workspace('/Users/sdehaan/Desktop/test-repo/')
     >>> for person in workspace.S(Person).filter(age__gte=20):
-    ...     print person.get_object(), dict(person.get_object())
+    ...     print person.name, person.age
     ...
-    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 20, 'uuid': u'9890c5813fc14fcd82a3ec3751a1b1fe', 'name': u'Bar'}
-    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 30, 'uuid': u'4b5c33de63034205ac23b746ee93344b', 'name': u'Baz'}
-    >>> for person in workspace.S(Person).query(name__match='Baz'):
-    ...     print person.get_object(), dict(person.get_object())
-    ...
-    <elasticgit.tests.base.TestPerson object at 0x10f906d90> {'age': 30, 'uuid': u'4b5c33de63034205ac23b746ee93344b', 'name': u'Baz'}
-    >>>
+    Bar 20
+    Baz 30
 
-Git log output of the repository
 
-.. code-block:: diff
+Schema Management
+-----------------
 
-    commit 89afa833e4c537293a5f21d4e867cd061ece82a9
-    Author: Simon de Haan <simon@praekeltfoundation.org>
-    Date:   Tue Oct 7 15:23:30 2014 +0200
+We've followed the example of Apache Avro when it comes to schema evolution.
+Avro compatible schema's can be generated from the command line.
 
-        Saving Person 3
+Model definitions can be rebuilt from Avro JSON schema files.
 
-    diff --git a/elasticgit.tests.base/TestPerson/4b5c33de63034205ac23b746ee93344b.json b/elasticgit.tests.base/TestPerson/4b5c33de63034205ac23b746ee93344b.json
-    new file mode 100644
-    index 0000000..03d55b8
-    --- /dev/null
-    +++ b/elasticgit.tests.base/TestPerson/4b5c33de63034205ac23b746ee93344b.json
-    @@ -0,0 +1,5 @@
-    +{
-    +  "age": 30,
-    +  "uuid": "4b5c33de63034205ac23b746ee93344b",
-    +  "name": "Baz"
-    +}
-    \ No newline at end of file
+.. code-block:: bash
 
-    commit bc3b779ade98dacfdcb181dd6a24bc4c9350bdd3
-    Author: Simon de Haan <simon@praekeltfoundation.org>
-    Date:   Tue Oct 7 15:23:28 2014 +0200
-
-        Saving Person 2
-
-    diff --git a/elasticgit.tests.base/TestPerson/9890c5813fc14fcd82a3ec3751a1b1fe.json b/elasticgit.tests.base/TestPerson/9890c5813fc14fcd82a3ec3751a1b1fe.json
-    new file mode 100644
-    index 0000000..3fb0070
-    --- /dev/null
-    +++ b/elasticgit.tests.base/TestPerson/9890c5813fc14fcd82a3ec3751a1b1fe.json
-    @@ -0,0 +1,5 @@
-    +{
-    +  "age": 20,
-    +  "uuid": "9890c5813fc14fcd82a3ec3751a1b1fe",
-    +  "name": "Bar"
-    +}
-    \ No newline at end of file
+    $ python -m elasticgit.tools dump-schema \
+        elasticgit.tests.base.TestPerson > avro.json
+    $ python -m elasticgit.tools load-schema avron.json > models.py
