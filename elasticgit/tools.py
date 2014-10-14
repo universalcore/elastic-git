@@ -1,6 +1,7 @@
 import argparse
 
 from elasticgit.commands.avro import SchemaDumper, SchemaLoader
+from elasticgit.commands.gitmodel import MigrateGitModelRepo
 
 
 def add_command(subparsers, dispatcher_class):  # pragma: no cover

@@ -29,6 +29,8 @@ class TestFallbackPerson(Model):
 
 class ModelBaseTest(TestCase):
 
+    destroy = 'KEEP_REPO' not in os.environ
+
     def mk_model(self, fields):
         return type('TempModel', (Model,), fields)
 
@@ -36,8 +38,9 @@ class ModelBaseTest(TestCase):
                      name=None,
                      url='https://localhost',
                      index_prefix='test-repo-index',
-                     auto_destroy=True):
+                     auto_destroy=None):
         name = name or self.id()
+        auto_destroy = auto_destroy or self.destroy
         workspace = EG.workspace(os.path.join(working_dir, name), es={
             'urls': [url],
         }, index_prefix=index_prefix)
