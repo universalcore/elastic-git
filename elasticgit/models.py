@@ -117,6 +117,13 @@ class ModelVersionField(DictField):
     def validate(self, config):
         config._config_data.setdefault(
             self.name, elasticgit.version_info.copy())
+        value = self.get_value(config)
+        current_version = elasticgit.version_info['package_version']
+        package_version = value['package_version']
+        if (current_version < package_version):
+            raise ConfigError(
+                'Got a version from the future, expecting: %r got %r' % (
+                    current_version, package_version))
         return super(ModelVersionField, self).validate(config)
 
 

@@ -354,3 +354,34 @@ class TestDumpAndLoad(ToolBaseTest):
         self.assertEqual(
             GeneratedFoo({'field': 'the new value'}).field,
             'the new value')
+
+    def test_load_older_version(self):
+        class Foo(models.Model):
+            pass
+
+        old_version_info = elasticgit.version_info.copy()
+        old_version_info['package_version'] = '0.0.1'
+
+        f = Foo({
+            'uuid': 'the-uuid',
+            '_version': old_version_info,
+        })
+        self.assertEqual(f.uuid, 'the-uuid')
+        self.assertEqual(f._version['package_version'], '0.0.1')
+
+    def test_load_newer_version(self):
+        class Foo(models.Model):
+            pass
+
+        major, minor, micro = map(
+            int, elasticgit.version_info['package_version'].split('.'))
+
+        new_version = elasticgit.version_info.copy()
+        new_version['package_version'] = '%d.%d.%d' % (
+            major + 1,
+            minor,
+            micro)
+        self.assertRaises(models.ConfigError, Foo, {
+            'uuid': 'the-uuid',
+            '_version': new_version,
+        })
