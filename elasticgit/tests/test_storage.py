@@ -109,9 +109,7 @@ class TestStorage(ModelBaseTest):
             'name': 'Test Kees',
         })
         self.sm.store(person, 'Saving a person')
-        print dict(person)
         reloaded_person = self.sm.load(
             self.sm.git_path(
                 person.__class__, '%s.json' % (person.uuid,)))
-        print dict(reloaded_person)
         self.assertEqual(person, reloaded_person)
