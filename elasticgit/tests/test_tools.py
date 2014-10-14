@@ -5,17 +5,13 @@ import os
 
 from StringIO import StringIO
 
-from elasticgit.tests.base import ModelBaseTest, TestPerson
+from elasticgit.tests.base import ModelBaseTest
 from elasticgit.tools import SchemaDumper, SchemaLoader
 from elasticgit import models
 import elasticgit
 
 
 class ToolBaseTest(ModelBaseTest):
-
-    def setUp(self):
-        self.workspace = self.mk_workspace()
-        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def mk_schema_dumper(self):
         schema_dumper = SchemaDumper()
