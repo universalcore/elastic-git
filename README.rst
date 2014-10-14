@@ -72,6 +72,39 @@ Model definitions can be rebuilt from Avro JSON schema files.
 
 .. code-block:: bash
 
+    $ tail -n 3 elasticgit/tests/base.py
+    class TestPerson(Model):
+        age = IntegerField('The Age')
+        name = TextField('The name')
     $ python -m elasticgit.tools dump-schema \
         elasticgit.tests.base.TestPerson > avro.json
     $ python -m elasticgit.tools load-schema avro.json > models.py
+
+The generated model file:
+
+.. code-block:: python
+
+    # NOTE:
+    #
+    #   This is an automatically generated Elasticgit Model definition
+    #   from an Avro schema. Do not manually edit this file unless you
+    #   absolutely know what you are doing.
+    #
+    # timestamp: 2014-10-14T15:55:13.786029
+    # namespace: elasticgit.tests.base
+    # type: record
+    # name: TestPerson
+    #
+
+    from elasticgit import models
+
+    class TestPerson(models.Model):
+
+        age = models.IntegerField(u"""The Age""")
+        _version = models.ModelVersionField(u"""Model Version Identifier""", default={       u'language': u'python',
+            u'language_version': u'2.7.6',
+            u'language_version_string': u'2.7.6 (default, Dec 22 2013, 09:30:03) \n[GCC 4.2.1 Compatible Apple LLVM 5.0 (clang-500.2.79)]',
+            u'package': u'elastic-git',
+            u'package_version': u'0.1.3'})
+        name = models.TextField(u"""The name""")
+        uuid = models.TextField(u"""Unique Identifier""")
