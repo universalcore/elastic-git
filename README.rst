@@ -96,7 +96,8 @@ Generating the Avro_ spec file
 
 .. code-block:: bash
 
-    $ python -m elasticgit.tools dump-schema elasticgit.tests.base.TestFallbackPerson > avro.json
+    $ python -m elasticgit.tools dump-schema \
+    >   elasticgit.tests.base.TestFallbackPerson > avro.json
     $ python -m elasticgit.tools load-schema avro.json > models.py
 
 The generated model file:
@@ -140,4 +141,5 @@ fields:
     'current name'
 
 
-.. _Avro: avro.apache.org/docs/1.7.7/spec.html
+.. _Avro: http://avro.apache.org/docs/1.7.7/spec.html
+.. _ConfModel: http://confmodel.rtfd.org/
