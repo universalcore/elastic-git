@@ -56,8 +56,8 @@ class SchemaLoader(object):
 
     def run(self, schema_file):
         with open(schema_file, 'r') as fp:
-            self.schema = json.load(fp)
-        self.stdout.write(self.generate_model(self.schema))
+            schema = json.load(fp)
+        self.stdout.write(self.generate_model(schema))
 
     def generate_model(self, schema):
         template = self.env.get_template('model_generator.jinja2')
@@ -81,6 +81,7 @@ class SchemaDumper(object):
         FloatField: 'float',
         BooleanField: 'boolean',
         ListField: 'array',
+        DictField: 'record',
         ModelVersionField: {
             'type': 'record',
             'name': 'ModelVersionField',
@@ -118,16 +119,16 @@ class SchemaDumper(object):
         if not issubclass(model_class, Model):
             raise ArgumentParserError(
                 '%r is not a subclass of %r' % (model_class, Model))
-        return self.dump_schema(model_class)
+        return self.stdout.write(self.dump_schema(model_class))
 
     def dump_schema(self, model_class):
-        json.dump({
+        return json.dumps({
             'type': 'record',
             'namespace': model_class.__module__,
             'name': model_class.__name__,
             'fields': [self.get_field_info(name, field)
                        for name, field in model_class._fields.items()],
-        }, self.stdout, indent=2)
+        }, indent=2)
 
     def get_field_info(self, name, field):
         data = {

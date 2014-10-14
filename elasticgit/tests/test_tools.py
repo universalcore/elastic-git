@@ -1,16 +1,17 @@
+# -*- coding: utf-8 -*-
 import json
 import tempfile
 import os
 
 from StringIO import StringIO
 
-from elasticgit.tests.base import ModelBaseTest
+from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.tools import SchemaDumper, SchemaLoader
 from elasticgit import models
 import elasticgit
 
 
-class TestDumpSchemaTool(ModelBaseTest):
+class ToolBaseTest(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
@@ -28,54 +29,6 @@ class TestDumpSchemaTool(ModelBaseTest):
         return [field
                 for field in schema['fields']
                 if field['name'] == field_name][0]
-
-    def test_dump_schema(self):
-        schema_dumper = self.mk_schema_dumper()
-        schema_dumper.run(
-            class_path='elasticgit.tests.base.TestPerson')
-        schema = self.get_schema(schema_dumper)
-        self.assertEqual(schema['type'], 'record')
-        self.assertEqual(schema['name'], 'TestPerson')
-        self.assertEqual(schema['namespace'], 'elasticgit.tests.base')
-
-    def test_dump_default_value(self):
-        class TestModel(models.Model):
-            age = models.IntegerField('The age', default=20)
-
-        schema_dumper = self.mk_schema_dumper()
-        schema_dumper.dump_schema(TestModel)
-        schema = self.get_schema(schema_dumper)
-        age = self.get_field(schema, 'age')
-        self.assertEqual(age['default'], 20)
-
-    def test_dump_doc(self):
-        class TestModel(models.Model):
-            age = models.IntegerField('The age', default=20)
-
-        schema_dumper = self.mk_schema_dumper()
-        schema_dumper.dump_schema(TestModel)
-        schema = self.get_schema(schema_dumper)
-        age = self.get_field(schema, 'age')
-        self.assertEqual(age['doc'], 'The age')
-
-    def test_dump_fallback_value(self):
-        class TestModel(models.Model):
-            age = models.IntegerField(
-                'The age', default=20,
-                fallbacks=[models.SingleFieldFallback('length')])
-
-        schema_dumper = self.mk_schema_dumper()
-        schema_dumper.dump_schema(TestModel)
-        schema = self.get_schema(schema_dumper)
-        age = self.get_field(schema, 'age')
-        self.assertEqual(age['aliases'], ['length'])
-
-
-class TestLoadSchemaTool(ModelBaseTest):
-
-    def setUp(self):
-        self.workspace = self.mk_workspace()
-        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def mk_tempfile(self, data):
         fd, name = tempfile.mkstemp(text=True)
@@ -105,12 +58,59 @@ class TestLoadSchemaTool(ModelBaseTest):
             'fields': [field]
         })
 
+    def load_class(self, code_string, name):
+        scope = {}
+        exec code_string in scope
+        return scope.pop(name)
+
     def load_class_with_field(self, field):
         name = 'GeneratedModel'
         model_code = self.load_field(field, name)
-        scope = {}
-        exec model_code in scope
-        return scope.pop(name)
+        return self.load_class(model_code, name)
+
+
+class TestDumpSchemaTool(ToolBaseTest):
+
+    def test_dump_schema(self):
+        schema_dumper = self.mk_schema_dumper()
+        schema_dumper.run(
+            class_path='elasticgit.tests.base.TestPerson')
+        schema = self.get_schema(schema_dumper)
+        self.assertEqual(schema['type'], 'record')
+        self.assertEqual(schema['name'], 'TestPerson')
+        self.assertEqual(schema['namespace'], 'elasticgit.tests.base')
+
+    def test_dump_default_value(self):
+        class TestModel(models.Model):
+            age = models.IntegerField('The age', default=20)
+
+        schema_dumper = self.mk_schema_dumper()
+        schema = json.loads(schema_dumper.dump_schema(TestModel))
+        age = self.get_field(schema, 'age')
+        self.assertEqual(age['default'], 20)
+
+    def test_dump_doc(self):
+        class TestModel(models.Model):
+            age = models.IntegerField('The age', default=20)
+
+        schema_dumper = self.mk_schema_dumper()
+        schema = json.loads(schema_dumper.dump_schema(TestModel))
+        age = self.get_field(schema, 'age')
+        self.assertEqual(age['doc'], 'The age')
+
+    def test_dump_fallback_value(self):
+        class TestModel(models.Model):
+            age = models.IntegerField(
+                'The age', default=20,
+                fallbacks=[models.SingleFieldFallback('length')])
+
+        schema_dumper = self.mk_schema_dumper()
+        schema = json.loads(schema_dumper.dump_schema(TestModel))
+        age = self.get_field(schema, 'age')
+        self.assertEqual(age['aliases'], ['length'])
+
+
+class TestLoadSchemaTool(ToolBaseTest):
 
     def assertFieldNames(self, model_class, *field_names):
         self.assertEqual(
@@ -207,3 +207,103 @@ class TestLoadSchemaTool(ModelBaseTest):
             'doc': 'The Model Version',
             'default': elasticgit.version_info,
         }, models.ModelVersionField)
+
+
+class DumpAndLoadModel(models.Model):
+    text = models.TextField('the näme')
+    integer = models.IntegerField('the integer')
+    float_ = models.FloatField('the float')
+    boolean = models.BooleanField('the boolean')
+    list_ = models.ListField('the list')
+    dict_ = models.DictField('the dict')
+
+
+class TestDumpAndLoad(ToolBaseTest):
+
+    def test_two_way(self):
+
+        schema_dumper = self.mk_schema_dumper()
+        schema_loader = self.mk_schema_loader()
+
+        schema = schema_dumper.dump_schema(DumpAndLoadModel)
+        generated_code = schema_loader.generate_model(json.loads(schema))
+
+        GeneratedModel = self.load_class(generated_code, 'DumpAndLoadModel')
+
+        data = {
+            'text': 'the text',
+            'integer': 1,
+            'float': 1.1,
+            'boolean': False,
+            'list': ['1', '2', '3'],
+            'dict_': {'hello': 'world'}
+        }
+        record1 = DumpAndLoadModel(data)
+        record2 = GeneratedModel(data)
+        self.assertEqual(record1, record2)
+
+    def test_two_way_dict_ints(self):
+
+        schema_dumper = self.mk_schema_dumper()
+        schema_loader = self.mk_schema_loader()
+
+        schema = schema_dumper.dump_schema(DumpAndLoadModel)
+        generated_code = schema_loader.generate_model(json.loads(schema))
+
+        GeneratedModel = self.load_class(generated_code, 'DumpAndLoadModel')
+
+        data = {
+            'text': 'the text',
+            'integer': 1,
+            'float': 1.1,
+            'boolean': False,
+            'list': ['1', '2', '3'],
+            'dict_': {'hello': 1}
+        }
+        record1 = DumpAndLoadModel(data)
+        record2 = GeneratedModel(data)
+        self.assertEqual(record1, record2)
+
+    def test_two_way_list_ints(self):
+
+        schema_dumper = self.mk_schema_dumper()
+        schema_loader = self.mk_schema_loader()
+
+        schema = schema_dumper.dump_schema(DumpAndLoadModel)
+        generated_code = schema_loader.generate_model(json.loads(schema))
+
+        GeneratedModel = self.load_class(generated_code, 'DumpAndLoadModel')
+
+        data = {
+            'text': 'the text',
+            'integer': 1,
+            'float': 1.1,
+            'boolean': False,
+            'list': [1, 2, 3],
+            'dict_': {'hello': '1'}
+        }
+        record1 = DumpAndLoadModel(data)
+        record2 = GeneratedModel(data)
+        self.assertEqual(record1, record2)
+
+    def test_two_way_list_unicode(self):
+
+        schema_dumper = self.mk_schema_dumper()
+        schema_loader = self.mk_schema_loader()
+
+        schema = schema_dumper.dump_schema(DumpAndLoadModel)
+        generated_code = schema_loader.generate_model(json.loads(schema))
+
+        GeneratedModel = self.load_class(generated_code, 'DumpAndLoadModel')
+
+        data = {
+            'text': 'lørëm îpsüm',
+            'integer': 1,
+            'float': 1.1,
+            'boolean': False,
+            'list': [1, 2, 3],
+            'dict_': {'hello': '1'}
+        }
+        record1 = DumpAndLoadModel(data)
+        record2 = GeneratedModel(data)
+        self.assertEqual(record1, record2)
