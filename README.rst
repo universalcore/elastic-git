@@ -87,8 +87,10 @@ A sample model file:
 
     class TestFallbackPerson(Model):
         age = IntegerField('The Age')
-        name = TextField('The name',
-                         fallbacks=[SingleFieldFallback('nick')])
+        name = TextField('The name', fallbacks=[
+            SingleFieldFallback('nick'),
+            SingleFieldFallback('obsolete'),
+        ])
         nick = TextField('The nickname', required=False)
         obsolete = TextField('Some obsolete field', required=False)
 
