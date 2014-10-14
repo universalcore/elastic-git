@@ -1,6 +1,5 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
-import elasticgit
 
 from git import Repo
 

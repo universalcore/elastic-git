@@ -1,5 +1,4 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
-import elasticgit
 
 from git import Repo, GitCommandError
 
