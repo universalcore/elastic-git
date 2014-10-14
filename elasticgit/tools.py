@@ -8,7 +8,7 @@ from datetime import datetime
 
 from elasticgit.models import (
     Model, IntegerField, TextField, ModelVersionField, FloatField,
-    BooleanField, ListField, DictField)
+    BooleanField, ListField, DictField, UUIDField)
 
 
 class ArgumentParserError(Exception):
@@ -120,6 +120,7 @@ class SchemaDumper(object):
         BooleanField: 'boolean',
         ListField: 'array',
         DictField: 'record',
+        UUIDField: 'string',
         ModelVersionField: {
             'type': 'record',
             'name': 'ModelVersionField',

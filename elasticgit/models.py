@@ -99,7 +99,7 @@ class RegexField(ConfigRegex):
     }
 
 
-class ModelVersionField(ConfigDict):
+class ModelVersionField(DictField):
     """
     A field holding the version information for a model
     """
@@ -114,9 +114,25 @@ class ModelVersionField(ConfigDict):
         }
     }
 
-    def __init__(self, *args, **kwargs):
-        super(ModelVersionField, self).__init__(*args, **kwargs)
-        self.default = elasticgit.version_info.copy()
+    def __init__(self, doc, required=False, default=None, static=False,
+                 fallbacks=()):
+        default = default or elasticgit.version_info.copy()
+        super(ModelVersionField, self).__init__(
+            doc, required=required, default=default, static=static,
+            fallbacks=fallbacks)
+
+
+class UUIDField(TextField):
+
+    def __init__(self, doc, required=False, default=None, static=False,
+                 fallbacks=()):
+        super(UUIDField, self).__init__(
+            doc, required=required, default=default, static=static,
+            fallbacks=fallbacks)
+
+    def validate(self, config):
+        config._config_data.setdefault(self.name, uuid.uuid4().hex)
+        return super(UUIDField, self).validate(config)
 
 
 class Model(Config):
@@ -131,17 +147,7 @@ class Model(Config):
         instance with.
     """
     _version = ModelVersionField('Model Version Identifier')
-    uuid = TextField('Unique Identifier')
-
-    def post_validate(self):
-        if not self.uuid:
-            self._config_data['uuid'] = uuid.uuid4().hex
-        self.validate()
-
-    def validate(self):
-        """
-        Subclasses can subclass this to perform more validation checks.
-        """
+    uuid = UUIDField('Unique Identifier')
 
     def __eq__(self, other):
         own_data = dict(self)

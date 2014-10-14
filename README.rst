@@ -8,13 +8,15 @@ Search as a query backend.
 
 .. image:: https://travis-ci.org/smn/elastic-git.svg?branch=develop
     :target: https://travis-ci.org/smn/elastic-git
+    :alt: Continuous Integration
 
 .. image:: https://coveralls.io/repos/smn/elastic-git/badge.png?branch=develop
-  :target: https://coveralls.io/r/smn/elastic-git?branch=develop
+    :target: https://coveralls.io/r/smn/elastic-git?branch=develop
+    :alt: Code Coverage
 
 .. image:: https://readthedocs.org/projects/elastic-git/badge/?version=latest
-  :target: https://readthedocs.org/projects/elastic-git/?badge=latest
-  :alt: Documentation Status
+    :target: https://elastic-git.readthedocs.org
+    :alt: Elastic-Git Documentation
 
 Usage
 -----
@@ -60,6 +62,15 @@ Data is now persisted in a git repository and is queryable via elastic search:
     ...
     Bar 20
     Baz 30
+
+Check the ``examples/`` directory for some more code samples.
+
+.. code-block:: bash
+
+    $ python -m examples.basic_usage
+    e6cb25f00870472fa5223d76dc361667 Baz 30
+    2bd470372243411c9abd8fdcb969dcf5 Bar 20
+
 
 
 Schema Management
