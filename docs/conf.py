@@ -34,6 +34,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
+    'sphinxarg.ext',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -272,4 +273,6 @@ intersphinx_mapping = {
         'https://pythonhosted.org/GitPython/0.3.1/', None),
     'confmodel': (
         'http://confmodel.readthedocs.org/en/latest/', None),
+    'python': (
+        'http://docs.python.org/3.2', None),
 }

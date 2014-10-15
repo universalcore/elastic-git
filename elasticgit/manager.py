@@ -102,6 +102,32 @@ class ESManager(object):
         """
         return self.es.indices.delete(index=self.index_name(name))
 
+    def index_status(self, name):
+        """
+        Get an index status
+
+        :param str name:
+        """
+        index_name = self.index_name(name)
+        status = self.es.indices.status(index=index_name)
+        index_status = status['indices'][index_name]
+        return index_status
+
+    def index_ready(self, name):
+        """
+        Check if an index is ready for use.
+
+        :param str name:
+        :returns: bool
+        """
+        status = self.index_status(name)
+        # NOTE: ES returns a lot of nested info here, hence the complicated
+        #       generator in generator
+        return any([
+            any([shard['state'] == 'STARTED' for shard in shard_slice])
+            for shard_slice in status['shards'].values()
+        ])
+
     def index(self, model, refresh_index=False):
         """
         Index a :py:class:`elasticgit.models.Model` instance in Elasticsearch
@@ -244,9 +270,11 @@ class StorageManager(object):
         path = self.git_path(model_class, '*.%s' % (self.serializer.suffix,))
         list_of_files = self.repo.git.ls_files(path)
         for file_path in filter(None, list_of_files.split('\n')):
-            yield self.load(file_path)
+            module_name, class_name, file_name = file_path.split('/', 3)
+            uuid, suffix = file_name.split('.', 2)
+            yield self.get(model_class, uuid)
 
-    def load(self, file_path):
+    def load(self, file_path, model_class=None):
         """
         Load a file from the repository and return it as a Model instance.
 
@@ -304,20 +332,36 @@ class StorageManager(object):
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
 
+        return self.store_data(
+            self.git_name(model), self.serializer.serialize(model), message)
+
+    def store_data(self, repo_path, data, message):
+        """
+        Store some data in a file
+
+        :param str file_path:
+            Where to store the file.
+        :param obj data:
+            The data to write in the file.
+        :param str message:
+            The commit message.
+        :returns:
+            The commit
+        """
+
         # ensure the directory exists
-        file_name = os.path.join(
-            self.repo.working_dir, self.git_name(model))
-        dir_name = os.path.dirname(file_name)
+        file_path = os.path.join(self.repo.working_dir, repo_path)
+        dir_name = os.path.dirname(file_path)
         if not (os.path.isdir(dir_name)):
             os.makedirs(dir_name)
 
-        with open(file_name, 'w') as fp:
+        with open(file_path, 'w') as fp:
             # write the object data
-            self.serializer.serialize(model, fp)
+            fp.write(data)
 
         # add to the git index
         index = self.repo.index
-        index.add([file_name])
+        index.add([file_path])
         return index.commit(message)
 
     def delete(self, model, message):
@@ -463,12 +507,46 @@ class Workspace(object):
         self.sm.store(model, message)
         self.im.index(model)
 
+    def reindex(self, model_class, refresh_index=True):
+        """
+        Reindex everything that Git knows about.
+
+        .. note::
+
+            This destroys the index for the current branch and then
+            recreates it and adds the new stuff to the index
+
+        :param elasticgit.models.Model model_class:
+        :param bool refresh_index:
+            Whether or not to refresh the index after everything has
+            been indexed. Defaults to ``True``
+
+        """
+        branch = self.repo.active_branch
+        if self.im.index_exists(branch.name):
+            self.im.destroy_index(branch.name)
+        self.im.create_index(branch.name)
+        iterator = self.sm.iterate(model_class)
+        for model in iterator:
+            yield self.im.index(model)
+
+        if refresh_index:
+            self.refresh_index()
+
     def refresh_index(self):
         """
         Manually refresh the Elasticsearch index. In production this is
         not necessary but it is useful when running tests.
         """
         self.im.refresh_indices(self.repo.active_branch.name)
+
+    def index_ready(self):
+        """
+        Check if the index is ready
+
+        :returns: bool
+        """
+        return self.im.index_ready(self.repo.active_branch.name)
 
     def S(self, model_class):
         """
