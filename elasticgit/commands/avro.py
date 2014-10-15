@@ -1,4 +1,5 @@
 from jinja2 import Environment, PackageLoader
+import imp
 import json
 import pprint
 
@@ -9,6 +10,27 @@ from elasticgit.models import (
     BooleanField, ListField, DictField, UUIDField)
 
 from elasticgit.commands.base import ToolCommand, ToolCommandError
+
+
+def deserialize(schema, module_name=None):
+    schema_loader = SchemaLoader()
+    model_code = schema_loader.generate_model(schema)
+    model_name = schema['name']
+
+    if module_name is not None:
+        mod = imp.new_module(module_name)
+        scope = mod.__dict__
+    else:
+        scope = {}
+
+    exec model_code in scope
+
+    return scope.pop(model_name)
+
+
+def serialize(model_class):
+    schema_dumper = SchemaDumper()
+    return schema_dumper.dump_schema(model_class)
 
 
 class SchemaLoader(ToolCommand):

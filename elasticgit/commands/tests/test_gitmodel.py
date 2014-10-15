@@ -11,8 +11,7 @@ from contextlib import contextmanager
 class TestMigrateGitModelRepo(ToolBaseTest):
 
     def setUp(self):
-        self.workspace = self.mk_workspace(
-            name='%s_remote' % (self.id(),), auto_destroy=self.destroy)
+        self.workspace = self.mk_workspace()
         self.workspace.setup('Test Kees', 'kees@example.org')
 
     def mk_gitmodel_category_data(self, workspace):
@@ -86,10 +85,10 @@ class TestMigrateGitModelRepo(ToolBaseTest):
                 'Field: %r, expected type %r got %r.' % (
                     key, value, schema_field['type']))
 
-    def test_migrate_category_data(self):
+    def test_introspect_category_schema(self):
         self.mk_gitmodel_category_data(self.workspace)
         migrator, stdouts = self.mk_gitmodel_migrator()
-        migrator.run(self.workspace.repo.working_dir)
+        migrator.run(self.workspace.repo.working_dir, 'migrated')
         json_schema = stdouts['gitcategorymodel'].getvalue()
         schema = json.loads(json_schema)
         self.assertEqual(schema['name'], 'GitCategoryModel')
@@ -100,16 +99,21 @@ class TestMigrateGitModelRepo(ToolBaseTest):
             ('language', 'string'),
             ('title', 'string'),
             ('slug', 'string'),
-            ('source', 'null'),
+            ('source', 'string'),  # inferred null but default type is string
             ('position', 'int'),
             ('featured_in_navbar', 'boolean'),
             ('id', 'string'),
         ])
 
-    def test_migrate_page_data(self):
+    def test_migrate_category_data(self):
+        self.mk_gitmodel_category_data(self.workspace)
+        migrator, stdouts = self.mk_gitmodel_migrator()
+        migrator.run(self.workspace.repo.working_dir, 'migrated')
+
+    def test_introspect_page_schema(self):
         self.mk_gitmodel_page_data(self.workspace)
         migrator, stdouts = self.mk_gitmodel_migrator()
-        migrator.run(self.workspace.repo.working_dir)
+        migrator.run(self.workspace.repo.working_dir, 'migrated')
         json_schema = stdouts['gitpagemodel'].getvalue()
         schema = json.loads(json_schema)
         self.assertEqual(schema['name'], 'GitPageModel')
@@ -127,7 +131,7 @@ class TestMigrateGitModelRepo(ToolBaseTest):
             ('linked_pages', 'array'),
             ('slug', 'string'),
             ('content', 'string'),
-            ('source', 'null'),
+            ('source', 'string'),  # inferred null but default type is string
             ('featured', 'boolean'),
             ('published', 'boolean'),
             ('position', 'int'),
