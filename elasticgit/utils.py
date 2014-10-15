@@ -10,6 +10,7 @@ def introspect_properties(model_class):
     >>> class TestModel(Model):
     ...     field = TextField('A text field')
     ...
+    >>> from elasticgit.utils import introspect_properties
     >>>
     >>> introspect_properties(TestModel) # doctest: +ELLIPSIS
     {'field': {'type': 'string'}, '_version': {'type': 'nested', ...}
