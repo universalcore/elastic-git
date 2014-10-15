@@ -109,3 +109,20 @@ class TestEG(ModelBaseTest):
         self.assertTrue(
             person.uuid == es_person.uuid == git_person.uuid)
         self.assertEqual(dict(person), dict(git_person))
+
+    def test_reindex(self):
+        workspace = self.workspace
+        repo = workspace.repo
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+        workspace.save(person, 'Saving a person')
+        workspace.im.destroy_index(repo.active_branch.name)
+        workspace.im.create_index(repo.active_branch.name)
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).count(), 0)
+        workspace.reindex(TestPerson)
+        self.assertEqual(
+            workspace.S(TestPerson).count(), 1)
