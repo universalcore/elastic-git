@@ -102,6 +102,32 @@ class ESManager(object):
         """
         return self.es.indices.delete(index=self.index_name(name))
 
+    def index_status(self, name):
+        """
+        Get an index status
+
+        :param str name:
+        """
+        index_name = self.index_name(name)
+        status = self.es.indices.status(index=index_name)
+        index_status = status['indices'][index_name]
+        return index_status
+
+    def index_ready(self, name):
+        """
+        Check if an index is ready for use.
+
+        :param str name:
+        :returns: bool
+        """
+        status = self.index_status(name)
+        # NOTE: ES returns a lot of nested info here, hence the complicated
+        #       generator in generator
+        return any([
+            any([shard['state'] == 'STARTED' for shard in shard_slice])
+            for shard_slice in status['shards'].values()
+        ])
+
     def index(self, model, refresh_index=False):
         """
         Index a :py:class:`elasticgit.models.Model` instance in Elasticsearch
@@ -513,6 +539,14 @@ class Workspace(object):
         not necessary but it is useful when running tests.
         """
         self.im.refresh_indices(self.repo.active_branch.name)
+
+    def index_ready(self):
+        """
+        Check if the index is ready
+
+        :returns: bool
+        """
+        return self.im.index_ready(self.repo.active_branch.name)
 
     def S(self, model_class):
         """
