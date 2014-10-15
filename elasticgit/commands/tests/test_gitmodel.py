@@ -1,18 +1,19 @@
+import os
+import json
+
+from StringIO import StringIO
 from uuid import uuid4
 from elasticgit.commands.gitmodel import MigrateGitModelRepo
 from elasticgit.tests.base import ToolBaseTest
+from contextlib import contextmanager
 
 
 class TestMigrateGitModelRepo(ToolBaseTest):
 
     def setUp(self):
-        self.local_workspace = self.mk_workspace(
-            name='%s_local' % (self.id(),), auto_destroy=self.destroy)
-        self.local_workspace.setup('Test Kees', 'kees@example.org')
-
-        self.remote_workspace = self.mk_workspace(
+        self.workspace = self.mk_workspace(
             name='%s_remote' % (self.id(),), auto_destroy=self.destroy)
-        self.remote_workspace.setup('Test Kees', 'kees@example.org')
+        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def mk_gitmodel_category_data(self, workspace):
         uuid = uuid4().hex
@@ -63,10 +64,72 @@ class TestMigrateGitModelRepo(ToolBaseTest):
             }""" % (uuid,), 'Test Page')
         return uuid
 
-    def test_setup_remotes(self):
-        self.mk_gitmodel_category_data(self.remote_workspace)
-        self.mk_gitmodel_page_data(self.remote_workspace)
+    def mk_gitmodel_migrator(self):
+        stdouts = {}
+
+        @contextmanager
+        def patched_get_stdout(dir_path):
+            dir_name = os.path.basename(dir_path)
+            yield stdouts.setdefault(dir_name, StringIO())
+
         migrator = MigrateGitModelRepo()
-        migrator.run(
-            self.remote_workspace.repo.working_dir,
-            self.local_workspace.repo.working_dir)
+        migrator.get_stdout = patched_get_stdout
+        return migrator, stdouts
+
+    def assertFields(self, schema, fields):
+        for key, value in fields:
+            [schema_field] = [field
+                              for field in schema['fields']
+                              if field['name'] == key]
+            self.assertEqual(
+                schema_field['type'], value,
+                'Field: %r, expected type %r got %r.' % (
+                    key, value, schema_field['type']))
+
+    def test_migrate_category_data(self):
+        self.mk_gitmodel_category_data(self.workspace)
+        migrator, stdouts = self.mk_gitmodel_migrator()
+        migrator.run(self.workspace.repo.working_dir)
+        json_schema = stdouts['gitcategorymodel'].getvalue()
+        schema = json.loads(json_schema)
+        self.assertEqual(schema['name'], 'GitCategoryModel')
+        self.assertEqual(schema['namespace'], 'gitcategorymodel')
+        self.assertEqual(schema['type'], 'record')
+        self.assertFields(schema, [
+            ('subtitle', 'string'),
+            ('language', 'string'),
+            ('title', 'string'),
+            ('slug', 'string'),
+            ('source', 'null'),
+            ('position', 'int'),
+            ('featured_in_navbar', 'boolean'),
+            ('id', 'string'),
+        ])
+
+    def test_migrate_page_data(self):
+        self.mk_gitmodel_page_data(self.workspace)
+        migrator, stdouts = self.mk_gitmodel_migrator()
+        migrator.run(self.workspace.repo.working_dir)
+        json_schema = stdouts['gitpagemodel'].getvalue()
+        schema = json.loads(json_schema)
+        self.assertEqual(schema['name'], 'GitPageModel')
+        self.assertEqual(schema['namespace'], 'gitpagemodel')
+        self.assertEqual(schema['type'], 'record')
+        self.assertFields(schema, [
+            ('subtitle', 'string'),
+            ('description', 'string'),
+            ('language', 'string'),
+            ('title', 'string'),
+            ('primary_category', 'string'),
+            ('created_at', 'string'),
+            ('featured_in_category', 'boolean'),
+            ('modified_at', 'string'),
+            ('linked_pages', 'array'),
+            ('slug', 'string'),
+            ('content', 'string'),
+            ('source', 'null'),
+            ('featured', 'boolean'),
+            ('published', 'boolean'),
+            ('position', 'int'),
+            ('id', 'string')
+        ])
