@@ -10,12 +10,17 @@ Welcome to Elastic Git's documentation!
 Elastic Git is a library for modelling data, storing it in git and querying
 it via elastic search.
 
-.. testcleanup::
+.. image:: https://travis-ci.org/smn/elastic-git.svg?branch=develop
+    :target: https://travis-ci.org/smn/elastic-git
+    :alt: Continuous Integration
 
-    from elasticgit import EG
+.. image:: https://coveralls.io/repos/smn/elastic-git/badge.png?branch=develop
+    :target: https://coveralls.io/r/smn/elastic-git?branch=develop
+    :alt: Code Coverage
 
-    workspace = EG.workspace('.test_repo')
-    workspace.destroy()
+.. image:: https://readthedocs.org/projects/elastic-git/badge/?version=latest
+    :target: https://elastic-git.readthedocs.org
+    :alt: Elastic-Git Documentation
 
 
 .. doctest::
@@ -64,6 +69,14 @@ it via elastic search.
    >>> sorted(dict(git_person1).keys())
    ['_version', 'age', 'name', 'uuid']
    >>>
+
+.. testcleanup::
+
+   from elasticgit import EG
+
+   workspace = EG.workspace('.test_repo')
+   workspace.destroy()
+
 
 .. toctree::
    :maxdepth: 2
