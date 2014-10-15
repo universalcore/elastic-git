@@ -8,7 +8,10 @@ module.
 
     $ python -m elasticgit.tools --help
 
-.. automodule:: elasticgit.tools
+.. argparse::
+   :module: elasticgit.tools
+   :func: get_parser
+   :prog: python -m elasticgit.tools
 
 
 Avro
