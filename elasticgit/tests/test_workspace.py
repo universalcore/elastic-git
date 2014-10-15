@@ -128,6 +128,7 @@ class TestEG(ModelBaseTest):
         workspace.refresh_index()
         self.assertEqual(
             workspace.S(TestPerson).count(), 0)
-        workspace.reindex(TestPerson)
+        [reindexed] = workspace.reindex(TestPerson)
+        self.assertEqual(reindexed.uuid, person.uuid)
         self.assertEqual(
             workspace.S(TestPerson).count(), 1)

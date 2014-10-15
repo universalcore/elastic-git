@@ -528,7 +528,7 @@ class Workspace(object):
         self.im.create_index(branch.name)
         iterator = self.sm.iterate(model_class)
         for model in iterator:
-            self.im.index(model)
+            yield self.im.index(model)
 
         if refresh_index:
             self.refresh_index()
