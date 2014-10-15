@@ -272,4 +272,6 @@ intersphinx_mapping = {
         'https://pythonhosted.org/GitPython/0.3.1/', None),
     'confmodel': (
         'http://confmodel.readthedocs.org/en/latest/', None),
+    'python': (
+        'http://docs.python.org/3.2', None),
 }

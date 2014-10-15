@@ -13,6 +13,19 @@ from elasticgit.commands.base import ToolCommand, ToolCommandError
 
 
 def deserialize(schema, module_name=None):
+    """
+    Deserialize an Avro schema and define it within a module (if specified)
+
+    :param dict schema:
+        The Avro schema
+    :param str module_name:
+        The name of the module to put this in. This module is dynamically
+        generated with :py:func:`imp.new_module` and only available
+        during code generation for setting the class' ``__module__``.
+    :returns:
+        :py:class:`elasticgit.models.Model`
+
+    """
     schema_loader = SchemaLoader()
     model_code = schema_loader.generate_model(schema)
     model_name = schema['name']
@@ -29,6 +42,12 @@ def deserialize(schema, module_name=None):
 
 
 def serialize(model_class):
+    """
+    Serialize a :py:class:`elasticgit.models.Model` to an Avro JSON schema
+
+    :param elasticgit.models.Model model_class:
+    :returns: str
+    """
     schema_dumper = SchemaDumper()
     return schema_dumper.dump_schema(model_class)
 
