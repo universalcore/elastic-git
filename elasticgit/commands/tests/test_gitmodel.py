@@ -68,8 +68,9 @@ class TestMigrateGitModelRepo(ToolBaseTest):
 
         @contextmanager
         def patched_get_stdout(dir_path):
-            dir_name = os.path.basename(dir_path)
-            yield stdouts.setdefault(dir_name, StringIO())
+            file_name = os.path.basename(dir_path)
+            model_name, _, _ = file_name.split('.', 3)
+            yield stdouts.setdefault(model_name, StringIO())
 
         migrator = MigrateGitModelRepo()
         migrator.get_stdout = patched_get_stdout
@@ -89,10 +90,10 @@ class TestMigrateGitModelRepo(ToolBaseTest):
         self.mk_gitmodel_category_data(self.workspace)
         migrator, stdouts = self.mk_gitmodel_migrator()
         migrator.run(self.workspace.repo.working_dir, 'migrated')
-        json_schema = stdouts['gitcategorymodel'].getvalue()
+        json_schema = stdouts['GitCategoryModel'].getvalue()
         schema = json.loads(json_schema)
         self.assertEqual(schema['name'], 'GitCategoryModel')
-        self.assertEqual(schema['namespace'], 'gitcategorymodel')
+        self.assertEqual(schema['namespace'], 'migrated')
         self.assertEqual(schema['type'], 'record')
         self.assertFields(schema, [
             ('subtitle', 'string'),
@@ -114,10 +115,10 @@ class TestMigrateGitModelRepo(ToolBaseTest):
         self.mk_gitmodel_page_data(self.workspace)
         migrator, stdouts = self.mk_gitmodel_migrator()
         migrator.run(self.workspace.repo.working_dir, 'migrated')
-        json_schema = stdouts['gitpagemodel'].getvalue()
+        json_schema = stdouts['GitPageModel'].getvalue()
         schema = json.loads(json_schema)
         self.assertEqual(schema['name'], 'GitPageModel')
-        self.assertEqual(schema['namespace'], 'gitpagemodel')
+        self.assertEqual(schema['namespace'], 'migrated')
         self.assertEqual(schema['type'], 'record')
         self.assertFields(schema, [
             ('subtitle', 'string'),

@@ -88,7 +88,7 @@ class MigrateGitModelRepo(ToolCommand):
             try:
                 schema, records = self.inspect_data_dir(directory)
                 yield directory, schema, records
-            except NotAGitModelException, e:
+            except NotAGitModelException:
                 warnings.warn(
                     'Directory %s does not look like a git model.' % (
                         directory,))
