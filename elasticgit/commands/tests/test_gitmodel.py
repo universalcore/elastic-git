@@ -4,6 +4,7 @@ import json
 from StringIO import StringIO
 from uuid import uuid4
 from elasticgit.commands.gitmodel import MigrateGitModelRepo
+from elasticgit.commands import avro
 from elasticgit.tests.base import ToolBaseTest
 from contextlib import contextmanager
 
@@ -107,9 +108,26 @@ class TestMigrateGitModelRepo(ToolBaseTest):
         ])
 
     def test_migrate_category_data(self):
-        self.mk_gitmodel_category_data(self.workspace)
+        category_uuid = self.mk_gitmodel_category_data(self.workspace)
         migrator, stdouts = self.mk_gitmodel_migrator()
-        migrator.run(self.workspace.repo.working_dir, 'migrated')
+        # using ``__module__`` as the module_name so the workspace
+        # is able to load the dynamically generatd classes out of module
+        # again
+        schema, records = migrator.run(
+            self.workspace.repo.working_dir, self.__module__)
+        model_class = avro.deserialize(schema, module_name=self.__module__)
+        [record] = records
+        self.assertEqual(record.uuid, category_uuid)
+        [reindexed] = self.workspace.reindex(model_class)
+        self.workspace.refresh_index()
+        [result] = self.workspace.S(model_class).everything()
+        self.assertEqual(model_class.__name__, 'GitCategoryModel')
+        self.assertTrue(
+            category_uuid == record.uuid == reindexed.uuid == result.uuid)
+        self.assertTrue(
+            dict(record) ==
+            dict(reindexed) ==
+            dict(result.get_object()))
 
     def test_introspect_page_schema(self):
         self.mk_gitmodel_page_data(self.workspace)
@@ -138,3 +156,25 @@ class TestMigrateGitModelRepo(ToolBaseTest):
             ('position', 'int'),
             ('id', 'string')
         ])
+
+    def test_migrate_page_data(self):
+        page_uuid = self.mk_gitmodel_page_data(self.workspace)
+        migrator, stdouts = self.mk_gitmodel_migrator()
+        # using ``__module__`` as the module_name so the workspace
+        # is able to load the dynamically generatd classes out of module
+        # again
+        schema, records = migrator.run(
+            self.workspace.repo.working_dir, self.__module__)
+        model_class = avro.deserialize(schema, module_name=self.__module__)
+        [record] = records
+        self.assertEqual(record.uuid, page_uuid)
+        [reindexed] = self.workspace.reindex(model_class)
+        self.workspace.refresh_index()
+        [result] = self.workspace.S(model_class).everything()
+        self.assertEqual(model_class.__name__, 'GitPageModel')
+        self.assertTrue(
+            page_uuid == record.uuid == reindexed.uuid == result.uuid)
+        self.assertTrue(
+            dict(record) ==
+            dict(reindexed) ==
+            dict(result.get_object()))

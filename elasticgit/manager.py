@@ -244,9 +244,11 @@ class StorageManager(object):
         path = self.git_path(model_class, '*.%s' % (self.serializer.suffix,))
         list_of_files = self.repo.git.ls_files(path)
         for file_path in filter(None, list_of_files.split('\n')):
-            yield self.load(file_path)
+            module_name, class_name, file_name = file_path.split('/', 3)
+            uuid, suffix = file_name.split('.', 2)
+            yield self.get(model_class, uuid)
 
-    def load(self, file_path):
+    def load(self, file_path, model_class=None):
         """
         Load a file from the repository and return it as a Model instance.
 
@@ -478,6 +480,15 @@ class Workspace(object):
         """
         self.sm.store(model, message)
         self.im.index(model)
+
+    def reindex(self, model_class):
+        branch = self.repo.active_branch
+        if self.im.index_exists(branch.name):
+            self.im.destroy_index(branch.name)
+        self.im.create_index(branch.name)
+        iterator = self.sm.iterate(model_class)
+        for model in iterator:
+            yield self.im.index(model)
 
     def refresh_index(self):
         """
