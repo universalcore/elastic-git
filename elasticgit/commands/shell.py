@@ -26,7 +26,26 @@ class EGShell(ToolCommand):
     Fire up a :py:class:`elasticgit.manager.Workspace` instance
     for debugging straight from the command line.
 
-    Uses iPython if available
+    Sets the following variables in the local scope:
+
+    - ``workspace``, a :py:class:`elasticgit.manager.Workspace` pointing
+      at the working directory provided.
+    - ``Q``, ``F`` and ``EG`` already imported
+    - all models loaded from the model class path provided.
+
+    Uses IPython if installed.
+
+    ::
+
+        python -m elasticgit.tools shell ./repo -m elasticgit.tests.base
+        Python 2.7.6 (default, Dec 22 2013, 09:30:03)
+        [GCC 4.2.1 Compatible Apple LLVM 5.0 (clang-500.2.79)] on darwin
+        Type "help", "copyright", "credits" or "license" for more information.
+        (InteractiveConsole)
+        >>> workspace.S(TestPerson).count()
+        0
+        >>>
+
     """
     command_name = 'shell'
     command_help_text = (
