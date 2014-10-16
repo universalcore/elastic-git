@@ -80,13 +80,12 @@ class ToolBaseTest(ModelBaseTest):
 
     def load_schema(self, data, mapping={}):
         loader = self.mk_schema_loader()
-        loader.run(
-            self.mk_tempfile(
-                json.dumps(data, indent=2)),
-            manual_mappings=[
+        tmp_file = self.mk_tempfile(json.dumps(data, indent=2))
+        with open(tmp_file, 'r') as fp:
+            loader.run([fp], manual_mappings=[
                 FieldMapType('%s=%s' % (key, fqcn(value)))
                 for key, value in mapping.items()])
-        return loader.stdout.getvalue()
+            return loader.stdout.getvalue()
 
     def load_field(self, field, name, mapping={}):
         return self.load_schema({

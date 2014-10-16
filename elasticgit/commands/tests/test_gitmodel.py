@@ -68,13 +68,13 @@ class TestMigrateGitModelRepo(ToolBaseTest):
         stdouts = {}
 
         @contextmanager
-        def patched_get_stdout(dir_path):
+        def patched_get_fileopener(dir_path, ignored_flags):
             file_name = os.path.basename(dir_path)
             model_name, _, _ = file_name.split('.', 3)
             yield stdouts.setdefault(model_name, StringIO())
 
         migrator = MigrateGitModelRepo()
-        migrator.get_stdout = patched_get_stdout
+        migrator.file_opener = patched_get_fileopener
         return migrator, stdouts
 
     def assertFields(self, schema, fields):
