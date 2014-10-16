@@ -69,8 +69,8 @@ class TestLoadSchemaTool(ToolBaseTest):
                 'Field %s is of type %r, was expecting %r' % (
                     field_name, type(fields[field_name]), field_type,))
 
-    def assertFieldCreation(self, field, field_type):
-        model_class = self.load_class_with_field(field)
+    def assertFieldCreation(self, field, field_type, mapping={}):
+        model_class = self.load_class_with_field(field, mapping=mapping)
         self.assertField(model_class, field['name'], field['default'],
                          field['doc'], field_type)
 
@@ -145,6 +145,16 @@ class TestLoadSchemaTool(ToolBaseTest):
             'doc': 'The Model Version',
             'default': elasticgit.version_info,
         }, models.ModelVersionField)
+
+    def test_mapping_hints(self):
+        self.assertFieldCreation({
+            'name': 'uuid',
+            'type': 'string',
+            'doc': 'The Name',
+            'default': 'Test Kees',
+        }, models.UUIDField, mapping={
+            'uuid': models.UUIDField
+        })
 
 
 class DumpAndLoadModel(models.Model):

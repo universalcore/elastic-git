@@ -1,4 +1,5 @@
 from jinja2 import Environment, PackageLoader
+from functools import partial
 import imp
 import json
 import pprint
@@ -9,7 +10,9 @@ from elasticgit.models import (
     Model, IntegerField, TextField, ModelVersionField, FloatField,
     BooleanField, ListField, DictField, UUIDField)
 
-from elasticgit.commands.base import ToolCommand, ToolCommandError
+from elasticgit.commands.base import (
+    ToolCommand, ToolCommandError, CommandArgument)
+from elasticgit.utils import load_class
 
 
 def deserialize(schema, module_name=None):
@@ -52,6 +55,29 @@ def serialize(model_class):
     return schema_dumper.dump_schema(model_class)
 
 
+class FieldMapType(object):
+    """
+    A custom type for providing mappings on the command line for the
+    :py:class:`.SchemaLoader` tool.
+
+    :param str mapping:
+        A mapping of a key to a field type
+
+    >>> from elasticgit.commands.avro import FieldMapType
+    >>> mt = FieldMapType('uuid=elasticgit.models.UUIDField')
+    >>> mt.key
+    'uuid'
+    >>> mt.field_class
+    <class 'elasticgit.models.UUIDField'>
+    >>>
+
+    """
+    def __init__(self, mapping):
+        key, _, class_name = mapping.partition('=')
+        self.key = key
+        self.field_class = load_class(class_name)
+
+
 class SchemaLoader(ToolCommand):
     """
     Load an Avro_ JSON schema and generate Elasticgit Model python code.
@@ -68,7 +94,16 @@ class SchemaLoader(ToolCommand):
     command_name = 'load-schema'
     command_help_text = 'Dump an Avro schema as an Elasticgit model.'
     command_arguments = (
-        ('schema_file', 'path to Avro schema file.'),
+        CommandArgument('schema_file', help='path to Avro schema file.'),
+        CommandArgument(
+            '-m', '--map-field',
+            help=(
+                'Manually map specific field names to Field classes. '
+                'Formatted as ``field=IntegerField``'
+            ),
+            metavar='key=FieldType',
+            dest='manual_mappings',
+            action='append', type=FieldMapType)
     )
 
     mapping = {
@@ -80,13 +115,29 @@ class SchemaLoader(ToolCommand):
         'record': DictField,
     }
 
-    def __init__(self):
-        self.env = Environment(loader=PackageLoader('elasticgit', 'templates'))
-        self.env.globals['field_class_for'] = self.field_class_for
-        self.env.globals['default_value'] = self.default_value
+    def run(self, schema_file, manual_mappings=[]):
+        """
+        Inspect an Avro schema file and write the generated Python code
+        to ``self.stdout``
 
-    def field_class_for(self, field):
+        :param str schema_file:
+            The path to the schema file to load.
+        :param list manual_mappings:
+            A list of :py:class:`.FieldMapType` types that allow
+            overriding of field mappings.
+        """
+        mapping = dict((m.key, m.field_class) for m in manual_mappings)
+        with open(schema_file, 'r') as fp:
+            schema = json.load(fp)
+        self.stdout.write(self.generate_model(schema, mapping=mapping))
+
+    def field_class_for(self, field, manual_mapping):
         field_type = field['type']
+        field_key = field['name']
+
+        if field_key in manual_mapping:
+            return manual_mapping[field_key].__name__
+
         if isinstance(field_type, dict):
             return self.field_class_for_complex_type(field)
         return self.mapping[field_type].__name__
@@ -101,27 +152,23 @@ class SchemaLoader(ToolCommand):
     def default_value(self, field):
         return pprint.pformat(field['default'], indent=8)
 
-    def run(self, schema_file):
-        """
-        Inspect an Avro schema file and write the generated Python code
-        to ``self.stdout``
-
-        :param str schema_file:
-            The path to the schema file to load.
-        """
-        with open(schema_file, 'r') as fp:
-            schema = json.load(fp)
-        self.stdout.write(self.generate_model(schema))
-
-    def generate_model(self, schema):
+    def generate_model(self, schema, mapping={}):
         """
         Generate Python code for the given Avro schema
 
         :param dict schema:
             The Avro schema
+        :param dict mapping:
+            An optional mapping of keys to field types that can be
+            used to override the default mapping.
         :returns: str
         """
-        template = self.env.get_template('model_generator.py.txt')
+        env = Environment(loader=PackageLoader('elasticgit', 'templates'))
+        env.globals['field_class_for'] = partial(
+            self.field_class_for, manual_mapping=mapping)
+        env.globals['default_value'] = self.default_value
+
+        template = env.get_template('model_generator.py.txt')
         return template.render(
             datetime=datetime.utcnow(),
             schema=schema)
@@ -142,7 +189,7 @@ class SchemaDumper(ToolCommand):
     command_name = 'dump-schema'
     command_help_text = 'Dump model information as an Avro schema.'
     command_arguments = (
-        ('class_path', 'python path to Class.'),
+        CommandArgument('class_path', help='python path to Class.'),
     )
 
     mapping = {

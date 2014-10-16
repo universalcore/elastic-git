@@ -7,7 +7,7 @@ from git import Repo
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
 from elasticgit.serializers import JSONSerializer
-from elasticgit.utils import introspect_properties
+from elasticgit.utils import introspect_properties, load_class
 
 
 class ModelMappingType(MappingType, Indexable):
@@ -287,8 +287,7 @@ class StorageManager(object):
         """
         module_name, class_name, file_name = file_path.split('/', 3)
         uuid, suffix = file_name.split('.', 2)
-        mod = __import__(module_name, fromlist=[class_name])
-        model_class = getattr(mod, class_name)
+        model_class = load_class('%s.%s' % (module_name, class_name))
         return self.get(model_class, uuid)
 
     def get(self, model_class, uuid):
