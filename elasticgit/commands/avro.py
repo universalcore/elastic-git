@@ -156,7 +156,7 @@ class SchemaLoader(ToolCommand):
             dest='field_mappings',
             action='append', type=FieldMapType),
         CommandArgument(
-            '-rm', '--rename-model',
+            '-r', '--rename-model',
             help=(
                 'Manually rename a model.'
                 'Formatted as ``OldModelName=NewShiny``'),

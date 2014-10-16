@@ -1,6 +1,8 @@
+import time
+import types
+
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
-import time
 
 from git import Repo
 
@@ -110,6 +112,20 @@ class TestEG(ModelBaseTest):
         self.assertTrue(
             person.uuid == es_person.uuid == git_person.uuid)
         self.assertEqual(dict(person), dict(git_person))
+
+    def test_reindex_iter(self):
+        workspace = self.workspace
+        repo = workspace.repo
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+        workspace.save(person, 'Saving a person')
+
+        iterator = workspace.reindex_iter(TestPerson)
+        self.assertTrue(iterator, types.GeneratorType)
+        [reindexed] = list(iterator)
+        self.assertEqual(person, reindexed)
 
     def test_reindex(self):
         workspace = self.workspace

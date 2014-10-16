@@ -508,14 +508,9 @@ class Workspace(object):
         self.sm.store(model, message)
         self.im.index(model)
 
-    def reindex(self, model_class, refresh_index=True):
+    def reindex_iter(self, model_class, refresh_index=True):
         """
-        Reindex everything that Git knows about.
-
-        .. note::
-
-            This destroys the index for the current branch and then
-            recreates it and adds the new stuff to the index
+        Reindex everything that Git knows about in an iterator
 
         :param elasticgit.models.Model model_class:
         :param bool refresh_index:
@@ -524,15 +519,22 @@ class Workspace(object):
 
         """
         branch = self.repo.active_branch
-        if self.im.index_exists(branch.name):
-            self.im.destroy_index(branch.name)
-        self.im.create_index(branch.name)
+        if not self.im.index_exists(branch.name):
+            self.im.create_index(branch.name)
         iterator = self.sm.iterate(model_class)
         for model in iterator:
             yield self.im.index(model)
 
         if refresh_index:
             self.refresh_index()
+
+    def reindex(self, model_class, refresh_index=True):
+        """
+        Same as :py:func:`reindex_iter` but returns a list instead of
+        a generator.
+        """
+        return list(
+            self.reindex_iter(model_class, refresh_index=refresh_index))
 
     def refresh_index(self):
         """
