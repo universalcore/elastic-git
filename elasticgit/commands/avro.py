@@ -122,6 +122,9 @@ class SchemaLoader(ToolCommand):
 
         :param str schema_file:
             The path to the schema file to load.
+        :param list manual_mappings:
+            A list of :py:class:`.FieldMapType` types that allow
+            overriding of field mappings.
         """
         mapping = dict((m.key, m.field_class) for m in manual_mappings)
         with open(schema_file, 'r') as fp:
