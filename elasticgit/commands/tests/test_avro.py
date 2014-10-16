@@ -69,10 +69,25 @@ class TestLoadSchemaTool(ToolBaseTest):
                 'Field %s is of type %r, was expecting %r' % (
                     field_name, type(fields[field_name]), field_type,))
 
-    def assertFieldCreation(self, field, field_type, mapping={}):
-        model_class = self.load_class_with_field(field, mapping=mapping)
+    def assertFieldCreation(self, field, field_type, field_mapping={}):
+        model_class = self.load_class_with_field(
+            field, field_mapping=field_mapping)
         self.assertField(model_class, field['name'], field['default'],
                          field['doc'], field_type)
+
+    def test_model_renames(self):
+        model_class = self.load_class_with_field(
+            {
+                'name': 'age',
+                'type': 'int',
+                'doc': 'The Age',
+                'default': 10,
+            },
+            model_name='OldModel',
+            model_renames={
+                'OldModel': 'NewModel',
+            })
+        self.assertEqual(model_class.__name__, 'NewModel')
 
     def test_integer_field(self):
         self.assertFieldCreation({
@@ -152,7 +167,7 @@ class TestLoadSchemaTool(ToolBaseTest):
             'type': 'string',
             'doc': 'The Name',
             'default': 'Test Kees',
-        }, models.UUIDField, mapping={
+        }, models.UUIDField, field_mapping={
             'uuid': models.UUIDField
         })
 

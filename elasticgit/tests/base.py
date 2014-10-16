@@ -10,7 +10,8 @@ from elasticgit.models import (
     IntegerField, TextField, Model, SingleFieldFallback)
 from elasticgit.manager import EG
 from elasticgit.utils import fqcn
-from elasticgit.commands.avro import SchemaDumper, SchemaLoader, FieldMapType
+from elasticgit.commands.avro import (
+    SchemaDumper, SchemaLoader, FieldMapType, RenameType)
 
 
 class TestPerson(Model):
@@ -78,29 +79,41 @@ class ToolBaseTest(ModelBaseTest):
         schema_loader.stdout = StringIO()
         return schema_loader
 
-    def load_schema(self, data, mapping={}):
+    def load_schema(self, data, field_mapping={}, model_renames={}):
         loader = self.mk_schema_loader()
         tmp_file = self.mk_tempfile(json.dumps(data, indent=2))
         with open(tmp_file, 'r') as fp:
-            loader.run([fp], manual_mappings=[
-                FieldMapType('%s=%s' % (key, fqcn(value)))
-                for key, value in mapping.items()])
+            loader.run(
+                [fp],
+                field_mappings=[
+                    FieldMapType('%s=%s' % (key, fqcn(value)))
+                    for key, value in field_mapping.items()
+                ],
+                model_renames=[
+                    RenameType('%s=%s' % (old, new))
+                    for old, new in model_renames.items()
+                ])
             return loader.stdout.getvalue()
 
-    def load_field(self, field, name, mapping={}):
+    def load_field(self, field, model_name,
+                   field_mapping={}, model_renames={}):
         return self.load_schema({
-            'name': name,
+            'name': model_name,
             'namespace': 'some.module',
             'type': 'record',
             'fields': [field]
-        }, mapping=mapping)
+        }, field_mapping=field_mapping, model_renames=model_renames)
 
     def load_class(self, code_string, name):
         scope = {}
         exec code_string in scope
         return scope.pop(name)
 
-    def load_class_with_field(self, field, mapping={}):
-        name = 'GeneratedModel'
-        model_code = self.load_field(field, name, mapping=mapping)
-        return self.load_class(model_code, name)
+    def load_class_with_field(self, field, field_mapping={}, model_renames={},
+                              model_name='GeneratedModel'):
+        model_code = self.load_field(field,
+                                     model_name,
+                                     field_mapping=field_mapping,
+                                     model_renames=model_renames)
+        model_name = model_renames.get(model_name, model_name)
+        return self.load_class(model_code, model_name)
