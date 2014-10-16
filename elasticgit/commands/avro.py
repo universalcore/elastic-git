@@ -152,10 +152,10 @@ class SchemaLoader(ToolCommand):
                 'Formatted as ``field=IntegerField``'
             ),
             metavar='key=FieldType',
-            dest='manual_mappings',
+            dest='field_mappings',
             action='append', type=FieldMapType),
         CommandArgument(
-            '-rc', '--rename-class',
+            '-rm', '--rename-model',
             help=(
                 'Manually rename a model.'
                 'Formatted as ``OldModelName=NewShiny``'),
