@@ -64,7 +64,7 @@ class EGShell(ToolCommand):
     def __init__(self, launcher=None):
         self.launcher = launcher
 
-    def run(self, workdir, models):
+    def run(self, workdir, models=None):
         namespace = {}
         if models is not None:
             models_module = load_class(models)
