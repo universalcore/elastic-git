@@ -42,7 +42,7 @@ class EGShell(ToolCommand):
         [GCC 4.2.1 Compatible Apple LLVM 5.0 (clang-500.2.79)] on darwin
         Type "help", "copyright", "credits" or "license" for more information.
         (InteractiveConsole)
-        >>> workspace.S(TestPerson).count()
+        >>> workspace.S(TestPerson).count()  # doctest: +SKIP
         0
         >>>
 
