@@ -9,7 +9,8 @@ from unittest import TestCase
 from elasticgit.models import (
     IntegerField, TextField, Model, SingleFieldFallback)
 from elasticgit.manager import EG
-from elasticgit.commands.avro import SchemaDumper, SchemaLoader
+from elasticgit.utils import fqcn
+from elasticgit.commands.avro import SchemaDumper, SchemaLoader, FieldMapType
 
 
 class TestPerson(Model):
@@ -77,27 +78,30 @@ class ToolBaseTest(ModelBaseTest):
         schema_loader.stdout = StringIO()
         return schema_loader
 
-    def load_schema(self, data):
+    def load_schema(self, data, mapping={}):
         loader = self.mk_schema_loader()
         loader.run(
             self.mk_tempfile(
-                json.dumps(data, indent=2)))
+                json.dumps(data, indent=2)),
+            manual_mappings=[
+                FieldMapType('%s=%s' % (key, fqcn(value)))
+                for key, value in mapping.items()])
         return loader.stdout.getvalue()
 
-    def load_field(self, field, name):
+    def load_field(self, field, name, mapping={}):
         return self.load_schema({
             'name': name,
             'namespace': 'some.module',
             'type': 'record',
             'fields': [field]
-        })
+        }, mapping=mapping)
 
     def load_class(self, code_string, name):
         scope = {}
         exec code_string in scope
         return scope.pop(name)
 
-    def load_class_with_field(self, field):
+    def load_class_with_field(self, field, mapping={}):
         name = 'GeneratedModel'
-        model_code = self.load_field(field, name)
+        model_code = self.load_field(field, name, mapping=mapping)
         return self.load_class(model_code, name)

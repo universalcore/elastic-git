@@ -8,8 +8,8 @@ def add_command(subparsers, dispatcher_class):  # pragma: no cover
     command = subparsers.add_parser(
         dispatcher_class.command_name,
         help=dispatcher_class.command_help_text)
-    for argument, argument_help in dispatcher_class.command_arguments:
-        command.add_argument(argument, help=argument_help)
+    for argument in dispatcher_class.command_arguments:
+        command.add_argument(*argument.args, **argument.kwargs)
     command.set_defaults(dispatcher=dispatcher_class)
 
 

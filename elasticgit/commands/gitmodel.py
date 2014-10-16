@@ -4,7 +4,7 @@ import json
 import warnings
 from contextlib import contextmanager
 
-from elasticgit.commands.base import ToolCommand
+from elasticgit.commands.base import ToolCommand, CommandArgument
 from elasticgit.commands import avro
 from elasticgit.manager import StorageManager
 
@@ -21,8 +21,12 @@ class MigrateGitModelRepo(ToolCommand):
     command_help_text = ('Migrate a GitModel based repository layout to an'
                          'Elastic-Git repository layout')
     command_arguments = (
-        ('working_dir', 'The directory of git model repository to migrate.'),
-        ('module_name', 'The module to put the migrated data in.'),
+        CommandArgument(
+            'working_dir',
+            help='The directory of git model repository to migrate.'),
+        CommandArgument(
+            'module_name',
+            help='The module to put the migrated data in.'),
     )
 
     default_type = 'string'
