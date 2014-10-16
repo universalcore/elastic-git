@@ -1,5 +1,6 @@
 from jinja2 import Environment, PackageLoader
 from functools import partial
+import argparse
 import imp
 import json
 import pprint
@@ -94,7 +95,11 @@ class SchemaLoader(ToolCommand):
     command_name = 'load-schema'
     command_help_text = 'Dump an Avro schema as an Elasticgit model.'
     command_arguments = (
-        CommandArgument('schema_file', help='path to Avro schema file.'),
+        CommandArgument(
+            'schema_files',
+            metavar='schema_file',
+            help='path to Avro schema file.',
+            nargs='+', type=argparse.FileType('r')),
         CommandArgument(
             '-m', '--map-field',
             help=(
@@ -115,21 +120,24 @@ class SchemaLoader(ToolCommand):
         'record': DictField,
     }
 
-    def run(self, schema_file, manual_mappings=[]):
+    def run(self, schema_files, manual_mappings=None):
         """
         Inspect an Avro schema file and write the generated Python code
         to ``self.stdout``
 
-        :param str schema_file:
-            The path to the schema file to load.
+        :param list schema_files:
+            The list of file pointers to load.
         :param list manual_mappings:
             A list of :py:class:`.FieldMapType` types that allow
             overriding of field mappings.
         """
-        mapping = dict((m.key, m.field_class) for m in manual_mappings)
-        with open(schema_file, 'r') as fp:
-            schema = json.load(fp)
-        self.stdout.write(self.generate_model(schema, mapping=mapping))
+        if manual_mappings:
+            mapping = dict((m.key, m.field_class) for m in manual_mappings)
+        else:
+            mapping = []
+
+        schemas = [json.load(schema_fp) for schema_fp in schema_files]
+        self.stdout.write(self.generate_models(schemas, mapping=mapping))
 
     def field_class_for(self, field, manual_mapping):
         field_type = field['type']
@@ -152,7 +160,28 @@ class SchemaLoader(ToolCommand):
     def default_value(self, field):
         return pprint.pformat(field['default'], indent=8)
 
-    def generate_model(self, schema, mapping={}):
+    def generate_models(self, schemas, mapping={}):
+        """
+        Generate Python code for the given Avro schemas
+
+        :param list schemas:
+            A list of Avro schema's
+        :param dict mapping:
+            An optional mapping of keys to field types that can be
+            used to override the default mapping.
+        :returns: str
+        """
+        first, remainder = schemas[0], schemas[1:]
+        first_chunk = self.generate_model(first, mapping)
+        remainder_chunk = u''.join([
+            self.generate_model(subsequent, mapping, include_header=False)
+            for subsequent in remainder])
+        return u'\n'.join([
+            first_chunk,
+            remainder_chunk,
+        ])
+
+    def generate_model(self, schema, mapping={}, include_header=True):
         """
         Generate Python code for the given Avro schema
 
@@ -161,6 +190,11 @@ class SchemaLoader(ToolCommand):
         :param dict mapping:
             An optional mapping of keys to field types that can be
             used to override the default mapping.
+        :parak bool include_header:
+            Whether or not to generate the header in the source code,
+            this is useful of you're generating a list of model schema
+            but don't want the header and import statements printed
+            every time.
         :returns: str
         """
         env = Environment(loader=PackageLoader('elasticgit', 'templates'))
@@ -171,7 +205,8 @@ class SchemaLoader(ToolCommand):
         template = env.get_template('model_generator.py.txt')
         return template.render(
             datetime=datetime.utcnow(),
-            schema=schema)
+            schema=schema,
+            include_header=include_header)
 
 
 class SchemaDumper(ToolCommand):
