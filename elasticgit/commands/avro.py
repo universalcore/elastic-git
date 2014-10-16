@@ -57,6 +57,20 @@ def serialize(model_class):
 
 class FieldMapType(object):
     """
+    A custom type for providing mappings on the command line for the
+    :py:class:`.SchemaLoader` tool.
+
+    :param str mapping:
+        A mapping of a key to a field type
+
+    >>> from elasticgit.commands.avro import FieldMapType
+    >>> mt = FieldMapType('uuid=elasticgit.models.UUIDField')
+    >>> mt.key
+    'uuid'
+    >>> mt.field_class
+    <class 'elasticgit.models.UUIDField'>
+    >>>
+
     """
     def __init__(self, mapping):
         key, _, class_name = mapping.partition('=')
