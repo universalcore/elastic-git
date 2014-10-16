@@ -2,6 +2,7 @@ import argparse
 
 from elasticgit.commands.avro import SchemaDumper, SchemaLoader
 from elasticgit.commands.gitmodel import MigrateGitModelRepo
+from elasticgit.commands.shell import EGShell
 
 
 def add_command(subparsers, dispatcher_class):  # pragma: no cover
@@ -21,6 +22,7 @@ def get_parser():  # pragma: no cover
     add_command(subparsers, SchemaDumper)
     add_command(subparsers, SchemaLoader)
     add_command(subparsers, MigrateGitModelRepo)
+    add_command(subparsers, EGShell)
 
     return parser
 
