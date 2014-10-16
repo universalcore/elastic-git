@@ -451,6 +451,8 @@ class Workspace(object):
         self.repo = repo
         self.sm = StorageManager(repo)
         self.im = ESManager(self.sm, es, index_prefix)
+        self.working_dir = self.repo.working_dir
+        self.index_prefix = index_prefix
 
     def setup(self, name, email):
         """
