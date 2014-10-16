@@ -1,4 +1,3 @@
-import time
 import types
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson
