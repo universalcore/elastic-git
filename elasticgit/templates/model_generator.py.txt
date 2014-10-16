@@ -7,6 +7,12 @@
 #
 # namespace: {{schema.namespace}}
 #
+# VERSION INFO:
+#
+#   package:          {{version_info.package}}
+#   package_version:  {{version_info.package_version}}
+#   language_version: {{version_info.language_version}}
+#
 
 from elasticgit import models
 {% endif %}

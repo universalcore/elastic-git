@@ -7,6 +7,7 @@ import pprint
 
 from datetime import datetime
 
+from elasticgit import version_info
 from elasticgit.models import (
     Model, IntegerField, TextField, ModelVersionField, FloatField,
     BooleanField, ListField, DictField, UUIDField)
@@ -278,7 +279,8 @@ class SchemaLoader(ToolCommand):
         return template.render(
             datetime=datetime.utcnow(),
             schema=schema,
-            include_header=include_header)
+            include_header=include_header,
+            version_info=version_info)
 
 
 class SchemaDumper(ToolCommand):
