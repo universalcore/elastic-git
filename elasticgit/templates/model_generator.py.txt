@@ -14,7 +14,7 @@
 from elasticgit import models
 {% endif %}
 
-class {{schema.name}}(models.Model):
+class {{model_class_for(schema.name)}}(models.Model):
     {% for field in schema.fields %}
     {{field.name}} = models.{{ field_class_for(field) }}(
         {%- if field.doc -%}u"""{{ field.doc }}"""{% else %}"""{{ field.name }}"""{% endif %}
