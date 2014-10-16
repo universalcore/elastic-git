@@ -115,7 +115,6 @@ class TestEG(ModelBaseTest):
 
     def test_reindex_iter(self):
         workspace = self.workspace
-        repo = workspace.repo
         person = TestPerson({
             'age': 1,
             'name': 'Name'
