@@ -121,7 +121,7 @@ class SchemaLoader(ToolCommand):
             The Avro schema
         :returns: str
         """
-        template = self.env.get_template('model_generator.jinja2')
+        template = self.env.get_template('model_generator.py.txt')
         return template.render(
             datetime=datetime.utcnow(),
             schema=schema)
