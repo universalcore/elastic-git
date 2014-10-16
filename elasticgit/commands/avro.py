@@ -16,18 +16,33 @@ from elasticgit.commands.base import (
 from elasticgit.utils import load_class
 
 
-def deserialize(schema, module_name=None):
+def deserialize(schema, mapping={}, module_name=None):
     """
     Deserialize an Avro schema and define it within a module (if specified)
 
     :param dict schema:
         The Avro schema
+    :param dict mapping:
+        Optional mapping to override the default mapping.
     :param str module_name:
         The name of the module to put this in. This module is dynamically
         generated with :py:func:`imp.new_module` and only available
         during code generation for setting the class' ``__module__``.
     :returns:
         :py:class:`elasticgit.models.Model`
+
+    >>> from elasticgit.commands.avro import deserialize
+    >>> schema = {
+    ... 'name': 'Foo',
+    ... 'type': 'record',
+    ... 'fields': [{
+    ...         'name': 'some_field',
+    ...         'type': 'int',
+    ...     }]
+    ... }
+    >>> deserialize(schema)
+    <class 'Foo'>
+    >>>
 
     """
     schema_loader = SchemaLoader()
@@ -51,6 +66,16 @@ def serialize(model_class):
 
     :param elasticgit.models.Model model_class:
     :returns: str
+
+    >>> from elasticgit.commands.avro import serialize
+    >>> from elasticgit.tests.base import TestPerson
+    >>> json_data = serialize(TestPerson)
+    >>> import json
+    >>> schema = json.loads(json_data)
+    >>> sorted(schema.keys())
+    [u'fields', u'name', u'namespace', u'type']
+    >>>
+
     """
     schema_dumper = SchemaDumper()
     return schema_dumper.dump_schema(model_class)
