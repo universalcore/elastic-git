@@ -5,10 +5,7 @@
 #   from an Avro schema. Do not manually edit this file unless you
 #   absolutely know what you are doing.
 #
-# timestamp: {{datetime.isoformat()}}
 # namespace: {{schema.namespace}}
-# type: {{schema.type}}
-# name: {{schema.name}}
 #
 
 from elasticgit import models
