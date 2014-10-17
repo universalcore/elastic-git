@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
-import pkg_resources
-
 from elasticgit.tests.base import ToolBaseTest, TestPerson
 from elasticgit.commands.shell import EGShell
 
