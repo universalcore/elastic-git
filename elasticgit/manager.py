@@ -530,6 +530,21 @@ class Workspace(object):
         self.sm.delete(model, message)
         self.im.unindex(model)
 
+    def fast_forward(self):
+        """
+        Fetch & Merge in an upstream's commits.
+
+        .. note::
+
+            This assumes a single remote, chances are that will turn
+            out to be incorrect soon.
+
+        """
+        remote = self.repo.remote()
+        [fetch_info] = remote.fetch()
+        git = self.repo.git
+        git.merge(fetch_info.commit)
+
     def reindex_iter(self, model_class, refresh_index=True):
         """
         Reindex everything that Git knows about in an iterator
