@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from elasticgit.tests.base import ToolBaseTest
+from elasticgit.tests.base import ToolBaseTest, TestPerson
 from elasticgit.commands.shell import EGShell
 
 
@@ -27,3 +27,19 @@ class TestDumpSchemaTool(ToolBaseTest):
         [scope] = shell.args
         for var in ['TestPerson', 'TestFallbackPerson']:
             self.assertTrue(var in scope)
+
+    def test_introspection(self):
+        workspace = self.mk_workspace()
+        workspace.save(TestPerson({'age': 1, 'name': 'Foo'}), 'Saving.')
+        shell = self.mk_shell(workspace.working_dir, introspect_models=True)
+        [scope] = shell.args
+        self.assertTrue('TestPerson' in scope)
+        self.assertTrue('TestFallbackPerson' in scope)
+
+    def test_introspection_off(self):
+        workspace = self.mk_workspace()
+        workspace.save(TestPerson({'age': 1, 'name': 'Foo'}), 'Saving.')
+        shell = self.mk_shell(workspace.working_dir, introspect_models=False)
+        [scope] = shell.args
+        self.assertFalse('TestPerson' in scope)
+        self.assertFalse('TestFallbackPerson' in scope)
