@@ -501,14 +501,29 @@ class Workspace(object):
 
     def save(self, model, message):
         """
-        Save a :py:class:`elasticgit.Model` instance in Git and add it
+        Save a :py:class:`elasticgit.models.Model` instance in Git and add it
         to the Elasticsearch index.
 
+        :param elasticgit.models.Model model:
+            The model instance
         :param str message:
             The commit message to write the model to Git with.
         """
         self.sm.store(model, message)
         self.im.index(model)
+
+    def delete(self, model, message):
+        """
+        Delete a :py:class`elasticgit.models.Model` instance from Git and
+        the Elasticsearch index.
+
+        :param elasticgit.models.Model model:
+            The model instance
+        :param str message:
+            The commit message to remove the model from Git with.
+        """
+        self.sm.delete(model, message)
+        self.im.unindex(model)
 
     def reindex_iter(self, model_class, refresh_index=True):
         """
