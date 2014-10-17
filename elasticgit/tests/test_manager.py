@@ -22,7 +22,11 @@ class TestManager(ModelBaseTest):
             'age': IntegerField('An age')
         })
         mapping_type = self.workspace.im.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_index(), 'test-repo-index-master')
+        self.assertEqual(
+            mapping_type.get_index(),
+            '%s-%s' % (
+                self.workspace.index_prefix,
+                self.workspace.repo.active_branch.name))
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
             mapping_type.get_mapping_type_name(),
