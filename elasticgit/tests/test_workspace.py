@@ -221,12 +221,7 @@ class TestEG(ModelBaseTest):
 
         self.assertEqual(
             workspace.S(TestPage).query(language__match='eng_UK').count(), 2)
-
-        # it'd be better if we had a way to do a match__exact
         self.assertEqual(
-            workspace.S(TestPage).query(
-                slug__match_phrase='sample-title').count(), 3)
-
+            workspace.S(TestPage).filter(language='swh_TZ').count(), 1)
         self.assertEqual(
-            workspace.S(TestPage).query(
-                slug__match_phrase='sample-title-3').count(), 1)
+            workspace.S(TestPage).filter(language='eng_UK').count(), 2)

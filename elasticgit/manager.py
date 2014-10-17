@@ -196,10 +196,13 @@ class ESManager(object):
             body=MappingType.get_mapping())
 
     def get_mapping(self, name, model_class):
+        index_name = self.index_name(name)
         MappingType = self.get_mapping_type(model_class)
-        return self.es.indices.get_mapping(
-            index=self.index_name(name),
+        data = self.es.indices.get_mapping(
+            index=index_name,
             doc_type=MappingType.get_mapping_type_name())
+        mappings = data[index_name]['mappings']
+        return mappings[MappingType.get_mapping_type_name()]
 
 
 class StorageException(Exception):
