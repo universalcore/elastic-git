@@ -1,7 +1,7 @@
 import os
 
 from elasticgit.models import IntegerField, ModelVersionField
-from elasticgit.tests.base import ModelBaseTest, TestPage
+from elasticgit.tests.base import ModelBaseTest, TestPage, TestPerson
 
 from elasticsearch.client import Elasticsearch
 
@@ -70,3 +70,23 @@ class TestManager(ModelBaseTest):
         self.assertEqual(
             self.workspace.get_mapping(TestPage),
             MappingType.get_mapping())
+
+    def test_setup_custom_mapping(self):
+        self.assertTrue(
+            self.workspace.setup_custom_mapping(TestPerson, {
+                'properties': {
+                    'name': {
+                        'type': 'string',
+                        'index': 'not_analyzed',
+                    },
+                    'age': {
+                        'type': 'integer'
+                    }
+                }
+            }))
+
+        post_mapping_person = TestPerson({'age': 10, 'name': 'eng_UK'})
+        self.workspace.save(post_mapping_person, 'Post-mapping save')
+        self.workspace.refresh_index()
+        self.assertEqual(
+            self.workspace.S(TestPerson).filter(name='eng_UK').count(), 1)
