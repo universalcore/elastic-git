@@ -72,7 +72,6 @@ class TestManager(ModelBaseTest):
             MappingType.get_mapping())
 
     def test_setup_custom_mapping(self):
-        MappingType = self.workspace.im.get_mapping_type(TestPerson)
         self.assertTrue(
             self.workspace.setup_custom_mapping(TestPerson, {
                 'properties': {
