@@ -21,6 +21,11 @@ class TextField(ConfigText):
         'type': 'string',
     }
 
+    def __init__(self, doc, mapping={}, *args, **kwargs):
+        super(TextField, self).__init__(doc, *args, **kwargs)
+
+        self.mapping.update(mapping)
+
 
 class IntegerField(ConfigInt):
     """

@@ -1,8 +1,9 @@
 import types
 import os
 
-from elasticgit.tests.base import ModelBaseTest, TestPerson
+from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
 from elasticgit.manager import ModelMappingType
+from elasticgit.utils import introspect_properties
 
 from git import Repo, GitCommandError
 
@@ -193,14 +194,16 @@ class TestEG(ModelBaseTest):
 
     def test_case_sensitivity(self):
         workspace = self.workspace
-        person = TestPerson({
-            'age': 1,
-            'name': 'Name'
+        page = TestPage({
+            'title': 'Sample title',
+            'language': 'eng_UK'
         })
 
-        workspace.save(person, 'Saving a person')
-        self.assertDataFile(workspace, person)
+        print introspect_properties(TestPage)
+
+        workspace.save(page, 'Saving a page')
+        self.assertDataFile(workspace, page)
 
         workspace.refresh_index()
         self.assertEqual(
-            workspace.S(TestPerson).filter(name='Name').count(), 1)
+            workspace.S(TestPage).filter(language='eng_UK').count(), 1)

@@ -19,6 +19,11 @@ class TestPerson(Model):
     name = TextField('The name')
 
 
+class TestPage(Model):
+    title = TextField('The title')
+    language = TextField('The language', mapping={'index': 'not_analyzed'})
+
+
 class TestFallbackPerson(Model):
     age = IntegerField('The Age')
     name = TextField('The name', fallbacks=[
