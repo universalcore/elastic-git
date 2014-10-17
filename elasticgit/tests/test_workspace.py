@@ -220,7 +220,7 @@ class TestEG(ModelBaseTest):
         workspace.refresh_index()
 
         self.assertEqual(
-            workspace.S(TestPage).query(language__match='eng_UK').count(), 2)
+            workspace.S(TestPage).filter(language='eng_UK').count(), 2)
 
         # it'd be better if we had a way to do a match__exact
         self.assertEqual(
