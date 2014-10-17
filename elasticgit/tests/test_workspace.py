@@ -220,8 +220,10 @@ class TestEG(ModelBaseTest):
         workspace.refresh_index()
 
         self.assertEqual(
-            workspace.S(TestPage).query(language__match='eng_UK').count(), 2)
-        self.assertEqual(
-            workspace.S(TestPage).filter(language='swh_TZ').count(), 1)
-        self.assertEqual(
             workspace.S(TestPage).filter(language='eng_UK').count(), 2)
+
+        self.assertEqual(
+            workspace.S(TestPage).filter(slug='sample-title').count(), 1)
+
+        self.assertEqual(
+            workspace.S(TestPage).filter(slug='sample-title-3').count(), 1)
