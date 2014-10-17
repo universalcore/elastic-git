@@ -1,3 +1,5 @@
+import os
+
 from confmodel.config import ConfigMetaClass
 
 from elasticgit.commands.base import ToolCommand, CommandArgument
@@ -58,22 +60,41 @@ class EGShell(ToolCommand):
         CommandArgument(
             '-m', '--models',
             dest='models',
-            help='The models file to load.')
+            help='The models file to load.'),
+        CommandArgument(
+            '-n', '--no-introspect-models',
+            dest='introspect_models',
+            help='Do not find & load models automatically.',
+            default=True, action='store_false')
     )
 
     def __init__(self, launcher=None):
         self.launcher = launcher
 
-    def run(self, workdir, models=None):
+    def load_models(self, models):
+        models_module = load_class(models)
+        models = dict([
+            (name, value)
+            for name, value in models_module.__dict__.items()
+            if isinstance(value, ConfigMetaClass)
+        ])
+        return models
+
+    def run(self, workdir, models=None, introspect_models=None):
         namespace = {}
         if models is not None:
-            models_module = load_class(models)
-            models = dict([
-                (name, value)
-                for name, value in models_module.__dict__.items()
-                if isinstance(value, ConfigMetaClass)
-            ])
-            namespace.update(models)
+            namespace.update(self.load_models(models))
+
+        if introspect_models:
+            possible_models = [m for m in os.listdir(workdir)
+                               if os.path.isdir(os.path.join(workdir, m))
+                               and not m.startswith('.')]
+            for models in possible_models:
+                try:
+                    found_models = self.load_models(models)
+                    namespace.update(found_models)
+                except ValueError:
+                    print '%s does not look like a models module.' % (models,)
 
         namespace.update({
             'workspace': EG.workspace(workdir),
