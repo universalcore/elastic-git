@@ -533,6 +533,12 @@ class Workspace(object):
     def fast_forward(self):
         """
         Fetch & Merge in an upstream's commits.
+
+        .. note::
+
+            This assumes a single remote, chances are that will turn
+            out to be incorrect soon.
+
         """
         remote = self.repo.remote()
         [fetch_info] = remote.fetch()

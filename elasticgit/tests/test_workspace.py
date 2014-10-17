@@ -201,7 +201,7 @@ class TestEG(ModelBaseTest):
         self.upstream_workspace.save(person, 'Saving upstream')
 
         repo = self.workspace.repo
-        remote = repo.create_remote(
+        repo.create_remote(
             'origin', self.upstream_workspace.working_dir)
 
         self.assertEqual(
