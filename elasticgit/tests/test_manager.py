@@ -42,7 +42,7 @@ class TestManager(ModelBaseTest):
             'properties': {
                 'age': {'type': 'integer'},
                 'uuid': {'type': 'string'},
-                '_version': ModelVersionField.mapping,
+                '_version': ModelVersionField.default_mapping,
             }
         })
         model_instance = model_class({'age': 1})
