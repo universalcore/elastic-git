@@ -60,7 +60,12 @@ class EGShell(ToolCommand):
         CommandArgument(
             '-m', '--models',
             dest='models',
-            help='The models file to load.')
+            help='The models file to load.'),
+        CommandArgument(
+            '-n', '--no-introspect-models',
+            dest='introspect_models',
+            help='Do not find & load models automatically.',
+            default=True, action='store_false')
     )
 
     def __init__(self, launcher=None):
@@ -75,11 +80,12 @@ class EGShell(ToolCommand):
         ])
         return models
 
-    def run(self, workdir, models=None):
+    def run(self, workdir, models=None, introspect_models=None):
         namespace = {}
         if models is not None:
             namespace.update(self.load_models(models))
-        else:
+
+        if introspect_models:
             possible_models = [m for m in os.listdir(workdir)
                                if os.path.isdir(os.path.join(workdir, m))
                                and not m.startswith('.')]
@@ -87,9 +93,7 @@ class EGShell(ToolCommand):
                 try:
                     found_models = self.load_models(models)
                     namespace.update(found_models)
-                    for key in found_models:
-                        print 'Automagic model: %s' % (key,)
-                except ValueError, e:
+                except ValueError:
                     print '%s does not look like a models module.' % (models,)
 
         namespace.update({
