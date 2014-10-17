@@ -1,3 +1,5 @@
+import os
+
 from confmodel.config import ConfigMetaClass
 
 from elasticgit.commands.base import ToolCommand, CommandArgument
@@ -64,16 +66,31 @@ class EGShell(ToolCommand):
     def __init__(self, launcher=None):
         self.launcher = launcher
 
+    def load_models(self, models):
+        models_module = load_class(models)
+        models = dict([
+            (name, value)
+            for name, value in models_module.__dict__.items()
+            if isinstance(value, ConfigMetaClass)
+        ])
+        return models
+
     def run(self, workdir, models=None):
         namespace = {}
         if models is not None:
-            models_module = load_class(models)
-            models = dict([
-                (name, value)
-                for name, value in models_module.__dict__.items()
-                if isinstance(value, ConfigMetaClass)
-            ])
-            namespace.update(models)
+            namespace.update(self.load_models(models))
+        else:
+            possible_models = [m for m in os.listdir(workdir)
+                               if os.path.isdir(os.path.join(workdir, m))
+                               and not m.startswith('.')]
+            for models in possible_models:
+                try:
+                    found_models = self.load_models(models)
+                    namespace.update(found_models)
+                    for key in found_models:
+                        print 'Automagic model: %s' % (key,)
+                except ValueError, e:
+                    print '%s does not look like a models module.' % (models,)
 
         namespace.update({
             'workspace': EG.workspace(workdir),
