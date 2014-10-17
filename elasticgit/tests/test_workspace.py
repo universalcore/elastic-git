@@ -220,9 +220,10 @@ class TestEG(ModelBaseTest):
             workspace.S(TestPage).query(language__match='eng_UK').count(), 2)
 
         self.assertEqual(
-            workspace.S(TestPage).query(slug__match='sample-title').count(), 3)
+            workspace.S(TestPage).query(
+                slug__match_phrase='sample-title').count(), 3)
 
         # this currently matches all 3 pages
         self.assertEqual(
-            workspace.S(TestPage).query(slug__match='sample-title-3').count(),
-            1)
+            workspace.S(TestPage).query(
+                slug__match_phrase='sample-title-3').count(), 1)
