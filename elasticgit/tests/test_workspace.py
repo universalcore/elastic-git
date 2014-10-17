@@ -190,3 +190,23 @@ class TestEG(ModelBaseTest):
         self.assertEqual(reindexed.uuid, person.uuid)
         self.assertEqual(
             workspace.S(TestPerson).count(), 1)
+
+    def test_fast_forward(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+        self.upstream_workspace = self.mk_workspace(
+            name='%s-upstream' % (self.id().lower()))
+        self.upstream_workspace.save(person, 'Saving upstream')
+
+        repo = self.workspace.repo
+        remote = repo.create_remote(
+            'origin', self.upstream_workspace.working_dir)
+
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+        self.workspace.fast_forward()
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
