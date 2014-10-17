@@ -333,6 +333,9 @@ class StorageManager(object):
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
 
+        if model.is_read_only():
+            raise StorageException('Trying to save a read only model.')
+
         return self.store_data(
             self.git_name(model), self.serializer.serialize(model), message)
 
