@@ -197,10 +197,23 @@ class ESManager(object):
         :returns: dict
         """
         MappingType = self.get_mapping_type(model_class)
+        return self.setup_custom_mapping(
+            name, model_class, MappingType.get_mapping())
+
+    def setup_custom_mapping(self, name, model_class, mapping):
+        """
+        Specify a mapping for a model class in a specific index
+
+        :param str name:
+        :param elasticgit.models.Model model_class:
+        :param dict mapping: The Elasticsearch mapping definition
+        :returns: dict
+        """
+        MappingType = self.get_mapping_type(model_class)
         return self.es.indices.put_mapping(
             index=self.index_name(name),
             doc_type=MappingType.get_mapping_type_name(),
-            body=MappingType.get_mapping())
+            body=mapping)
 
     def get_mapping(self, name, model_class):
         """
@@ -626,6 +639,18 @@ class Workspace(object):
         :returns: dict, the decoded dictionary from Elasticsearch
         """
         return self.im.setup_mapping(self.repo.active_branch.name, model_class)
+
+    def setup_custom_mapping(self, model_class, mapping):
+        """
+        Add a custom mapping for a model class instead of accepting
+        what the model_class defines.
+
+        :param elasticgit.models.Model model_class:
+        :param dict: the Elastisearch mapping definition
+        :returns: dict, the decoded dictionary from Elasticsearch
+        """
+        return self.im.setup_custom_mapping(
+            self.repo.active_branch.name, model_class, mapping)
 
     def get_mapping(self, model_class):
         """
