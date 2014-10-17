@@ -44,9 +44,10 @@ class ModelBaseTest(TestCase):
     def mk_workspace(self, working_dir='.test_repos/',
                      name=None,
                      url='https://localhost',
-                     index_prefix='test-repo-index',
+                     index_prefix=None,
                      auto_destroy=None):
         name = name or self.id()
+        index_prefix = index_prefix or name.lower().replace('.', '-')
         auto_destroy = auto_destroy or self.destroy
         workspace = EG.workspace(os.path.join(working_dir, name), es={
             'urls': [url],
