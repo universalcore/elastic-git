@@ -190,3 +190,17 @@ class TestEG(ModelBaseTest):
         self.assertEqual(reindexed.uuid, person.uuid)
         self.assertEqual(
             workspace.S(TestPerson).count(), 1)
+
+    def test_case_sensitivity(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        self.assertDataFile(workspace, person)
+
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).filter(name='Name').count(), 1)
