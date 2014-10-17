@@ -378,7 +378,9 @@ class StorageManager(object):
         """
         index = self.repo.index
         index.remove([self.git_name(model)])
-        return index.commit(message)
+        index.commit(message)
+        return os.remove(
+            os.path.join(self.workdir, self.git_name(model)))
 
     def storage_exists(self):
         """

@@ -1,4 +1,5 @@
 import types
+import os
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
@@ -68,6 +69,24 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
 
+    def is_file(self, workspace, model, suffix):
+        return os.path.isfile(
+            os.path.join(
+                workspace.working_dir,
+                model.__module__,
+                model.__class__.__name__,
+                '%s.%s' % (model.uuid, suffix)))
+
+    def assertDataFile(self, workspace, model, suffix='json'):
+        self.assertTrue(
+            self.is_file(workspace, model, suffix),
+            '%s has no data file.' % (model,))
+
+    def assertNotDataFile(self, workspace, model, suffix='json'):
+        self.assertFalse(
+            self.is_file(workspace, model, suffix),
+            '%s has a data file.' % (model,))
+
     def test_deleting(self):
         workspace = self.workspace
         person = TestPerson({
@@ -75,7 +94,11 @@ class TestEG(ModelBaseTest):
             'name': 'Name'
         })
 
+        dir_name = os.path.join(workspace.working_dir,
+                                TestPerson.__module__)
         workspace.save(person, 'Saving a person')
+        self.assertDataFile(workspace, person)
+
         workspace.refresh_index()
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
@@ -83,6 +106,8 @@ class TestEG(ModelBaseTest):
         self.assertEqual(git_person, person)
 
         workspace.delete(person, 'Deleting a person')
+        self.assertNotDataFile(workspace, person)
+
         workspace.refresh_index()
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 0)
