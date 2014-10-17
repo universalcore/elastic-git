@@ -7,7 +7,7 @@ from git import Repo
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
 from elasticgit.serializers import JSONSerializer
-from elasticgit.utils import introspect_properties
+from elasticgit.utils import introspect_properties, load_class
 
 
 class ModelMappingType(MappingType, Indexable):
@@ -222,6 +222,7 @@ class StorageManager(object):
 
         >>> from git import Repo
         >>> from elasticgit.tests.base import TestPerson
+        >>> from elasticgit.manager import StorageManager
         >>> sm = StorageManager(Repo('.'))
         >>> sm.git_path(TestPerson)
         'elasticgit.tests.base/TestPerson'
@@ -246,6 +247,7 @@ class StorageManager(object):
 
         >>> from git import Repo
         >>> from elasticgit.tests.base import TestPerson
+        >>> from elasticgit.manager import StorageManager
         >>> person = TestPerson({'age': 1, 'name': 'Foo', 'uuid': 'the-uuid'})
         >>> sm = StorageManager(Repo('.'))
         >>> sm.git_name(person)
@@ -285,8 +287,7 @@ class StorageManager(object):
         """
         module_name, class_name, file_name = file_path.split('/', 3)
         uuid, suffix = file_name.split('.', 2)
-        mod = __import__(module_name, fromlist=[class_name])
-        model_class = getattr(mod, class_name)
+        model_class = load_class('%s.%s' % (module_name, class_name))
         return self.get(model_class, uuid)
 
     def get(self, model_class, uuid):
@@ -331,6 +332,9 @@ class StorageManager(object):
         """
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
+
+        if model.is_read_only():
+            raise StorageException('Trying to save a read only model.')
 
         return self.store_data(
             self.git_name(model), self.serializer.serialize(model), message)
@@ -377,7 +381,9 @@ class StorageManager(object):
         """
         index = self.repo.index
         index.remove([self.git_name(model)])
-        return index.commit(message)
+        index.commit(message)
+        return os.remove(
+            os.path.join(self.workdir, self.git_name(model)))
 
     def storage_exists(self):
         """
@@ -450,6 +456,8 @@ class Workspace(object):
         self.repo = repo
         self.sm = StorageManager(repo)
         self.im = ESManager(self.sm, es, index_prefix)
+        self.working_dir = self.repo.working_dir
+        self.index_prefix = index_prefix
 
     def setup(self, name, email):
         """
@@ -498,23 +506,48 @@ class Workspace(object):
 
     def save(self, model, message):
         """
-        Save a :py:class:`elasticgit.Model` instance in Git and add it
+        Save a :py:class:`elasticgit.models.Model` instance in Git and add it
         to the Elasticsearch index.
 
+        :param elasticgit.models.Model model:
+            The model instance
         :param str message:
             The commit message to write the model to Git with.
         """
         self.sm.store(model, message)
         self.im.index(model)
 
-    def reindex(self, model_class, refresh_index=True):
+    def delete(self, model, message):
         """
-        Reindex everything that Git knows about.
+        Delete a :py:class`elasticgit.models.Model` instance from Git and
+        the Elasticsearch index.
+
+        :param elasticgit.models.Model model:
+            The model instance
+        :param str message:
+            The commit message to remove the model from Git with.
+        """
+        self.sm.delete(model, message)
+        self.im.unindex(model)
+
+    def fast_forward(self):
+        """
+        Fetch & Merge in an upstream's commits.
 
         .. note::
 
-            This destroys the index for the current branch and then
-            recreates it and adds the new stuff to the index
+            This assumes a single remote, chances are that will turn
+            out to be incorrect soon.
+
+        """
+        remote = self.repo.remote()
+        [fetch_info] = remote.fetch()
+        git = self.repo.git
+        git.merge(fetch_info.commit)
+
+    def reindex_iter(self, model_class, refresh_index=True):
+        """
+        Reindex everything that Git knows about in an iterator
 
         :param elasticgit.models.Model model_class:
         :param bool refresh_index:
@@ -523,15 +556,22 @@ class Workspace(object):
 
         """
         branch = self.repo.active_branch
-        if self.im.index_exists(branch.name):
-            self.im.destroy_index(branch.name)
-        self.im.create_index(branch.name)
+        if not self.im.index_exists(branch.name):
+            self.im.create_index(branch.name)
         iterator = self.sm.iterate(model_class)
         for model in iterator:
             yield self.im.index(model)
 
         if refresh_index:
             self.refresh_index()
+
+    def reindex(self, model_class, refresh_index=True):
+        """
+        Same as :py:func:`reindex_iter` but returns a list instead of
+        a generator.
+        """
+        return list(
+            self.reindex_iter(model_class, refresh_index=refresh_index))
 
     def refresh_index(self):
         """

@@ -1,8 +1,10 @@
+import types
+import os
+
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
-import time
 
-from git import Repo
+from git import Repo, GitCommandError
 
 
 class TestWorkspace(ModelBaseTest):
@@ -67,6 +69,49 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
 
+    def is_file(self, workspace, model, suffix):
+        return os.path.isfile(
+            os.path.join(
+                workspace.working_dir,
+                model.__module__,
+                model.__class__.__name__,
+                '%s.%s' % (model.uuid, suffix)))
+
+    def assertDataFile(self, workspace, model, suffix='json'):
+        self.assertTrue(
+            self.is_file(workspace, model, suffix),
+            '%s has no data file.' % (model,))
+
+    def assertNotDataFile(self, workspace, model, suffix='json'):
+        self.assertFalse(
+            self.is_file(workspace, model, suffix),
+            '%s has a data file.' % (model,))
+
+    def test_deleting(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        self.assertDataFile(workspace, person)
+
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).query(name__match='Name').count(), 1)
+        git_person = workspace.sm.get(TestPerson, person.uuid)
+        self.assertEqual(git_person, person)
+
+        workspace.delete(person, 'Deleting a person')
+        self.assertNotDataFile(workspace, person)
+
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).query(name__match='Name').count(), 0)
+        self.assertRaises(
+            GitCommandError, workspace.sm.get, TestPerson, person.uuid)
+
     def test_get_object(self):
         workspace = self.workspace
         person = TestPerson({
@@ -111,6 +156,19 @@ class TestEG(ModelBaseTest):
             person.uuid == es_person.uuid == git_person.uuid)
         self.assertEqual(dict(person), dict(git_person))
 
+    def test_reindex_iter(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+        workspace.save(person, 'Saving a person')
+
+        iterator = workspace.reindex_iter(TestPerson)
+        self.assertTrue(iterator, types.GeneratorType)
+        [reindexed] = list(iterator)
+        self.assertEqual(person, reindexed)
+
     def test_reindex(self):
         workspace = self.workspace
         repo = workspace.repo
@@ -132,3 +190,23 @@ class TestEG(ModelBaseTest):
         self.assertEqual(reindexed.uuid, person.uuid)
         self.assertEqual(
             workspace.S(TestPerson).count(), 1)
+
+    def test_fast_forward(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+        self.upstream_workspace = self.mk_workspace(
+            name='%s-upstream' % (self.id().lower()))
+        self.upstream_workspace.save(person, 'Saving upstream')
+
+        repo = self.workspace.repo
+        repo.create_remote(
+            'origin', self.upstream_workspace.working_dir)
+
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+        self.workspace.fast_forward()
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)

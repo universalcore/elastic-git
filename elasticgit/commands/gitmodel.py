@@ -4,7 +4,7 @@ import json
 import warnings
 from contextlib import contextmanager
 
-from elasticgit.commands.base import ToolCommand
+from elasticgit.commands.base import ToolCommand, CommandArgument
 from elasticgit.commands import avro
 from elasticgit.manager import StorageManager
 
@@ -21,11 +21,16 @@ class MigrateGitModelRepo(ToolCommand):
     command_help_text = ('Migrate a GitModel based repository layout to an'
                          'Elastic-Git repository layout')
     command_arguments = (
-        ('working_dir', 'The directory of git model repository to migrate.'),
-        ('module_name', 'The module to put the migrated data in.'),
+        CommandArgument(
+            'working_dir',
+            help='The directory of git model repository to migrate.'),
+        CommandArgument(
+            'module_name',
+            help='The module to put the migrated data in.'),
     )
 
     default_type = 'string'
+    file_opener = open
 
     def run(self, working_dir, module_name):
         repo = Repo(working_dir)
@@ -50,7 +55,7 @@ class MigrateGitModelRepo(ToolCommand):
             # Save the schema in the new module's dir
             file_path = os.path.join(target_dir,
                                      '%s.avro.json' % (schema['name'],))
-            with self.get_stdout(file_path) as stdout:
+            with self.file_opener(file_path, 'w') as stdout:
                 json.dump(schema, fp=stdout, indent=2)
 
         return schema, records
@@ -65,12 +70,6 @@ class MigrateGitModelRepo(ToolCommand):
         replacement.setdefault('aliases', []).append(alias)
         schema['fields'].append(replacement)
         return schema
-
-    @contextmanager
-    def get_stdout(self, file_path):
-        fp = open(file_path, 'w')
-        yield fp
-        fp.close()
 
     def list_dirs(self, path):
         return [dir_path

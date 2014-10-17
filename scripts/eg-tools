@@ -1,0 +1,6 @@
+#!python
+
+from elasticgit import tools
+
+if __name__ == '__main__':
+    tools.run()
