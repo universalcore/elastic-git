@@ -15,14 +15,13 @@ class TextField(ConfigText):
     """
     A text field
     """
-
-    #: Mapping for Elasticsearch
-    mapping = {
-        'type': 'string',
-    }
-
     def __init__(self, doc, mapping={}, *args, **kwargs):
         super(TextField, self).__init__(doc, *args, **kwargs)
+
+        #: Mapping for Elasticsearch
+        self.mapping = {
+            'type': 'string',
+        }
 
         self.mapping.update(mapping)
 
