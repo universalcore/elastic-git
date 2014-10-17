@@ -19,6 +19,12 @@ class TestPerson(Model):
     name = TextField('The name')
 
 
+class TestPage(Model):
+    title = TextField('The title')
+    slug = TextField('The slug', mapping={'index': 'not_analyzed'})
+    language = TextField('The language', mapping={'index': 'not_analyzed'})
+
+
 class TestFallbackPerson(Model):
     age = IntegerField('The Age')
     name = TextField('The name', fallbacks=[
@@ -36,12 +42,19 @@ class ModelBaseTest(TestCase):
     def mk_model(self, fields):
         return type('TempModel', (Model,), fields)
 
+    def mk_index_prefix(self):
+        long_name = self.id().split('.')
+        class_name, test_name = long_name[-2], long_name[-1]
+        index_prefix = '%s-%s' % (class_name, test_name)
+        return index_prefix.lower()
+
     def mk_workspace(self, working_dir='.test_repos/',
                      name=None,
-                     url='https://localhost',
-                     index_prefix='test-repo-index',
+                     url='http://localhost',
+                     index_prefix=None,
                      auto_destroy=None):
         name = name or self.id()
+        index_prefix = index_prefix or self.mk_index_prefix()
         auto_destroy = auto_destroy or self.destroy
         workspace = EG.workspace(os.path.join(working_dir, name), es={
             'urls': [url],

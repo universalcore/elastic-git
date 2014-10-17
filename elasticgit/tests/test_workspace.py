@@ -1,7 +1,7 @@
 import types
 import os
 
-from elasticgit.tests.base import ModelBaseTest, TestPerson
+from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
 from elasticgit.manager import ModelMappingType
 
 from git import Repo, GitCommandError
@@ -210,3 +210,39 @@ class TestEG(ModelBaseTest):
         self.workspace.reindex(TestPerson)
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
+
+    def test_case_sensitivity(self):
+        workspace = self.workspace
+        workspace.setup_mapping(TestPage)
+
+        page = TestPage({
+            'title': 'Sample title',
+            'slug': 'sample-title',
+            'language': 'eng_UK'
+        })
+        workspace.save(page, 'Saving a page')
+
+        page2 = TestPage({
+            'title': 'Sample title 2',
+            'slug': 'sample-title-2',
+            'language': 'eng_UK'
+        })
+        workspace.save(page2, 'Saving a page 2')
+
+        page3 = TestPage({
+            'title': 'Sample title 3',
+            'slug': 'sample-title-3',
+            'language': 'swh_TZ'
+        })
+        workspace.save(page3, 'Saving a page 3')
+
+        workspace.refresh_index()
+
+        self.assertEqual(
+            workspace.S(TestPage).filter(language='eng_UK').count(), 2)
+
+        self.assertEqual(
+            workspace.S(TestPage).filter(slug='sample-title').count(), 1)
+
+        self.assertEqual(
+            workspace.S(TestPage).filter(slug='sample-title-3').count(), 1)
