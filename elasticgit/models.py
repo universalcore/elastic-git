@@ -1,109 +1,170 @@
+from copy import deepcopy
+from urllib2 import urlparse
 import uuid
 
-from confmodel.config import Config
+from confmodel.config import Config, ConfigField
 from confmodel.errors import ConfigError
-from confmodel.fields import (
-    ConfigText, ConfigInt, ConfigFloat, ConfigBool, ConfigList,
-    ConfigDict, ConfigUrl, ConfigRegex)
 from confmodel.fallbacks import SingleFieldFallback
 
 
 import elasticgit
 
 
-class TextField(ConfigText):
+class ModelField(ConfigField):
+
+    default_mapping = {
+        'type': 'string',
+    }
+
+    def __init__(self, doc, required=False, default=None, static=False,
+                 fallbacks=(), mapping={}):
+        super(ModelField, self).__init__(
+            doc, required=required, default=default, static=static,
+            fallbacks=fallbacks)
+        self.mapping = self.__class__.default_mapping.copy()
+        self.mapping.update(mapping)
+
+
+class TextField(ModelField):
     """
     A text field
     """
+    field_type = 'str'
 
-    #: Mapping for Elasticsearch
-    mapping = {
-        'type': 'string',
-    }
+    def clean(self, value):
+        if not isinstance(value, basestring):
+            self.raise_config_error("is not a base string.")
+        return value
 
 
-class IntegerField(ConfigInt):
+class UnicodeTextField(ModelField):
+    """
+    A text field
+    """
+    field_type = 'unicode'
+
+    def clean(self, value):
+        if not isinstance(value, unicode):
+            self.raise_config_error("is not unicode.")
+        return value
+
+
+class IntegerField(ModelField):
     """
     An integer field
     """
+    field_type = 'int'
 
     #: Mapping for Elasticsearch
-    mapping = {
+    default_mapping = {
         'type': 'integer',
     }
 
+    def clean(self, value):
+        try:
+            # We go via "str" to avoid silently truncating floats.
+            # XXX: Is there a better way to do this?
+            return int(str(value))
+        except (ValueError, TypeError):
+            self.raise_config_error("could not be converted to int.")
 
-class FloatField(ConfigFloat):
+
+class FloatField(ModelField):
     """
     A float field
     """
+    field_type = 'float'
 
     #: Mapping for Elasticsearch
-    mapping = {
+    default_mapping = {
         'type': 'float'
     }
 
+    def clean(self, value):
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            self.raise_config_error("could not be converted to float.")
 
-class BooleanField(ConfigBool):
+
+class BooleanField(ModelField):
     """
     A boolean field
     """
+    field_type = 'bool'
 
     #: Mapping for Elasticsearch
-    mapping = {
+    default_mapping = {
         'type': 'boolean'
     }
 
+    def clean(self, value):
+        if isinstance(value, basestring):
+            return value.strip().lower() not in ('false', '0', '')
+        return bool(value)
 
-class ListField(ConfigList):
+
+class ListField(ModelField):
     """
     A list field
     """
+    field_type = 'list'
 
     #: Mapping for Elasticsearch
-    mapping = {
+    default_mapping = {
         'type': 'string',
     }
 
+    def clean(self, value):
+        if isinstance(value, tuple):
+            value = list(value)
+        if not isinstance(value, list):
+            self.raise_config_error("is not a list.")
+        return deepcopy(value)
 
-class DictField(ConfigDict):
+
+class DictField(ModelField):
     """
     A dictionary field
     """
+    field_type = 'dict'
 
     #: Mapping for Elasticsearch
-    mapping = {
+    default_mapping = {
         'type': 'string',
     }
 
+    def clean(self, value):
+        if not isinstance(value, dict):
+            self.raise_config_error("is not a dict.")
+        return deepcopy(value)
 
-class URLField(ConfigUrl):
+
+class URLField(ModelField):
     """
     A url field
     """
+    field_type = 'URL'
 
     #: Mapping for Elasticsearch
     mapping = {
         'type': 'string',
     }
 
-
-class RegexField(ConfigRegex):
-    """
-    A regex field
-    """
-
-    #: Mapping for Elasticsearch
-    mapping = {
-        'type': 'string',
-    }
+    def clean(self, value):
+        if not isinstance(value, basestring):
+            self.raise_config_error("is not a URL string.")
+        # URLs must be bytes, not unicode.
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        return urlparse.urlparse(value)
 
 
 class ModelVersionField(DictField):
     """
     A field holding the version information for a model
     """
-    mapping = {
+    default_mapping = {
         'type': 'nested',
         'properties': {
             'language': {'type': 'string'},

@@ -1,7 +1,7 @@
 import os
 
 from elasticgit.models import IntegerField, ModelVersionField
-from elasticgit.tests.base import ModelBaseTest
+from elasticgit.tests.base import ModelBaseTest, TestPage
 
 from elasticsearch.client import Elasticsearch
 
@@ -22,7 +22,11 @@ class TestManager(ModelBaseTest):
             'age': IntegerField('An age')
         })
         mapping_type = self.workspace.im.get_mapping_type(model_class)
-        self.assertEqual(mapping_type.get_index(), 'test-repo-index-master')
+        self.assertEqual(
+            mapping_type.get_index(),
+            '%s-%s' % (
+                self.workspace.index_prefix,
+                self.workspace.repo.active_branch.name))
         self.assertEqual(mapping_type.get_model(), model_class)
         self.assertEqual(
             mapping_type.get_mapping_type_name(),
@@ -38,7 +42,7 @@ class TestManager(ModelBaseTest):
             'properties': {
                 'age': {'type': 'integer'},
                 'uuid': {'type': 'string'},
-                '_version': ModelVersionField.mapping,
+                '_version': ModelVersionField.default_mapping,
             }
         })
         model_instance = model_class({'age': 1})
@@ -58,3 +62,11 @@ class TestManager(ModelBaseTest):
         user_data = {'name': 'test', 'email': 'email@example.org'}
         sm.write_config('user', user_data)
         self.assertEqual(sm.read_config('user'), user_data)
+
+    def test_setup_mapping(self):
+        MappingType = self.workspace.im.get_mapping_type(TestPage)
+        self.assertTrue(
+            self.workspace.setup_mapping(TestPage))
+        self.assertEqual(
+            self.workspace.get_mapping(TestPage),
+            MappingType.get_mapping())
