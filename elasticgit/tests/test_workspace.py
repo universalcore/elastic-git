@@ -3,7 +3,7 @@ import types
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import ModelMappingType
 
-from git import Repo
+from git import Repo, GitCommandError
 
 
 class TestWorkspace(ModelBaseTest):
@@ -67,6 +67,27 @@ class TestEG(ModelBaseTest):
         workspace.refresh_index()
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
+
+    def test_deleting(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).query(name__match='Name').count(), 1)
+        git_person = workspace.sm.get(TestPerson, person.uuid)
+        self.assertEqual(git_person, person)
+
+        workspace.delete(person, 'Deleting a person')
+        workspace.refresh_index()
+        self.assertEqual(
+            workspace.S(TestPerson).query(name__match='Name').count(), 0)
+        self.assertRaises(
+            GitCommandError, workspace.sm.get, TestPerson, person.uuid)
 
     def test_get_object(self):
         workspace = self.workspace
