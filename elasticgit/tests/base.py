@@ -21,7 +21,7 @@ class TestPerson(Model):
 
 class TestPage(Model):
     title = TextField('The title')
-    slug = TextField('The slug')
+    slug = TextField('The slug', mapping={'index': 'not_analyzed'})
     language = TextField('The language', mapping={'index': 'not_analyzed'})
 
 
