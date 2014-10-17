@@ -27,10 +27,13 @@ def get_parser():  # pragma: no cover
     return parser
 
 
-if __name__ == '__main__':  # pragma: no cover
+def run():  # pragma: no cover
     parser = get_parser()
     args = parser.parse_args()
     data = vars(args)
     dispatcher_class = data.pop('dispatcher')
     dispatcher = dispatcher_class()
     dispatcher.run(**data)
+
+if __name__ == '__main__':  # pragma: no cover
+    run()
