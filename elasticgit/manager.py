@@ -189,6 +189,13 @@ class ESManager(object):
         return self.es.indices.refresh(index=self.index_name(name))
 
     def setup_mapping(self, name, model_class):
+        """
+        Specify a mapping for a model class in a specific index
+
+        :param str name:
+        :param elasticgit.models.Model model_class:
+        :returns: dict
+        """
         MappingType = self.get_mapping_type(model_class)
         return self.es.indices.put_mapping(
             index=self.index_name(name),
@@ -196,6 +203,13 @@ class ESManager(object):
             body=MappingType.get_mapping())
 
     def get_mapping(self, name, model_class):
+        """
+        Retrieve a mapping for a model class in a specific index
+
+        :param str name:
+        :param elasticgit.models.Model model_class:
+        :returns: dict
+        """
         index_name = self.index_name(name)
         MappingType = self.get_mapping_type(model_class)
         data = self.es.indices.get_mapping(
@@ -590,9 +604,20 @@ class Workspace(object):
         return self.im.index_ready(self.repo.active_branch.name)
 
     def setup_mapping(self, model_class):
+        """
+        Add a custom mapping for a model_class
+
+        :param elasticgit.models.Model model_class:
+        :returns: dict, the decoded dictionary from Elasticsearch
+        """
         return self.im.setup_mapping(self.repo.active_branch.name, model_class)
 
     def get_mapping(self, model_class):
+        """
+        Get a mapping from Elasticsearch for a model_class
+        :param elasticgit.models.Model model_class:
+        :returns: dict
+        """
         return self.im.get_mapping(self.repo.active_branch.name, model_class)
 
     def S(self, model_class):

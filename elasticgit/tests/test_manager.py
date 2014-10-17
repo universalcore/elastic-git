@@ -61,14 +61,8 @@ class TestManager(ModelBaseTest):
 
     def test_setup_mapping(self):
         MappingType = self.workspace.im.get_mapping_type(TestPage)
-        page = TestPage({
-            'title': 'Sample title',
-            'language': 'eng_UK'
-        })
         self.assertTrue(
             self.workspace.setup_mapping(TestPage))
-        [mapping] = self.workspace.get_mapping(TestPage).values()
-        properties = mapping['mappings'][MappingType.get_mapping_type_name()]
         self.assertEqual(
-            properties,
+            self.workspace.get_mapping(TestPage),
             MappingType.get_mapping())
