@@ -198,10 +198,35 @@ class TestEG(ModelBaseTest):
 
         page = TestPage({
             'title': 'Sample title',
+            'slug': 'sample-title',
             'language': 'eng_UK'
         })
         workspace.save(page, 'Saving a page')
+
+        page2 = TestPage({
+            'title': 'Sample title 2',
+            'slug': 'sample-title-2',
+            'language': 'eng_UK'
+        })
+        workspace.save(page2, 'Saving a page 2')
+
+        page3 = TestPage({
+            'title': 'Sample title 3',
+            'slug': 'sample-title-3',
+            'language': 'swh_TZ'
+        })
+        workspace.save(page3, 'Saving a page 3')
+
         workspace.refresh_index()
 
         self.assertEqual(
-            workspace.S(TestPage).filter(language='eng_UK').count(), 1)
+            workspace.S(TestPage).query(language__match='eng_UK').count(), 2)
+
+        # it'd be better if we had a way to do a match__exact
+        self.assertEqual(
+            workspace.S(TestPage).query(
+                slug__match_phrase='sample-title').count(), 3)
+
+        self.assertEqual(
+            workspace.S(TestPage).query(
+                slug__match_phrase='sample-title-3').count(), 1)
