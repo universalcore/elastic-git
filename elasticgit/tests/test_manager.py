@@ -1,7 +1,7 @@
 import os
 
 from elasticgit.models import IntegerField, ModelVersionField
-from elasticgit.tests.base import ModelBaseTest
+from elasticgit.tests.base import ModelBaseTest, TestPage
 
 from elasticsearch.client import Elasticsearch
 
@@ -58,3 +58,17 @@ class TestManager(ModelBaseTest):
         user_data = {'name': 'test', 'email': 'email@example.org'}
         sm.write_config('user', user_data)
         self.assertEqual(sm.read_config('user'), user_data)
+
+    def test_setup_mapping(self):
+        MappingType = self.workspace.im.get_mapping_type(TestPage)
+        page = TestPage({
+            'title': 'Sample title',
+            'language': 'eng_UK'
+        })
+        self.assertTrue(
+            self.workspace.setup_mapping(TestPage))
+        [mapping] = self.workspace.get_mapping(TestPage).values()
+        properties = mapping['mappings'][MappingType.get_mapping_type_name()]
+        self.assertEqual(
+            properties,
+            MappingType.get_mapping())

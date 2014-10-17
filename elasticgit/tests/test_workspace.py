@@ -194,16 +194,14 @@ class TestEG(ModelBaseTest):
 
     def test_case_sensitivity(self):
         workspace = self.workspace
+        workspace.setup_mapping(TestPage)
+
         page = TestPage({
             'title': 'Sample title',
             'language': 'eng_UK'
         })
-
-        print introspect_properties(TestPage)
-
         workspace.save(page, 'Saving a page')
-        self.assertDataFile(workspace, page)
-
         workspace.refresh_index()
+
         self.assertEqual(
             workspace.S(TestPage).filter(language='eng_UK').count(), 1)
