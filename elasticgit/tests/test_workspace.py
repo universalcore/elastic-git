@@ -94,8 +94,6 @@ class TestEG(ModelBaseTest):
             'name': 'Name'
         })
 
-        dir_name = os.path.join(workspace.working_dir,
-                                TestPerson.__module__)
         workspace.save(person, 'Saving a person')
         self.assertDataFile(workspace, person)
 

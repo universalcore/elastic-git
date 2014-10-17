@@ -148,6 +148,10 @@ class Model(Config):
     _version = ModelVersionField('Model Version Identifier')
     uuid = UUIDField('Unique Identifier')
 
+    def __init__(self, config_data, static=False):
+        super(Model, self).__init__(config_data, static=static)
+        self._read_only = False
+
     def __eq__(self, other):
         own_data = dict(self)
         other_data = dict(other)
@@ -155,6 +159,21 @@ class Model(Config):
         other_version_info = other_data.pop('_version')
         return (own_data == other_data and
                 own_version_info == other_version_info)
+
+    def update(self, fields, mark_read_only=True):
+        model_class = self.__class__
+        data = dict(self)
+        data.update(fields)
+        new_instance = model_class(data)
+        if mark_read_only:
+            self.set_read_only()
+        return new_instance
+
+    def set_read_only(self):
+        self._read_only = True
+
+    def is_read_only(self):
+        return self._read_only
 
     def __iter__(self):
         for field in self._get_fields():

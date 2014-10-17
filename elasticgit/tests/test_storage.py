@@ -1,4 +1,5 @@
 from elasticgit.tests.base import ModelBaseTest, TestPerson
+from elasticgit.manager import StorageException
 
 from git import Repo, GitCommandError
 
@@ -30,6 +31,17 @@ class TestStorage(ModelBaseTest):
             'name': 'Test Kees'
         })
         self.sm.store(p, 'Saving a person.')
+
+    def test_store_readonly(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+        p = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
+        new_p = p.update({'name': 'Foo'})
+        self.assertRaises(
+            StorageException, self.sm.store, p, 'Crashing a person.')
+        self.assertTrue(self.sm.store(new_p, 'Saving a person.'))
 
     def test_delete(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
