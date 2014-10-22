@@ -217,7 +217,8 @@ class TestEG(ModelBaseTest):
             'name': 'Name',
         })
         self.origin_workspace = self.mk_workspace(
-            name='%s-origin' % (self.id().lower()))
+            name='%s-origin' % (self.id().lower()),
+            index_prefix='origin')
         self.origin_workspace.save(person, 'Saving origin upstream')
 
         person2 = TestPerson({
@@ -225,7 +226,8 @@ class TestEG(ModelBaseTest):
             'name': 'Another Name',
         })
         self.upstream_workspace = self.mk_workspace(
-            name='%s-upstream' % (self.id().lower()))
+            name='%s-upstream' % (self.id().lower()),
+            index_prefix='upstream')
         self.upstream_workspace.save(person2, 'Saving upstream')
 
         repo = self.workspace.repo
