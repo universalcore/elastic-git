@@ -211,6 +211,44 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
 
+    def test_fast_forward_with_multiple_remotes(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+        self.origin_workspace = self.mk_workspace(
+            name='%s-origin' % (self.id().lower()),
+            index_prefix='origin')
+        self.origin_workspace.save(person, 'Saving origin upstream')
+
+        person2 = TestPerson({
+            'age': 2,
+            'name': 'Another Name',
+        })
+        self.upstream_workspace = self.mk_workspace(
+            name='%s-upstream' % (self.id().lower()),
+            index_prefix='upstream')
+        self.upstream_workspace.save(person2, 'Saving upstream')
+
+        repo = self.workspace.repo
+        repo.create_remote(
+            'origin', self.origin_workspace.working_dir)
+        repo.create_remote(
+            'upstream', self.upstream_workspace.working_dir)
+
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+
+        self.workspace.fast_forward()
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+
+        self.workspace.fast_forward('upstream')
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 2)
+
     def test_case_sensitivity(self):
         workspace = self.workspace
         workspace.setup_mapping(TestPage)

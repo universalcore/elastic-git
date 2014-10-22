@@ -573,7 +573,7 @@ class Workspace(object):
         self.sm.delete(model, message)
         self.im.unindex(model)
 
-    def fast_forward(self):
+    def fast_forward(self, remote_name='origin'):
         """
         Fetch & Merge in an upstream's commits.
 
@@ -583,7 +583,7 @@ class Workspace(object):
             out to be incorrect soon.
 
         """
-        remote = self.repo.remote()
+        remote = self.repo.remote(name=remote_name)
         [fetch_info] = remote.fetch()
         git = self.repo.git
         git.merge(fetch_info.commit)
