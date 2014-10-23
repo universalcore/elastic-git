@@ -1,9 +1,17 @@
 language: python
 python:
   - "2.7"
+  - "pypy"
+env:
+  - SMMAP=smmap
+  - SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap
+matrix:
+  allow_failures:
+    - python: pypy
 services:
   - elasticsearch
 install:
+  - pip install $SMMAP
   - pip install -r requirements.txt --use-wheel
   - pip install -r requirements-dev.txt --use-wheel
   - pip install -e . --use-wheel
