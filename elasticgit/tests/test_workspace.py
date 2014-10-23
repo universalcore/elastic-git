@@ -199,7 +199,7 @@ class TestEG(ModelBaseTest):
 
         self.upstream_workspace = self.mk_workspace(
             name='%s-upstream' % (self.id().lower()))
-        self.upstream_workspace.save(person1, 'Saving upstream 1')
+        self.upstream_workspace.save(person1, 'Saving upstream')
 
         repo = self.workspace.repo
         repo.create_remote(
