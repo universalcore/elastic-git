@@ -573,21 +573,23 @@ class Workspace(object):
         self.sm.delete(model, message)
         self.im.unindex(model)
 
-    def fast_forward(self, remote_name='origin'):
+    def fast_forward(self, branch_name='master', remote_name='origin'):
         """
         Fetch & Merge in an upstream's commits.
 
         .. note::
+            This should probably be renamed to `pull` instead as that
+            is essentially what a ``fetch`` + ``merge`` is in Git.
 
-            This assumes a single remote, chances are that will turn
-            out to be incorrect soon.
-
+        :param str branch_name:
+            The name of the branch to fast forward & merge in
+        :param str remote_name:
+            The name of the remote to fetch from.
         """
         remote = self.repo.remote(name=remote_name)
-        fetch_infos = remote.fetch()
-        if fetch_infos:
-            fetch_info = fetch_infos[0]
-            self.repo.git.merge(fetch_info.commit)
+        fetch_list = remote.fetch()
+        fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
+        self.repo.git.merge(fetch_info.commit)
 
     def reindex_iter(self, model_class, refresh_index=True):
         """
