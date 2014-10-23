@@ -192,14 +192,13 @@ class TestEG(ModelBaseTest):
             workspace.S(TestPerson).count(), 1)
 
     def test_fast_forward(self):
-        person1 = TestPerson({
+        person = TestPerson({
             'age': 1,
             'name': 'Name',
         })
-
         self.upstream_workspace = self.mk_workspace(
             name='%s-upstream' % (self.id().lower()))
-        self.upstream_workspace.save(person1, 'Saving upstream')
+        self.upstream_workspace.save(person, 'Saving upstream')
 
         repo = self.workspace.repo
         repo.create_remote(
