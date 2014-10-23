@@ -191,6 +191,40 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             workspace.S(TestPerson).count(), 1)
 
+    def test_fast_forward_multiple_branches(self):
+        person1 = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+        person2 = TestPerson({
+            'age': 1,
+            'name': 'Name'
+        })
+
+        remote_workspace = self.mk_workspace(
+            name='%s_remote' % (self.id().lower(),),
+            index_prefix='%s_remote' % (self.workspace.index_prefix,))
+
+        # create a temporary branch, check it out and add another person
+        remote_repo = remote_workspace.repo
+        remote_workspace.save(person1, 'Saving person1.')
+        remote_repo.git.checkout('master', b='temp')
+        remote_workspace.save(person2, 'Saving person2.')
+
+        origin = self.workspace.repo.create_remote(
+            'origin', remote_workspace.working_dir)
+        # Fetch results in FetchInfo's from every branch
+        origin.fetch()
+
+        self.workspace.fast_forward(branch_name='master')
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+        self.workspace.fast_forward(branch_name='temp')
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 2)
+
     def test_fast_forward(self):
         person = TestPerson({
             'age': 1,
@@ -244,7 +278,7 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
 
-        self.workspace.fast_forward('upstream')
+        self.workspace.fast_forward(remote_name='upstream')
         self.workspace.reindex(TestPerson)
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 2)
