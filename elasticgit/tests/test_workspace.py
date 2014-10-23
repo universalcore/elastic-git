@@ -207,12 +207,8 @@ class TestEG(ModelBaseTest):
         self.upstream_workspace.save(person2, 'Saving upstream 2')
 
         repo = self.workspace.repo
-        origin = repo.create_remote(
+        repo.create_remote(
             'origin', self.upstream_workspace.working_dir)
-        origin.fetch()
-
-        branch = repo.active_branch
-        branch.set_tracking_branch(origin.refs.master)
 
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
