@@ -584,9 +584,10 @@ class Workspace(object):
 
         """
         remote = self.repo.remote(name=remote_name)
-        [fetch_info] = remote.fetch()
-        git = self.repo.git
-        git.merge(fetch_info.commit)
+        fetch_infos = remote.fetch()
+        if fetch_infos:
+            fetch_info = fetch_infos[0]
+            self.repo.git.merge(fetch_info.commit)
 
     def reindex_iter(self, model_class, refresh_index=True):
         """

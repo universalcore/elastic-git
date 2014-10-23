@@ -192,24 +192,34 @@ class TestEG(ModelBaseTest):
             workspace.S(TestPerson).count(), 1)
 
     def test_fast_forward(self):
-        person = TestPerson({
+        person1 = TestPerson({
             'age': 1,
             'name': 'Name',
         })
+        person2 = TestPerson({
+            'age': 2,
+            'name': 'Foo',
+        })
+
         self.upstream_workspace = self.mk_workspace(
             name='%s-upstream' % (self.id().lower()))
-        self.upstream_workspace.save(person, 'Saving upstream')
+        self.upstream_workspace.save(person1, 'Saving upstream 1')
+        self.upstream_workspace.save(person2, 'Saving upstream 2')
 
         repo = self.workspace.repo
-        repo.create_remote(
+        origin = repo.create_remote(
             'origin', self.upstream_workspace.working_dir)
+        origin.fetch()
+
+        branch = repo.active_branch
+        branch.set_tracking_branch(origin.refs.master)
 
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
         self.workspace.fast_forward()
         self.workspace.reindex(TestPerson)
         self.assertEqual(
-            self.workspace.S(TestPerson).count(), 1)
+            self.workspace.S(TestPerson).count(), 2)
 
     def test_fast_forward_with_multiple_remotes(self):
         person = TestPerson({
