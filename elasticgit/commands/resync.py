@@ -9,6 +9,9 @@ from elasticgit.commands.base import (
 from elasticgit.utils import load_class
 
 
+DEFAULT_SECTION = 'app:cmsfrontend'
+
+
 class ResyncTool(ToolCommand):
 
     command_name = 'resync'
@@ -24,11 +27,16 @@ class ResyncTool(ToolCommand):
             '-m', '--model',
             dest='model_class_name',
             help='The model class to load.', required=True),
+        CommandArgument(
+            '-s' '--section-name',
+            dest='section_name',
+            help='The section from where to read the config keys.',
+            default=DEFAULT_SECTION)
     )
 
     stdout = sys.stdout
 
-    def run(self, config_file, model_class_name):
+    def run(self, config_file, model_class_name, section_name=DEFAULT_SECTION):
         # NOTE: ConfigParser's DEFAULT handling is kind of nuts
         config = ConfigParser()
         config.set('DEFAULT', 'here', os.getcwd())
@@ -36,7 +44,7 @@ class ResyncTool(ToolCommand):
 
         required_options = ['es.index_prefix', 'git.path']
         has_options = [
-            config.has_option('app:main', option)
+            config.has_option(section_name, option)
             for option in required_options
         ]
 
@@ -45,8 +53,8 @@ class ResyncTool(ToolCommand):
                 'Missing some required options. Required options are: %s' % (
                     ', '.join(required_options)))
 
-        working_dir = config.get('app:main', 'git.path')
-        index_prefix = config.get('app:main', 'es.index_prefix')
+        working_dir = config.get(section_name, 'git.path')
+        index_prefix = config.get(section_name, 'es.index_prefix')
         workspace = EG.workspace(working_dir, index_prefix=index_prefix)
         model = load_class(model_class_name)
         updated, removed = workspace.sync(model)

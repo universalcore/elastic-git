@@ -2,7 +2,7 @@ from StringIO import StringIO
 from ConfigParser import ConfigParser
 
 from elasticgit.tests.base import ToolBaseTest, TestPerson
-from elasticgit.commands.resync import ResyncTool
+from elasticgit.commands.resync import ResyncTool, DEFAULT_SECTION
 from elasticgit.utils import fqcn
 
 
@@ -23,10 +23,10 @@ class TestResyncTool(ToolBaseTest):
 
     def resync(self, workspace, models_module):
         parser = ConfigParser()
-        parser.add_section('app:main')
-        parser.set('app:main', 'git.path',
+        parser.add_section(DEFAULT_SECTION)
+        parser.set(DEFAULT_SECTION, 'git.path',
                    workspace.working_dir)
-        parser.set('app:main', 'es.index_prefix',
+        parser.set(DEFAULT_SECTION, 'es.index_prefix',
                    workspace.index_prefix)
         sio = StringIO()
         parser.write(sio)
