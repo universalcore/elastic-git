@@ -28,7 +28,7 @@ class ResyncTool(ToolCommand):
             dest='model_class_name',
             help='The model class to load.', required=True),
         CommandArgument(
-            '-s' '--section-name',
+            '-s', '--section-name',
             dest='section_name',
             help='The section from where to read the config keys.',
             default=DEFAULT_SECTION)
