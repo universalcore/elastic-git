@@ -148,6 +148,27 @@ class ESManager(object):
             MappingType.refresh_index()
         return model
 
+    def raw_unindex(self, model_class, uuid, refresh_index=False):
+        """
+        Remove an entry from the Elasticsearch index.
+        This differs from :py:func:`.unindex` because it does not
+        require an instance of :py:class:`elasticgit.models.Model`
+        because you're likely in a position where you don't have it
+        if you're trying to unindex it.
+
+        :param elasticgit.models.Model model_class:
+            The model class
+        :param str uuid:
+            The model's UUID
+        :param bool refresh_index:
+            Whether or not to manually refresh the Elasticsearch index.
+            Useful in testing.
+        """
+        MappingType = self.get_mapping_type(model_class)
+        MappingType.unindex(uuid)
+        if refresh_index:
+            MappingType.refresh_index()
+
     def unindex(self, model, refresh_index=False):
         """
         Remove a :py:class:`elasticgit.models.Model` instance from the
@@ -162,10 +183,7 @@ class ESManager(object):
             :py:class:`elasticgit.models.Model`
         """
         model_class = model.__class__
-        MappingType = self.get_mapping_type(model_class)
-        MappingType.unindex(model.uuid)
-        if refresh_index:
-            MappingType.refresh_index()
+        self.raw_unindex(model_class, model.uuid, refresh_index=refresh_index)
         return model
 
     def index_name(self, name):
@@ -633,6 +651,21 @@ class Workspace(object):
         :returns: bool
         """
         return self.im.index_ready(self.repo.active_branch.name)
+
+    def sync(self, model_class, refresh_index=True):
+        reindexed_uuids = set([])
+        removed_uuids = set([])
+
+        for model_obj in self.reindex_iter(model_class,
+                                           refresh_index=refresh_index):
+            reindexed_uuids.add(model_obj.uuid)
+
+        for result in self.S(model_class).everything():
+            if result.uuid not in reindexed_uuids:
+                self.im.raw_unindex(model_class, result.uuid)
+                removed_uuids.add(result.uuid)
+
+        return reindexed_uuids, removed_uuids
 
     def setup_mapping(self, model_class):
         """
