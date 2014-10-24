@@ -3,8 +3,8 @@ python:
   - "2.7"
   - "pypy"
 env:
-  - SMMAP=smmap GITDB=gitdb
-  - SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb
+  - SMMAP=smmap GITDB=gitdb GITPYTHON="0.3.2.RC1"
+  - SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb GITPYTHON=git+git://github.com/gitpython-developers/GitPython.git#egg=GitPython
 matrix:
   fast_finish: true
   allow_failures:
@@ -14,6 +14,7 @@ services:
 install:
   - pip install $SMMAP
   - pip install $GITDB
+  - pip install $GITPYTHON
   - pip install -r requirements.txt --use-wheel
   - pip install -r requirements-dev.txt --use-wheel
   - pip install -e . --use-wheel
