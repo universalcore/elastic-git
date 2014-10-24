@@ -5,6 +5,9 @@ from elasticgit import version_info
 from elasticgit.commands.base import ToolCommand, CommandArgument
 
 
+DEFAULT_FILE_NAME = '.unicore.json'
+
+
 class VersionTool(ToolCommand):
 
     command_name = 'version'
@@ -23,15 +26,29 @@ class VersionTool(ToolCommand):
         CommandArgument(
             '-au', '--author-url',
             help='The url where to find more information about the author'),
+        CommandArgument(
+            '-f', '--file',
+            dest='file_name',
+            help='The file to write to. Set to `-` for stdout.',
+            default=DEFAULT_FILE_NAME)
     )
 
+    opener = open
     stdout = sys.stdout
 
-    def run(self, name, license, author, author_url=None):
+    def run(self, name, license, author, author_url=None,
+            file_name=DEFAULT_FILE_NAME):
+
+        if file_name == '-':
+            fp = self.stdout
+        else:
+            print 'self.opener', self.opener
+            fp = self.opener(file_name, 'w')
+
         json.dump({
             'name': name,
             'license': license,
             'author': author,
             'author_url': author_url,
             'version_info': version_info,
-        }, fp=self.stdout, indent=2)
+        }, fp=fp, indent=2)
