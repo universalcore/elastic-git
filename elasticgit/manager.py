@@ -148,9 +148,26 @@ class ESManager(object):
             MappingType.refresh_index()
         return model
 
-    def raw_unindex(self, model_class, uuid):
+    def raw_unindex(self, model_class, uuid, refresh_index=False):
+        """
+        Remove an entry from the Elasticsearch index.
+        This differs from :py:func:`.unindex` because it does not
+        require an instance of :py:class:`elasticgit.models.Model`
+        because you're likely in a position where you don't have it
+        if you're trying to unindex it.
+
+        :param elasticgit.models.Model model_class:
+            The model class
+        :param str uuid:
+            The model's UUID
+        :param bool refresh_index:
+            Whether or not to manually refresh the Elasticsearch index.
+            Useful in testing.
+        """
         MappingType = self.get_mapping_type(model_class)
         MappingType.unindex(uuid)
+        if refresh_index:
+            MappingType.refresh_index()
 
     def unindex(self, model, refresh_index=False):
         """
@@ -166,9 +183,7 @@ class ESManager(object):
             :py:class:`elasticgit.models.Model`
         """
         model_class = model.__class__
-        self.raw_unindex(model_class, model.uuid)
-        if refresh_index:
-            MappingType.refresh_index()
+        self.raw_unindex(model_class, model.uuid, refresh_index=refresh_index)
         return model
 
     def index_name(self, name):
