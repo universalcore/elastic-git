@@ -42,7 +42,6 @@ class VersionTool(ToolCommand):
         if file_name == '-':
             fp = self.stdout
         else:
-            print 'self.opener', self.opener
             fp = self.opener(file_name, 'w')
 
         json.dump({
