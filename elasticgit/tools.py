@@ -4,6 +4,7 @@ from elasticgit.commands.avro import SchemaDumper, SchemaLoader
 from elasticgit.commands.gitmodel import MigrateGitModelRepo
 from elasticgit.commands.shell import EGShell
 from elasticgit.commands.version import VersionTool
+from elasticgit.commands.resync import ResyncTool
 
 
 def add_command(subparsers, dispatcher_class):  # pragma: no cover
@@ -25,6 +26,7 @@ def get_parser():  # pragma: no cover
     add_command(subparsers, MigrateGitModelRepo)
     add_command(subparsers, EGShell)
     add_command(subparsers, VersionTool)
+    add_command(subparsers, ResyncTool)
 
     return parser
 
