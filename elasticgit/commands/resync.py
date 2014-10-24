@@ -6,7 +6,7 @@ from ConfigParser import ConfigParser
 from elasticgit import EG
 from elasticgit.commands.base import (
     ToolCommand, CommandArgument, ToolCommandError)
-from elasticgit.commands.utils import load_models
+from elasticgit.utils import load_class
 
 
 class ResyncTool(ToolCommand):
@@ -21,14 +21,14 @@ class ResyncTool(ToolCommand):
             help='Python paste config file.', required=True,
             type=argparse.FileType('r')),
         CommandArgument(
-            '-m', '--models',
-            dest='models_module',
-            help='The models module to load.', required=True),
+            '-m', '--model',
+            dest='model_class_name',
+            help='The model class to load.', required=True),
     )
 
     stdout = sys.stdout
 
-    def run(self, config_file, models_module):
+    def run(self, config_file, model_class_name):
         # NOTE: ConfigParser's DEFAULT handling is kind of nuts
         config = ConfigParser()
         config.set('DEFAULT', 'here', os.getcwd())
@@ -48,8 +48,7 @@ class ResyncTool(ToolCommand):
         working_dir = config.get('app:main', 'git.path')
         index_prefix = config.get('app:main', 'es.index_prefix')
         workspace = EG.workspace(working_dir, index_prefix=index_prefix)
-        models = load_models(models_module)
-        for name, klass in models.items():
-            updated, removed = workspace.sync(klass)
-            self.stdout.writelines('%s: %d updated, %d removed.\n' % (
-                name, len(updated), len(removed)))
+        model = load_class(model_class_name)
+        updated, removed = workspace.sync(model)
+        self.stdout.writelines('%s: %d updated, %d removed.\n' % (
+            model_class_name, len(updated), len(removed)))
