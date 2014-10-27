@@ -9,7 +9,8 @@ matrix:
   fast_finish: true
   allow_failures:
     - python: pypy
-    - env: BUILD_FROM_SOURCE=True
+    - python: "2.7"
+      env: BUILD_FROM_SOURCE=True
 services:
   - elasticsearch
 install:
