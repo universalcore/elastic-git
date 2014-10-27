@@ -165,8 +165,8 @@ class TestStorage(ModelBaseTest):
         repo = new_workspace.repo
         # NOTE: this is a bare remote repo and so it doesn't have a working
         #       copy checked out, there's nothing on the remote.
-        [origin] = repo.remotes
-        [pi] = origin.push()
+        origin = repo.remote()
+        origin.push()
 
         [found_commit] = bare_repo.iter_commits()
         self.assertEqual(commit, found_commit)
