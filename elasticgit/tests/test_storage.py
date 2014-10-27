@@ -1,3 +1,4 @@
+import os
 import shutil
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson
@@ -145,8 +146,9 @@ class TestStorage(ModelBaseTest):
         self.assertEqual(person, cloned_person)
 
     def test_clone_from_bare_repository(self):
-        bare_repo_path = '%s_bare' % (self.workspace.working_dir,)
-        bare_repo = EG.init_repo(EG.dot_git_path(bare_repo_path), bare=True)
+        bare_repo_name = '%s_bare' % (self.id(),)
+        bare_repo_path = os.path.join(self.WORKING_DIR, bare_repo_name)
+        bare_repo = EG.init_repo(bare_repo_path, bare=True)
         self.assertEqual(bare_repo.bare, True)
 
         if self.destroy:
@@ -159,14 +161,22 @@ class TestStorage(ModelBaseTest):
             self.addCleanup(new_workspace.destroy)
 
         # create an initial commit
-        commit = new_workspace.sm.store_data(
+        initial_commit = new_workspace.sm.store_data(
             'README.md', '# Hello World', 'Initial commit')
 
         repo = new_workspace.repo
         # NOTE: this is a bare remote repo and so it doesn't have a working
         #       copy checked out, there's nothing on the remote.
-        origin = repo.remote()
+        [origin] = repo.remotes
         origin.push()
 
-        [found_commit] = bare_repo.iter_commits()
-        self.assertEqual(commit, found_commit)
+        # Now pull in the changes in a remote repo to ensure we've
+        # succesfully are able to push & pull things around
+        second_cloned_repo_path = '%s_second_clone' % (bare_repo_path,)
+        EG.clone_repo(bare_repo_path, second_cloned_repo_path)
+        second_workspace = EG.workspace(second_cloned_repo_path)
+        second_workspace.fast_forward()
+        self.addCleanup(second_workspace.destroy)
+
+        [found_commit] = second_workspace.repo.iter_commits()
+        self.assertEqual(found_commit, initial_commit)

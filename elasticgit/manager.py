@@ -772,8 +772,6 @@ class EG(object):
 
     @classmethod
     def init_repo(cls, workdir, bare=False):
-        if not cls.is_repo(workdir) and not cls.is_dir(workdir):
-            os.makedirs(workdir)
         return Repo.init(workdir, bare=bare)
 
     @classmethod
