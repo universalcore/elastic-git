@@ -1,5 +1,4 @@
-import tempfile
-import os
+import shutil
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit.manager import StorageException, EG, StorageManager
@@ -139,8 +138,6 @@ class TestStorage(ModelBaseTest):
         clone_source = workspace.working_dir
         clone_dest = '%s_clone' % (workspace.working_dir,)
         cloned_repo = EG.clone_repo(clone_source, clone_dest)
-        print cloned_repo.working_dir
-
         self.addCleanup(EG.workspace(cloned_repo.working_dir).destroy)
 
         sm = StorageManager(cloned_repo)
@@ -148,19 +145,28 @@ class TestStorage(ModelBaseTest):
         self.assertEqual(person, cloned_person)
 
     def test_clone_from_bare_repository(self):
-        bare_repo = EG.init_repo('%s_bare' % (self.workspace.working_dir,),
-                                 bare=True)
+        bare_repo_path = '%s_bare' % (self.workspace.working_dir,)
+        bare_repo = EG.init_repo(EG.dot_git_path(bare_repo_path), bare=True)
         self.assertEqual(bare_repo.bare, True)
-        new_workspace = EG.workspace(bare_repo.working_dir)
-        # self.addCleanup(new_workspace.destroy)
+
+        if self.destroy:
+            self.addCleanup(lambda: shutil.rmtree(bare_repo_path))
+
+        cloned_repo_path = '%s_clone' % (bare_repo_path,)
+        EG.clone_repo(bare_repo_path, cloned_repo_path)
+        new_workspace = EG.workspace(cloned_repo_path)
+        if self.destroy:
+            self.addCleanup(new_workspace.destroy)
 
         # create an initial commit
-        new_workspace.sm.store_data(
+        commit = new_workspace.sm.store_data(
             'README.md', '# Hello World', 'Initial commit')
 
         repo = new_workspace.repo
         # NOTE: this is a bare remote repo and so it doesn't have a working
         #       copy checked out, there's nothing on the remote.
-        self.assertEqual(len(repo.remotes), 0)
-        origin = repo.create_remote('origin', self.workspace.working_dir)
-        origin.push(repo.refs.master)
+        [origin] = repo.remotes
+        [pi] = origin.push()
+
+        [found_commit] = bare_repo.iter_commits()
+        self.assertEqual(commit, found_commit)
