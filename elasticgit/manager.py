@@ -605,10 +605,13 @@ class Workspace(object):
             The name of the remote to fetch from.
         """
         remote = self.repo.remote(name=remote_name)
+        def debug(remote):
+            print remote.url
+            for ref in remote.refs:
+                print ref, ref.remote_head, ref.remote_name
+        debug(remote)
         fetch_list = remote.fetch()
-        for fi in fetch_list:
-            print fi.name, fi.commit, fi.commit.message
-
+        debug(remote)
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
         self.repo.git.merge(fetch_info.commit)
 
