@@ -139,7 +139,9 @@ class TestStorage(ModelBaseTest):
         clone_source = workspace.working_dir
         clone_dest = '%s_clone' % (workspace.working_dir,)
         cloned_repo = EG.clone_repo(clone_source, clone_dest)
-        self.addCleanup(EG.workspace(clone_dest).destroy)
+        print cloned_repo.working_dir
+
+        self.addCleanup(EG.workspace(cloned_repo.working_dir).destroy)
 
         sm = StorageManager(cloned_repo)
         [cloned_person] = sm.iterate(TestPerson)
@@ -150,7 +152,7 @@ class TestStorage(ModelBaseTest):
                                  bare=True)
         self.assertEqual(bare_repo.bare, True)
         new_workspace = EG.workspace(bare_repo.working_dir)
-        self.addCleanup(new_workspace.destroy)
+        # self.addCleanup(new_workspace.destroy)
 
         # create an initial commit
         new_workspace.sm.store_data(

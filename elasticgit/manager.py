@@ -755,8 +755,12 @@ class EG(object):
         return Workspace(repo, get_es(**es), index_prefix)
 
     @classmethod
+    def dot_git_path(cls, workdir):
+        return os.path.join(workdir, '.git')
+
+    @classmethod
     def is_repo(cls, workdir):
-        return os.path.isdir(os.path.join(workdir, '.git'))
+        return cls.is_dir(cls.dot_git_path(workdir))
 
     @classmethod
     def is_dir(cls, workdir):
