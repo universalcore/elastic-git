@@ -653,6 +653,20 @@ class Workspace(object):
         return self.im.index_ready(self.repo.active_branch.name)
 
     def sync(self, model_class, refresh_index=True):
+        """
+        Resync a workspace, it assumes the Git repository is the source
+        of truth and Elasticsearch is made to match. This involves two
+        passes, first to index everything that Git knows about and
+        unindexing everything that's in Elastisearch that Git does not
+        know about.
+
+        :param elasticgit.models.Model model_class:
+            The model to resync
+        :param bool refresh_index:
+            Whether or not to refresh the index after indexing
+            everything from Git
+
+        """
         reindexed_uuids = set([])
         removed_uuids = set([])
 
