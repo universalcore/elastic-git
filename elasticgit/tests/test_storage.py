@@ -144,3 +144,21 @@ class TestStorage(ModelBaseTest):
         sm = StorageManager(cloned_repo)
         [cloned_person] = sm.iterate(TestPerson)
         self.assertEqual(person, cloned_person)
+
+    def test_clone_from_bare_repository(self):
+        bare_repo = EG.init_repo('%s_bare' % (self.workspace.working_dir,),
+                                 bare=True)
+        self.assertEqual(bare_repo.bare, True)
+        new_workspace = EG.workspace(bare_repo.working_dir)
+        self.addCleanup(new_workspace.destroy)
+
+        # create an initial commit
+        new_workspace.sm.store_data(
+            'README.md', '# Hello World', 'Initial commit')
+
+        repo = new_workspace.repo
+        # NOTE: this is a bare remote repo and so it doesn't have a working
+        #       copy checked out, there's nothing on the remote.
+        self.assertEqual(len(repo.remotes), 0)
+        origin = repo.create_remote('origin', self.workspace.working_dir)
+        origin.push(repo.refs.master)

@@ -759,14 +759,18 @@ class EG(object):
         return os.path.isdir(os.path.join(workdir, '.git'))
 
     @classmethod
+    def is_dir(cls, workdir):
+        return os.path.isdir(workdir)
+
+    @classmethod
     def read_repo(cls, workdir):
         return Repo(workdir)
 
     @classmethod
     def init_repo(cls, workdir, bare=False):
-        if not cls.is_repo(workdir):
+        if not cls.is_repo(workdir) and not cls.is_dir(workdir):
             os.makedirs(workdir)
-        return Repo.init(workdir, bare)
+        return Repo.init(workdir, bare=bare)
 
     @classmethod
     def clone_repo(cls, repo_url, workdir):
