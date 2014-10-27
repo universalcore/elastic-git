@@ -1,5 +1,8 @@
+import tempfile
+import os
+
 from elasticgit.tests.base import ModelBaseTest, TestPerson
-from elasticgit.manager import StorageException
+from elasticgit.manager import StorageException, EG, StorageManager
 
 from git import Repo, GitCommandError
 
@@ -124,3 +127,20 @@ class TestStorage(ModelBaseTest):
             self.sm.git_path(
                 person.__class__, '%s.json' % (person.uuid,)))
         self.assertEqual(person, reloaded_person)
+
+    def test_clone_from(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Test Kees 1'
+        })
+        workspace.save(person, 'Saving a person')
+
+        clone_source = workspace.working_dir
+        clone_dest = '%s_clone' % (workspace.working_dir,)
+        cloned_repo = EG.clone_repo(clone_source, clone_dest)
+        self.addCleanup(EG.workspace(clone_dest).destroy)
+
+        sm = StorageManager(cloned_repo)
+        [cloned_person] = sm.iterate(TestPerson)
+        self.assertEqual(person, cloned_person)
