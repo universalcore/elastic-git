@@ -168,7 +168,7 @@ class TestStorage(ModelBaseTest):
         # NOTE: this is a bare remote repo and so it doesn't have a working
         #       copy checked out, there's nothing on the remote.
         [origin] = repo.remotes
-        print origin.push()
+        origin.push('refs/heads/master:refs/heads/master')
 
         # Now pull in the changes in a remote repo to ensure we've
         # succesfully are able to push & pull things around
