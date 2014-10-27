@@ -22,7 +22,7 @@ install:
   - pip install -e . --use-wheel
   - pip install coveralls --use-wheel
 script:
-  - py.test elasticgit
+  - py.test elasticgit -s
   - cd docs && make doctest && cd -
 after_success:
   - coveralls

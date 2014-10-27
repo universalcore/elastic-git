@@ -606,6 +606,9 @@ class Workspace(object):
         """
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
+        for fi in fetch_list:
+            print fi.name, fi.commit, fi.commit.message
+
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
         self.repo.git.merge(fetch_info.commit)
 
