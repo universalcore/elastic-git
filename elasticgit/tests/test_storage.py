@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import shutil
 
@@ -34,6 +36,17 @@ class TestStorage(ModelBaseTest):
             'name': 'Test Kees'
         })
         self.sm.store(p, 'Saving a person.')
+
+    def test_store_unicode_commit_message(self):
+        self.workspace.setup('Test Kees', 'kees@example.org')
+        p = TestPerson({
+            'age': 1,
+            'name': 'Test Kees'
+        })
+        message = u'Saving a përsøn.'
+        self.assertRaises(
+            StorageException, self.sm.store, p, message)
+        self.assertTrue(self.sm.store(p, message.encode('utf-8')))
 
     def test_store_readonly(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
