@@ -22,19 +22,10 @@ class TestResyncTool(ToolBaseTest):
         self.im.refresh_indices(branch_name)
 
     def resync(self, workspace, models_module):
-        parser = ConfigParser()
-        parser.add_section(DEFAULT_SECTION)
-        parser.set(DEFAULT_SECTION, 'git.path',
-                   workspace.working_dir)
-        parser.set(DEFAULT_SECTION, 'es.index_prefix',
-                   workspace.index_prefix)
-        sio = StringIO()
-        parser.write(sio)
-        sio.seek(0)
-
         tool = ResyncTool()
         tool.stdout = StringIO()
-        tool.run(sio, models_module)
+        tool.run(None, models_module,
+                 workspace.index_prefix, workspace.working_dir)
         return tool.stdout.getvalue()
 
     def test_resync_empty_index(self):
@@ -107,3 +98,22 @@ class TestResyncTool(ToolBaseTest):
             output)
         self.workspace.refresh_index()
         self.assertEqual(self.workspace.S(TestPerson).count(), 3)
+
+
+class TestResyncToolWithConfigFile(TestResyncTool):
+
+    def resync(self, workspace, models_module):
+        parser = ConfigParser()
+        parser.add_section(DEFAULT_SECTION)
+        parser.set(DEFAULT_SECTION, 'git.path',
+                   workspace.working_dir)
+        parser.set(DEFAULT_SECTION, 'es.index_prefix',
+                   workspace.index_prefix)
+        sio = StringIO()
+        parser.write(sio)
+        sio.seek(0)
+
+        tool = ResyncTool()
+        tool.stdout = StringIO()
+        tool.run(sio, models_module, None, None)
+        return tool.stdout.getvalue()

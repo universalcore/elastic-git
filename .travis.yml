@@ -1,25 +1,28 @@
 language: python
 python:
   - "2.7"
-  - "pypy"
+  # - "pypy"
 env:
-  - SMMAP=smmap GITDB=gitdb
-  - SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb
+  matrix:
+    - SMMAP=smmap GITDB=gitdb GITPYTHON="GitPython==0.3.2.RC1"
+    - SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb GITPYTHON=git+git://github.com/gitpython-developers/GitPython.git#egg=GitPython
 matrix:
   fast_finish: true
   allow_failures:
     - python: pypy
+    - env: SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb GITPYTHON=git+git://github.com/gitpython-developers/GitPython.git#egg=GitPython
 services:
   - elasticsearch
 install:
   - pip install $SMMAP
   - pip install $GITDB
+  - pip install $GITPYTHON
   - pip install -r requirements.txt --use-wheel
   - pip install -r requirements-dev.txt --use-wheel
   - pip install -e . --use-wheel
   - pip install coveralls --use-wheel
 script:
-  - py.test elasticgit
+  - py.test elasticgit -s
   - cd docs && make doctest && cd -
 after_success:
   - coveralls
@@ -30,3 +33,5 @@ deploy:
     secure: EA5FqGREb4eAPa+lf7/qtAFQW8eCvvQA6RTbnpwvPhYRxvFtudi0v/r668dX08LEwsIlqJ4X02XjMJNBU2rn3VGvsgStJPBnhkf5BptbbiCdVM+T9FhNN2jLMUk4fmFjrniHt/4a/biKgTMDgWek7xhbaI3gBMQkKY1MFhZRnjI=
   on:
     tags: true
+    repo: universalcore/elastic-git
+    branch: develop

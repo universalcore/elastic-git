@@ -38,6 +38,7 @@ class TestFallbackPerson(Model):
 class ModelBaseTest(TestCase):
 
     destroy = 'KEEP_REPO' not in os.environ
+    WORKING_DIR = '.test_repos/'
 
     def mk_model(self, fields):
         return type('TempModel', (Model,), fields)
@@ -48,11 +49,12 @@ class ModelBaseTest(TestCase):
         index_prefix = '%s-%s' % (class_name, test_name)
         return index_prefix.lower()
 
-    def mk_workspace(self, working_dir='.test_repos/',
+    def mk_workspace(self, working_dir=None,
                      name=None,
                      url='http://localhost',
                      index_prefix=None,
                      auto_destroy=None):
+        working_dir = working_dir or self.WORKING_DIR
         name = name or self.id()
         index_prefix = index_prefix or self.mk_index_prefix()
         auto_destroy = auto_destroy or self.destroy

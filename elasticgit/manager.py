@@ -653,6 +653,20 @@ class Workspace(object):
         return self.im.index_ready(self.repo.active_branch.name)
 
     def sync(self, model_class, refresh_index=True):
+        """
+        Resync a workspace, it assumes the Git repository is the source
+        of truth and Elasticsearch is made to match. This involves two
+        passes, first to index everything that Git knows about and
+        unindexing everything that's in Elastisearch that Git does not
+        know about.
+
+        :param elasticgit.models.Model model_class:
+            The model to resync
+        :param bool refresh_index:
+            Whether or not to refresh the index after indexing
+            everything from Git
+
+        """
         reindexed_uuids = set([])
         removed_uuids = set([])
 
@@ -719,7 +733,7 @@ class EG(object):
 
     """
     @classmethod
-    def workspace(cls, workdir, es={}, index_prefix='elastic-git'):
+    def workspace(cls, workdir, es={}, index_prefix=None):
         """
         Create a workspace
 
@@ -735,14 +749,23 @@ class EG(object):
         :returns:
             :py:class:`.Workspace`
         """
+        index_prefix = index_prefix or os.path.basename(workdir)
         repo = (cls.read_repo(workdir)
                 if cls.is_repo(workdir)
                 else cls.init_repo(workdir))
         return Workspace(repo, get_es(**es), index_prefix)
 
     @classmethod
+    def dot_git_path(cls, workdir):
+        return os.path.join(workdir, '.git')
+
+    @classmethod
     def is_repo(cls, workdir):
-        return os.path.isdir(os.path.join(workdir, '.git'))
+        return cls.is_dir(cls.dot_git_path(workdir))
+
+    @classmethod
+    def is_dir(cls, workdir):
+        return os.path.isdir(workdir)
 
     @classmethod
     def read_repo(cls, workdir):
@@ -750,9 +773,11 @@ class EG(object):
 
     @classmethod
     def init_repo(cls, workdir, bare=False):
-        if not cls.is_repo(workdir):
-            os.makedirs(workdir)
-        return Repo.init(workdir, bare)
+        return Repo.init(workdir, bare=bare)
+
+    @classmethod
+    def clone_repo(cls, repo_url, workdir):
+        return Repo.clone_from(repo_url, workdir)
 
 Q
 F

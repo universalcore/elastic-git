@@ -1,5 +1,6 @@
 import os
 
+from elasticgit import EG
 from elasticgit.models import IntegerField, ModelVersionField
 from elasticgit.tests.base import ModelBaseTest, TestPage, TestPerson
 
@@ -16,6 +17,12 @@ class TestManager(ModelBaseTest):
         workspace = self.mk_workspace(name='.foo')
         self.assertTrue(isinstance(workspace.im.es, Elasticsearch))
         self.assertEqual(os.path.basename(workspace.repo.working_dir), '.foo')
+
+    def test_index_prefix(self):
+        repo_path = os.path.join(self.WORKING_DIR, 'bar')
+        workspace = EG.workspace(repo_path)
+        self.addCleanup(workspace.destroy)
+        self.assertEqual(workspace.index_prefix, 'bar')
 
     def test_mapping_type(self):
         model_class = self.mk_model({
