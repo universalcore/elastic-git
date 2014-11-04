@@ -2,6 +2,8 @@ import shutil
 import os
 from urllib import quote
 
+from unidecode import unidecode
+
 from git import Repo
 
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
@@ -391,6 +393,9 @@ class StorageManager(object):
         :returns:
             The commit.
         """
+        if not isinstance(message, str):
+            raise StorageException('Messages need to be bytestrings.')
+
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
 
@@ -575,6 +580,8 @@ class Workspace(object):
         :param str message:
             The commit message to write the model to Git with.
         """
+        if isinstance(message, unicode):
+            message = unidecode(message)
         self.sm.store(model, message)
         self.im.index(model)
 
