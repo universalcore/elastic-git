@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 
 from elasticgit import EG
@@ -97,3 +99,17 @@ class TestManager(ModelBaseTest):
         self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).filter(name='eng_UK').count(), 1)
+
+    def test_save_bytestring(self):
+        p = TestPerson({'age': 10, 'name': 'Name'})
+        self.workspace.save(p, 'bytestring')
+        repo = self.workspace.repo
+        [commit] = repo.iter_commits()
+        self.assertEqual(commit.message, 'bytestring')
+
+    def test_save_unidecode(self):
+        p = TestPerson({'age': 10, 'name': 'Name'})
+        self.workspace.save(p, u'Unîcødé')
+        repo = self.workspace.repo
+        [commit] = repo.iter_commits()
+        self.assertEqual(commit.message, 'Unicode')

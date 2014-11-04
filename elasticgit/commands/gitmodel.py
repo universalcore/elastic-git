@@ -49,7 +49,7 @@ class MigrateGitModelRepo(ToolCommand):
             for data_record in data_records:
                 record = model_class(data_record)
                 storage_manager.store(record, 'Migrated %s.' % (
-                    record.uuid,))
+                    record.uuid.encode('utf-8'),))
                 records.append(record)
 
             # Save the schema in the new module's dir
