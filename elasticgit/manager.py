@@ -733,7 +733,7 @@ class EG(object):
 
     """
     @classmethod
-    def workspace(cls, workdir, es={}, index_prefix='elastic-git'):
+    def workspace(cls, workdir, es={}, index_prefix=None):
         """
         Create a workspace
 
@@ -749,6 +749,7 @@ class EG(object):
         :returns:
             :py:class:`.Workspace`
         """
+        index_prefix = index_prefix or os.path.basename(workdir)
         repo = (cls.read_repo(workdir)
                 if cls.is_repo(workdir)
                 else cls.init_repo(workdir))
