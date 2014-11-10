@@ -695,9 +695,6 @@ class Workspace(object):
         :param elasticgit.models.Model model_class:
         :returns: dict, the decoded dictionary from Elasticsearch
         """
-        if not self.im.index_exists(self.repo.active_branch.name):
-            self.im.create_index(self.repo.active_branch.name)
-
         return self.im.setup_mapping(self.repo.active_branch.name, model_class)
 
     def setup_custom_mapping(self, model_class, mapping):
@@ -709,9 +706,6 @@ class Workspace(object):
         :param dict: the Elastisearch mapping definition
         :returns: dict, the decoded dictionary from Elasticsearch
         """
-
-        if not self.im.index_exists(self.repo.active_branch.name):
-            self.im.create_index(self.repo.active_branch.name)
 
         return self.im.setup_custom_mapping(
             self.repo.active_branch.name, model_class, mapping)

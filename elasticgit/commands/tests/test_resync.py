@@ -22,12 +22,14 @@ class TestResyncTool(ToolBaseTest):
             True
         self.im.refresh_indices(branch_name)
 
-    def resync(self, workspace, model_class, mapping_file=None):
+    def resync(self, workspace, model_class, mapping_file=None,
+               recreate_index=True):
         tool = ResyncTool()
         tool.stdout = StringIO()
         tool.run(None, model_class,
                  workspace.index_prefix, workspace.working_dir,
-                 mapping_file)
+                 mapping_file=mapping_file,
+                 recreate_index=recreate_index)
         return tool.stdout.getvalue()
 
     def test_resync_empty_index(self):
@@ -120,14 +122,46 @@ class TestResyncTool(ToolBaseTest):
         mapping_file = StringIO()
         json.dump(mapping, fp=mapping_file)
         mapping_file.seek(0)
-        self.resync(self.workspace, TestPerson, mapping_file=mapping_file)
+        output = self.resync(
+            self.workspace, TestPerson, mapping_file=mapping_file)
         self.assertEqual(
             self.workspace.get_mapping(TestPerson), mapping)
+        self.assertEqual(
+            output.strip(),
+            "\n".join([
+                'Creating index for master.',
+                'Creating mapping for elasticgit.tests.base.TestPerson.',
+                'elasticgit.tests.base.TestPerson: 0 updated, 0 removed.',
+            ]))
+
+    def test_recreate_non_existent_index(self):
+        output = self.resync(
+            self.workspace, TestPerson, recreate_index=True)
+        self.assertEqual(
+            output.strip(),
+            "\n".join([
+                'Creating index for master.',
+                'elasticgit.tests.base.TestPerson: 0 updated, 0 removed.'
+            ]))
+
+    def test_recreate_existing_index(self):
+        branch = self.workspace.repo.active_branch
+        self.workspace.im.create_index(branch.name)
+        output = self.resync(
+            self.workspace, TestPerson, recreate_index=True)
+        self.assertEqual(
+            output.strip(),
+            "\n".join([
+                'Destroying index for master.',
+                'Creating index for master.',
+                'elasticgit.tests.base.TestPerson: 0 updated, 0 removed.'
+            ]))
 
 
 class TestResyncToolWithConfigFile(TestResyncTool):
 
-    def resync(self, workspace, models_module, mapping_file=None):
+    def resync(self, workspace, models_module, mapping_file=None,
+               recreate_index=False):
         parser = ConfigParser()
         parser.add_section(DEFAULT_SECTION)
         parser.set(DEFAULT_SECTION, 'git.path',
@@ -140,5 +174,6 @@ class TestResyncToolWithConfigFile(TestResyncTool):
 
         tool = ResyncTool()
         tool.stdout = StringIO()
-        tool.run(sio, models_module, None, None, mapping_file)
+        tool.run(sio, models_module, None, None, mapping_file=mapping_file,
+                 recreate_index=recreate_index)
         return tool.stdout.getvalue()
