@@ -23,7 +23,7 @@ class TestResyncTool(ToolBaseTest):
         self.im.refresh_indices(branch_name)
 
     def resync(self, workspace, model_class, mapping_file=None,
-               recreate_index=True):
+               recreate_index=False):
         tool = ResyncTool()
         tool.stdout = StringIO()
         tool.run(None, model_class,
