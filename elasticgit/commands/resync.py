@@ -28,7 +28,7 @@ class ResyncTool(ToolCommand):
             type=argparse.FileType('r')),
         CommandArgument(
             '-m', '--model',
-            dest='model_class_name',
+            dest='model_class',
             help='The model class to load.', required=True,
             type=ModelClassType()),
         CommandArgument(
