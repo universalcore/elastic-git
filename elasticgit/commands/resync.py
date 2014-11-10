@@ -8,7 +8,7 @@ from ConfigParser import ConfigParser
 from elasticgit import EG
 from elasticgit.commands.base import (
     ToolCommand, CommandArgument, ToolCommandError)
-from elasticgit.commands.utils import ModelClassType
+from elasticgit.commands.utils import ModelClassType, BooleanType
 from elasticgit.utils import fqcn
 
 
@@ -49,12 +49,18 @@ class ResyncTool(ToolCommand):
             dest='mapping_file',
             help='The path to a custom mapping file.',
             type=argparse.FileType('r')),
+        CommandArgument(
+            '-r', '--recreate-index',
+            dest='recreate_index',
+            help='Whether or not to recreate the index from scratch.',
+            type=BooleanType(), default=False),
     )
 
     stdout = sys.stdout
 
     def run(self, config_file, model_class, index_prefix, git_path,
-            mapping_file=None, section_name=DEFAULT_SECTION):
+            mapping_file=None, recreate_index=False,
+            section_name=DEFAULT_SECTION):
 
         mapping = (json.load(mapping_file)
                    if mapping_file is not None
@@ -62,17 +68,18 @@ class ResyncTool(ToolCommand):
 
         # resync
         if config_file is not None:
-            self.resync_with_config_file(config_file, model_class,
-                                         section_name, mapping)
-        elif index_prefix and git_path:
-            self.resync(git_path, index_prefix, model_class, mapping)
-        else:
+            index_prefix, git_path = self.read_config_file(
+                config_file, section_name)
+
+        if not all([index_prefix, git_path]):
             raise ToolCommandError(
                 'Please specify either `--config` or `--index-prefix` and '
                 '`--git-path`.')
 
-    def resync_with_config_file(self, config_file, model_class,
-                                section_name, mapping=None):
+        return self.resync(git_path, index_prefix, model_class,
+                           mapping=mapping, recreate_index=recreate_index)
+
+    def read_config_file(self, config_file, section_name):
         # NOTE: ConfigParser's DEFAULT handling is kind of nuts
         config = ConfigParser()
         config.set('DEFAULT', 'here', os.getcwd())
@@ -91,13 +98,30 @@ class ResyncTool(ToolCommand):
 
         working_dir = config.get(section_name, 'git.path')
         index_prefix = config.get(section_name, 'es.index_prefix')
+        return index_prefix, working_dir
 
-        self.resync(working_dir, index_prefix, model_class, mapping)
+    def resync(self, working_dir, index_prefix, model_class,
+               mapping=None, recreate_index=False):
 
-    def resync(self, working_dir, index_prefix, model_class, mapping=None):
         workspace = EG.workspace(working_dir, index_prefix=index_prefix)
+        branch = workspace.sm.repo.active_branch
+
+        if recreate_index and workspace.im.index_exists(branch.name):
+            self.stdout.writelines(
+                'Destroying index for %s.\n' % (branch.name,))
+            workspace.im.destroy_index(branch.name)
+
+        if not workspace.im.index_exists(branch.name):
+            self.stdout.writelines(
+                'Creating index for %s.\n' % (branch.name,))
+            # create the index and wait for it to become ready
+            workspace.im.create_index(branch.name)
+            while not workspace.index_ready():
+                pass
 
         if mapping is not None:
+            self.stdout.writelines(
+                'Creating mapping for %s.\n' % (fqcn(model_class),))
             workspace.setup_custom_mapping(model_class, mapping)
 
         updated, removed = workspace.sync(model_class)

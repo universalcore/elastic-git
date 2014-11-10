@@ -54,3 +54,33 @@ class ModelClassType(ClassType):
 
     def __init__(self):
         super(ModelClassType, self).__init__(Model)
+
+
+class BooleanType(object):
+    """
+    Helper class for specify booleans on the command line.
+
+    >>> from elasticgit.commands.utils import BooleanType
+    >>> checker = BooleanType()
+    >>> checker('yes')
+    True
+    >>> checker('no')
+    False
+    >>> checker('true')
+    True
+    >>> checker('false')
+    False
+    >>> checker('t')
+    True
+    >>> checker('f')
+    False
+    >>> checker('1')
+    True
+    >>> checker('0')
+    False
+    >>>
+
+    """
+
+    def __call__(self, value):
+        return value.lower() in ("yes", "true", "t", "1")
