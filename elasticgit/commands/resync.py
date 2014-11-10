@@ -1,6 +1,8 @@
 import argparse
 import os
 import sys
+import json
+
 from ConfigParser import ConfigParser
 
 from elasticgit import EG
@@ -54,23 +56,23 @@ class ResyncTool(ToolCommand):
     def run(self, config_file, model_class, index_prefix, git_path,
             mapping_file=None, section_name=DEFAULT_SECTION):
 
-        # apply mappings if supplied
-        if mapping_file is not None:
-            self.apply_mapping(mapping_file, model_class)
+        mapping = (json.load(mapping_file)
+                   if mapping_file is not None
+                   else None)
 
         # resync
         if config_file is not None:
             self.resync_with_config_file(config_file, model_class,
-                                         section_name)
+                                         section_name, mapping)
         elif index_prefix and git_path:
-            self.resync(git_path, index_prefix, model_class)
+            self.resync(git_path, index_prefix, model_class, mapping)
         else:
             raise ToolCommandError(
                 'Please specify either `--config` or `--index-prefix` and '
                 '`--git-path`.')
 
     def resync_with_config_file(self, config_file, model_class,
-                                section_name):
+                                section_name, mapping=None):
         # NOTE: ConfigParser's DEFAULT handling is kind of nuts
         config = ConfigParser()
         config.set('DEFAULT', 'here', os.getcwd())
@@ -90,10 +92,14 @@ class ResyncTool(ToolCommand):
         working_dir = config.get(section_name, 'git.path')
         index_prefix = config.get(section_name, 'es.index_prefix')
 
-        self.resync(working_dir, index_prefix, model_class)
+        self.resync(working_dir, index_prefix, model_class, mapping)
 
-    def resync(self, working_dir, index_prefix, model_class):
+    def resync(self, working_dir, index_prefix, model_class, mapping=None):
         workspace = EG.workspace(working_dir, index_prefix=index_prefix)
+
+        if mapping is not None:
+            workspace.setup_custom_mapping(model_class, mapping)
+
         updated, removed = workspace.sync(model_class)
         self.stdout.writelines('%s: %d updated, %d removed.\n' % (
             fqcn(model_class), len(updated), len(removed)))

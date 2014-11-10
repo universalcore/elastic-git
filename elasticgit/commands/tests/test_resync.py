@@ -1,3 +1,5 @@
+import json
+
 from StringIO import StringIO
 from ConfigParser import ConfigParser
 
@@ -20,11 +22,12 @@ class TestResyncTool(ToolBaseTest):
             True
         self.im.refresh_indices(branch_name)
 
-    def resync(self, workspace, model_class):
+    def resync(self, workspace, model_class, mapping_file=None):
         tool = ResyncTool()
         tool.stdout = StringIO()
         tool.run(None, model_class,
-                 workspace.index_prefix, workspace.working_dir)
+                 workspace.index_prefix, workspace.working_dir,
+                 mapping_file)
         return tool.stdout.getvalue()
 
     def test_resync_empty_index(self):
@@ -98,10 +101,31 @@ class TestResyncTool(ToolBaseTest):
         self.workspace.refresh_index()
         self.assertEqual(self.workspace.S(TestPerson).count(), 3)
 
+    def test_mapping(self):
+        mapping = {
+            'properties': {
+                'uuid': {
+                    'type': 'string',
+                    'index': 'not_analyzed',
+                },
+                'name': {
+                    'type': 'string',
+                    'index': 'not_analyzed',
+                },
+                'age': {
+                    'type': 'integer',
+                },
+            }
+        }
+        mapping_file = StringIO()
+        json.dump(mapping, fp=mapping_file)
+        mapping_file.seek(0)
+        self.resync(self.workspace, TestPerson, mapping_file=mapping_file)
+
 
 class TestResyncToolWithConfigFile(TestResyncTool):
 
-    def resync(self, workspace, models_module):
+    def resync(self, workspace, models_module, mapping_file=None):
         parser = ConfigParser()
         parser.add_section(DEFAULT_SECTION)
         parser.set(DEFAULT_SECTION, 'git.path',
@@ -114,5 +138,5 @@ class TestResyncToolWithConfigFile(TestResyncTool):
 
         tool = ResyncTool()
         tool.stdout = StringIO()
-        tool.run(sio, models_module, None, None)
+        tool.run(sio, models_module, None, None, mapping_file)
         return tool.stdout.getvalue()
