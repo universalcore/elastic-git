@@ -7,7 +7,6 @@ from elasticgit.utils import load_class
 
 def load_models(models):
     models_module = load_class(models)
-    print models_module.__dict__
     models = dict([
         (name, value)
         for name, value in models_module.__dict__.items()
