@@ -6,7 +6,8 @@ from ConfigParser import ConfigParser
 from elasticgit import EG
 from elasticgit.commands.base import (
     ToolCommand, CommandArgument, ToolCommandError)
-from elasticgit.utils import load_class
+from elasticgit.commands.utils import ModelClassType
+from elasticgit.utils import fqcn
 
 
 DEFAULT_SECTION = 'app:cmsfrontend'
@@ -26,7 +27,8 @@ class ResyncTool(ToolCommand):
         CommandArgument(
             '-m', '--model',
             dest='model_class_name',
-            help='The model class to load.', required=True),
+            help='The model class to load.', required=True,
+            type=ModelClassType()),
         CommandArgument(
             '-s', '--section-name',
             dest='section_name',
@@ -40,24 +42,34 @@ class ResyncTool(ToolCommand):
             '-p', '--git-path',
             dest='git_path',
             help='The path to the repository.'),
+        CommandArgument(
+            '-f', '--mapping-file',
+            dest='mapping_file',
+            help='The path to a custom mapping file.',
+            type=argparse.FileType('r')),
     )
 
     stdout = sys.stdout
 
-    def run(self, config_file, model_class_name, index_prefix, git_path,
-            section_name=DEFAULT_SECTION):
+    def run(self, config_file, model_class, index_prefix, git_path,
+            mapping_file=None, section_name=DEFAULT_SECTION):
 
+        # apply mappings if supplied
+        if mapping_file is not None:
+            self.apply_mapping(mapping_file, model_class)
+
+        # resync
         if config_file is not None:
-            self.resync_with_config_file(config_file, model_class_name,
+            self.resync_with_config_file(config_file, model_class,
                                          section_name)
         elif index_prefix and git_path:
-            self.resync(git_path, index_prefix, model_class_name)
+            self.resync(git_path, index_prefix, model_class)
         else:
             raise ToolCommandError(
                 'Please specify either `--config` or `--index-prefix` and '
                 '`--git-path`.')
 
-    def resync_with_config_file(self, config_file, model_class_name,
+    def resync_with_config_file(self, config_file, model_class,
                                 section_name):
         # NOTE: ConfigParser's DEFAULT handling is kind of nuts
         config = ConfigParser()
@@ -78,11 +90,10 @@ class ResyncTool(ToolCommand):
         working_dir = config.get(section_name, 'git.path')
         index_prefix = config.get(section_name, 'es.index_prefix')
 
-        self.resync(working_dir, index_prefix, model_class_name)
+        self.resync(working_dir, index_prefix, model_class)
 
-    def resync(self, working_dir, index_prefix, model_class_name):
+    def resync(self, working_dir, index_prefix, model_class):
         workspace = EG.workspace(working_dir, index_prefix=index_prefix)
-        model = load_class(model_class_name)
-        updated, removed = workspace.sync(model)
+        updated, removed = workspace.sync(model_class)
         self.stdout.writelines('%s: %d updated, %d removed.\n' % (
-            model_class_name, len(updated), len(removed)))
+            fqcn(model_class), len(updated), len(removed)))

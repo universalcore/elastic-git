@@ -3,7 +3,6 @@ from ConfigParser import ConfigParser
 
 from elasticgit.tests.base import ToolBaseTest, TestPerson
 from elasticgit.commands.resync import ResyncTool, DEFAULT_SECTION
-from elasticgit.utils import fqcn
 
 
 class TestResyncTool(ToolBaseTest):
@@ -21,10 +20,10 @@ class TestResyncTool(ToolBaseTest):
             True
         self.im.refresh_indices(branch_name)
 
-    def resync(self, workspace, models_module):
+    def resync(self, workspace, model_class):
         tool = ResyncTool()
         tool.stdout = StringIO()
-        tool.run(None, models_module,
+        tool.run(None, model_class,
                  workspace.index_prefix, workspace.working_dir)
         return tool.stdout.getvalue()
 
@@ -41,7 +40,7 @@ class TestResyncTool(ToolBaseTest):
         self.recreate_index(branch_name)
         self.assertEqual(self.workspace.S(TestPerson).count(), 0)
 
-        output = self.resync(self.workspace, fqcn(TestPerson))
+        output = self.resync(self.workspace, TestPerson)
         self.assertEqual(
             'elasticgit.tests.base.TestPerson: 1 updated, 0 removed.\n',
             output)
@@ -61,7 +60,7 @@ class TestResyncTool(ToolBaseTest):
 
         self.workspace.refresh_index()
         self.assertEqual(self.workspace.S(TestPerson).count(), 1)
-        output = self.resync(self.workspace, fqcn(TestPerson))
+        output = self.resync(self.workspace, TestPerson)
         self.assertEqual(
             'elasticgit.tests.base.TestPerson: 0 updated, 1 removed.\n',
             output)
@@ -92,7 +91,7 @@ class TestResyncTool(ToolBaseTest):
         self.workspace.refresh_index()
 
         self.assertEqual(self.workspace.S(TestPerson).count(), 1)
-        output = self.resync(self.workspace, fqcn(TestPerson))
+        output = self.resync(self.workspace, TestPerson)
         self.assertEqual(
             'elasticgit.tests.base.TestPerson: 3 updated, 0 removed.\n',
             output)
