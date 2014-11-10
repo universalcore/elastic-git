@@ -32,6 +32,5 @@ deploy:
   password:
     secure: EA5FqGREb4eAPa+lf7/qtAFQW8eCvvQA6RTbnpwvPhYRxvFtudi0v/r668dX08LEwsIlqJ4X02XjMJNBU2rn3VGvsgStJPBnhkf5BptbbiCdVM+T9FhNN2jLMUk4fmFjrniHt/4a/biKgTMDgWek7xhbaI3gBMQkKY1MFhZRnjI=
   on:
-    repo: universalcore/elastic-git
-    branch: master
-
+    tags: true
+    all_branches: true
