@@ -121,6 +121,8 @@ class TestResyncTool(ToolBaseTest):
         json.dump(mapping, fp=mapping_file)
         mapping_file.seek(0)
         self.resync(self.workspace, TestPerson, mapping_file=mapping_file)
+        self.assertEqual(
+            self.workspace.get_mapping(TestPerson), mapping)
 
 
 class TestResyncToolWithConfigFile(TestResyncTool):
