@@ -82,6 +82,5 @@ class BooleanType(object):
 
     """
 
-
     def __call__(self, value):
         return value.lower() in ("yes", "true", "t", "1")
