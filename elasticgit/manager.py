@@ -445,6 +445,9 @@ class StorageManager(object):
         :returns:
             The commit.
         """
+        if not isinstance(message, str):
+            raise StorageException('Messages need to be bytestrings.')
+
         index = self.repo.index
         index.remove([self.git_name(model)])
         index.commit(message)
@@ -595,6 +598,8 @@ class Workspace(object):
         :param str message:
             The commit message to remove the model from Git with.
         """
+        if isinstance(message, unicode):
+            message = unidecode(message)
         self.sm.delete(model, message)
         self.im.unindex(model)
 

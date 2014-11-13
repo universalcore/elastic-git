@@ -113,3 +113,19 @@ class TestManager(ModelBaseTest):
         repo = self.workspace.repo
         [commit] = repo.iter_commits()
         self.assertEqual(commit.message, 'Unicode')
+
+    def test_delete_bytestring(self):
+        p = TestPerson({'age': 10, 'name': 'Name'})
+        self.workspace.save(p, 'bytestring')
+        self.workspace.delete(p, 'bytestring')
+        repo = self.workspace.repo
+        [_, delete_commit] = repo.iter_commits()
+        self.assertEqual(delete_commit.message, 'bytestring')
+
+    def test_delete_unidecode(self):
+        p = TestPerson({'age': 10, 'name': 'Name'})
+        self.workspace.save(p, u'Unîcødé')
+        self.workspace.delete(p, u'Unîcødé')
+        repo = self.workspace.repo
+        [_, delete_commit] = repo.iter_commits()
+        self.assertEqual(delete_commit.message, 'Unicode')
