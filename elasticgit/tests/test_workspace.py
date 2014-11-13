@@ -231,7 +231,8 @@ class TestEG(ModelBaseTest):
             'name': 'Name',
         })
         self.upstream_workspace = self.mk_workspace(
-            name='%s-upstream' % (self.id().lower()))
+            name='%s-upstream' % (self.id().lower()),
+            index_prefix='%s_upstream' % (self.workspace.index_prefix,))
         self.upstream_workspace.save(person, 'Saving upstream')
 
         repo = self.workspace.repo
@@ -252,7 +253,7 @@ class TestEG(ModelBaseTest):
         })
         self.origin_workspace = self.mk_workspace(
             name='%s-origin' % (self.id().lower()),
-            index_prefix='origin')
+            index_prefix='%s_origin' % (self.workspace.index_prefix,))
         self.origin_workspace.save(person, 'Saving origin upstream')
 
         person2 = TestPerson({
@@ -261,7 +262,7 @@ class TestEG(ModelBaseTest):
         })
         self.upstream_workspace = self.mk_workspace(
             name='%s-upstream' % (self.id().lower()),
-            index_prefix='upstream')
+            index_prefix='%s_upstream' % (self.workspace.index_prefix,))
         self.upstream_workspace.save(person2, 'Saving upstream')
 
         repo = self.workspace.repo
@@ -289,7 +290,8 @@ class TestEG(ModelBaseTest):
             'name': 'Name',
         })
         self.upstream_workspace = self.mk_workspace(
-            name='%s-upstream' % (self.id().lower()))
+            name='%s-upstream' % (self.id().lower()),
+            index_prefix='%s_upstream' % (self.workspace.index_prefix,))
         self.upstream_workspace.save(person, 'Saving upstream')
 
         repo = self.workspace.repo
@@ -311,6 +313,8 @@ class TestEG(ModelBaseTest):
 
         self.workspace.fast_forward()
         self.workspace.reindex(TestPerson)
+        print self.workspace.index_prefix
+        print self.upstream_workspace.index_prefix
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
 
