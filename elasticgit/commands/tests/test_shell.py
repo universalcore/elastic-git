@@ -17,13 +17,13 @@ class TestDumpSchemaTool(ToolBaseTest):
         return shell.run(*args, **kwargs)
 
     def test_shell_workdir(self):
-        shell = self.mk_shell('dir')
+        shell = self.mk_shell(self.mk_tempdir())
         [scope] = shell.args
         for var in ['Q', 'workspace', 'F', 'EG']:
             self.assertTrue(var in scope)
 
     def test_shell_models(self):
-        shell = self.mk_shell('dir', 'elasticgit.tests.base')
+        shell = self.mk_shell(self.mk_tempdir(), 'elasticgit.tests.base')
         [scope] = shell.args
         for var in ['TestPerson', 'TestFallbackPerson']:
             self.assertTrue(var in scope)

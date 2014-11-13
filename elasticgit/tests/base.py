@@ -1,6 +1,7 @@
 import os
 import json
 import tempfile
+import shutil
 
 from StringIO import StringIO
 
@@ -80,6 +81,11 @@ class ToolBaseTest(ModelBaseTest):
         return [field
                 for field in schema['fields']
                 if field['name'] == field_name][0]
+
+    def mk_tempdir(self):
+        abs_path = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(abs_path))
+        return abs_path
 
     def mk_tempfile(self, data):
         fd, name = tempfile.mkstemp(text=True)
