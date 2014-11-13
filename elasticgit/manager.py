@@ -619,7 +619,17 @@ class Workspace(object):
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
-        return self.repo.git.merge(fetch_info.commit)
+
+        # NOTE: This can happen when we've not done anything yet on a
+        #       repository
+        if self.repo.heads:
+            hcommit = self.repo.head.commit
+            diff = hcommit.diff(fetch_info.commit)
+        else:
+            diff = []
+
+        self.repo.git.merge(fetch_info.commit)
+        return diff
 
     def reindex_iter(self, model_class, refresh_index=True):
         """
