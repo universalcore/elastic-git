@@ -619,7 +619,7 @@ class Workspace(object):
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
-        self.repo.git.merge(fetch_info.commit)
+        return self.repo.git.merge(fetch_info.commit)
 
     def reindex_iter(self, model_class, refresh_index=True):
         """

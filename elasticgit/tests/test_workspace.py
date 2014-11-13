@@ -283,6 +283,37 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 2)
 
+    def test_fast_forwards_with_deletes(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+        self.upstream_workspace = self.mk_workspace(
+            name='%s-upstream' % (self.id().lower()))
+        self.upstream_workspace.save(person, 'Saving upstream')
+
+        repo = self.workspace.repo
+        repo.create_remote(
+            'origin', self.upstream_workspace.working_dir)
+
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+        self.workspace.fast_forward()
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+
+        self.upstream_workspace.delete(person, 'Deleting upstream')
+        self.upstream_workspace.refresh_index()
+
+        self.assertEqual(
+            self.upstream_workspace.S(TestPerson).count(), 0)
+
+        self.workspace.fast_forward()
+        self.workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+
     def test_case_sensitivity(self):
         workspace = self.workspace
         workspace.setup_mapping(TestPage)
