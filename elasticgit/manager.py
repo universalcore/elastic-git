@@ -664,7 +664,7 @@ class Workspace(object):
 
         # reindex added blobs
         for diff in changes.iter_change_type('A'):
-            model_class, uuid = self.sm.path_info(diff.a_blob.path)
+            model_class, uuid = self.sm.path_info(diff.b_blob.path)
             obj = self.sm.get(model_class, uuid)
             self.im.index(obj)
 
