@@ -311,9 +311,7 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.upstream_workspace.S(TestPerson).count(), 0)
 
-        diffs = self.workspace.fast_forward()
-        for change in diffs.iter_change_type('D'):
-            print 'deleted path', change.a_blob.path
+        self.workspace.fast_forward()
 
         self.workspace.reindex(TestPerson)
         self.assertEqual(
