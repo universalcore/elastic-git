@@ -217,11 +217,11 @@ class TestEG(ModelBaseTest):
         origin.fetch()
 
         self.workspace.fast_forward(branch_name='master')
-        self.workspace.reindex(TestPerson)
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
         self.workspace.fast_forward(branch_name='temp')
-        self.workspace.reindex(TestPerson)
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 2)
 
@@ -242,38 +242,35 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
         self.workspace.fast_forward()
-        self.workspace.reindex(TestPerson)
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
 
     def test_fast_forward_with_multiple_remotes(self):
-        person = TestPerson({
+        person1 = TestPerson({
             'age': 1,
             'name': 'Name',
         })
-        self.origin_workspace = self.mk_workspace(
-            name='%s-origin' % (self.id().lower()),
-            index_prefix='%s_origin' % (self.workspace.index_prefix,))
-        self.origin_workspace.save(person, 'Saving origin upstream')
 
         person2 = TestPerson({
             'age': 2,
             'name': 'Another Name',
         })
-        self.upstream_workspace = self.mk_workspace(
-            name='%s-upstream' % (self.id().lower()),
-            index_prefix='%s_upstream' % (self.workspace.index_prefix,))
-        self.upstream_workspace.save(person2, 'Saving upstream')
 
-        repo = self.workspace.repo
-        repo.create_remote(
-            'origin', self.origin_workspace.working_dir)
-        repo.create_remote(
-            'upstream', self.upstream_workspace.working_dir)
+        origin_workspace = self.create_upstream_for(
+            self.workspace, remote_name='origin', suffix='origin')
+        origin_workspace.save(person1, 'Saving person1 in origin')
+
+        upstream_workspace = self.create_upstream_for(
+            self.workspace, remote_name='upstream', suffix='upstream')
+        upstream_workspace.save(person2, 'Saving person2 in upstream')
 
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
 
+        # NOTE: if you're dealing with multiple remotes you need to do
+        #       a reindex because GitPython gets confused about what's
+        #       actually been deleted / updated.
         self.workspace.fast_forward()
         self.workspace.reindex(TestPerson)
         self.assertEqual(
@@ -348,8 +345,9 @@ class TestEG(ModelBaseTest):
             self.workspace.S(TestPerson).count(), 1)
 
         updated_person = person.update({'age': 2, 'name': 'Foo'})
-        self.upstream_workspace.save(updated_person, 'Updating a person')
+        upstream_workspace.save(updated_person, 'Updating a person')
         self.workspace.fast_forward()
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
         self.assertEqual(

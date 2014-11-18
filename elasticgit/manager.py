@@ -659,27 +659,22 @@ class Workspace(object):
 
         # unindex deleted blobs
         for diff in changes.iter_change_type('D'):
+            print 'deleted', branch_name, remote_name, diff.a_blob.path
             model_class, uuid = self.sm.path_info(diff.a_blob.path)
             self.im.raw_unindex(model_class, uuid)
 
         # reindex added blobs
         for diff in changes.iter_change_type('A'):
+            print 'adding', branch_name, remote_name, diff.b_blob.path
             model_class, uuid = self.sm.path_info(diff.b_blob.path)
             obj = self.sm.get(model_class, uuid)
             self.im.index(obj)
 
         # reindex modified blobs
         for diff in changes.iter_change_type('M'):
+            print 'modified', branch_name, remote_name, diff.a_blob.path
             model_class, uuid = self.sm.path_info(diff.a_blob.path)
             obj = self.sm.get(model_class, uuid)
-            self.im.index(obj)
-
-        # reindex renamed blobs
-        for diff in changes.iter_change_type('R'):
-            old_model_class, old_uuid = self.sm.path_info(diff.a_blob.path)
-            new_model_class, new_uuid = self.sm.path_info(diff.b_blob.path)
-            self.im.raw_unindex(old_model_class, old_uuid)
-            obj = self.sm.get(new_model_class, new_uuid)
             self.im.index(obj)
 
     def reindex_iter(self, model_class, refresh_index=True):
