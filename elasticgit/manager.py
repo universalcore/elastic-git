@@ -1,5 +1,6 @@
 import shutil
 import os
+import warnings
 from urllib import quote
 
 from unidecode import unidecode
@@ -642,12 +643,13 @@ class Workspace(object):
         self.im.unindex(model)
 
     def fast_forward(self, branch_name='master', remote_name='origin'):
+        warnings.warn('This method is deprecated, use pull() instead',
+                      DeprecationWarning)
+        return self.pull(branch_name=branch_name, remote_name=remote_name)
+
+    def pull(self, branch_name='master', remote_name='origin'):
         """
         Fetch & Merge in an upstream's commits.
-
-        .. note::
-            This should probably be renamed to `pull` instead as that
-            is essentially what a ``fetch`` + ``merge`` is in Git.
 
         :param str branch_name:
             The name of the branch to fast forward & merge in
