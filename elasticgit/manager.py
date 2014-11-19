@@ -647,6 +647,24 @@ class Workspace(object):
                       DeprecationWarning)
         return self.pull(branch_name=branch_name, remote_name=remote_name)
 
+    def reindex_diff(self, diff_index):
+        changed_model_set = set([])
+        for diff in diff_index:
+            if diff.new_file:
+                changed_model_set.add(
+                    self.sm.path_info(diff.b_blob.path)[0])
+            elif diff.renamed:
+                changed_model_set.add(
+                    self.sm.path_info(diff.a_blob.path)[0])
+                changed_model_set.add(
+                    self.sm.path_info(diff.b_blob.path)[0])
+            else:
+                changed_model_set.add(
+                    self.sm.path_info(diff.a_blob.path)[0])
+
+        for model_class in changed_model_set:
+            self.reindex(model_class)
+
     def pull(self, branch_name='master', remote_name='origin'):
         """
         Fetch & Merge in an upstream's commits.
@@ -658,6 +676,23 @@ class Workspace(object):
         """
         changes = self.sm.pull(branch_name=branch_name,
                                remote_name=remote_name)
+
+        # NOTE: This is probably more complicated than it needs to be
+        #       If we have multiple remotes GitPython gets confused about
+        #       deletes. It marks things as deletes because it may not
+        #       exist on another remote.
+        #
+        #       Here we loop over all changes, track the models that've
+        #       changed and then reindex fully to make sure we're in sync.
+        if len(self.repo.remotes) > 1 and any(changes):
+            return self.reindex_diff(changes)
+
+        # NOTE: There's a very unlikely scenario where we're dealing with
+        #       renames. This generally can only happen when a repository
+        #       has been manually modififed. If that's the case then
+        #       reindex everything as well
+        if any(changes.iter_change_type('R')):
+            return self.reindex_diff(changes)
 
         # unindex deleted blobs
         for diff in changes.iter_change_type('D'):

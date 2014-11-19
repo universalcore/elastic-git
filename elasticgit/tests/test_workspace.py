@@ -268,16 +268,11 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
 
-        # NOTE: if you're dealing with multiple remotes you need to do
-        #       a reindex because GitPython gets confused about what's
-        #       actually been deleted / updated.
         self.workspace.fast_forward()
-        self.workspace.reindex(TestPerson)
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
 
         self.workspace.fast_forward(remote_name='upstream')
-        self.workspace.reindex(TestPerson)
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 2)
 
