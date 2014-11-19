@@ -54,7 +54,8 @@ class ModelBaseTest(TestCase):
                      name=None,
                      url='http://localhost',
                      index_prefix=None,
-                     auto_destroy=None):
+                     auto_destroy=None,
+                     initial_commit=True):
         working_dir = working_dir or self.WORKING_DIR
         name = name or self.id()
         index_prefix = index_prefix or self.mk_index_prefix()
@@ -64,6 +65,11 @@ class ModelBaseTest(TestCase):
         }, index_prefix=index_prefix)
         if auto_destroy:
             self.addCleanup(workspace.destroy)
+
+        if initial_commit:
+            index = workspace.repo.index
+            index.commit('Initial Commit')
+
         return workspace
 
 

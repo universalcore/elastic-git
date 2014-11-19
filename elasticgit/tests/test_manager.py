@@ -104,28 +104,30 @@ class TestManager(ModelBaseTest):
         p = TestPerson({'age': 10, 'name': 'Name'})
         self.workspace.save(p, 'bytestring')
         repo = self.workspace.repo
-        [commit] = repo.iter_commits()
-        self.assertEqual(commit.message, 'bytestring')
+        [save_commit, _] = repo.iter_commits()
+        self.assertEqual(save_commit.message, 'bytestring')
 
     def test_save_unidecode(self):
         p = TestPerson({'age': 10, 'name': 'Name'})
         self.workspace.save(p, u'Unîcødé')
         repo = self.workspace.repo
-        [commit] = repo.iter_commits()
-        self.assertEqual(commit.message, 'Unicode')
+        [save_commit, _] = repo.iter_commits()
+        self.assertEqual(save_commit.message, 'Unicode')
 
     def test_delete_bytestring(self):
         p = TestPerson({'age': 10, 'name': 'Name'})
-        self.workspace.save(p, 'bytestring')
-        self.workspace.delete(p, 'bytestring')
+        self.workspace.save(p, 'save bytestring')
+        self.workspace.delete(p, 'delete bytestring')
         repo = self.workspace.repo
-        [_, delete_commit] = repo.iter_commits()
-        self.assertEqual(delete_commit.message, 'bytestring')
+        [delete_commit, save_commit, _] = repo.iter_commits()
+        self.assertEqual(save_commit.message, 'save bytestring')
+        self.assertEqual(delete_commit.message, 'delete bytestring')
 
     def test_delete_unidecode(self):
         p = TestPerson({'age': 10, 'name': 'Name'})
-        self.workspace.save(p, u'Unîcødé')
-        self.workspace.delete(p, u'Unîcødé')
+        self.workspace.save(p, u'Sävé Unîcødé')
+        self.workspace.delete(p, u'Délëtê Unîcødé')
         repo = self.workspace.repo
-        [_, delete_commit] = repo.iter_commits()
-        self.assertEqual(delete_commit.message, 'Unicode')
+        [delete_commit, save_commit, _] = repo.iter_commits()
+        self.assertEqual(save_commit.message, 'Save Unicode')
+        self.assertEqual(delete_commit.message, 'Delete Unicode')

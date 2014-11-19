@@ -1,10 +1,12 @@
 import shutil
 import os
+import warnings
 from urllib import quote
 
 from unidecode import unidecode
 
 from git import Repo
+from git.diff import DiffIndex
 
 from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
@@ -339,7 +341,21 @@ class StorageManager(object):
             uuid, suffix = file_name.split('.', 2)
             yield self.get(model_class, uuid)
 
-    def load(self, file_path, model_class=None):
+    def path_info(self, file_path):
+        """
+        Analyze a file path and return the object's class and the uuid.
+
+        :param str file_path:
+            The path of the object we want a model instance for.
+        :returns:
+            (model_class, uuid) tuple
+        """
+        module_name, class_name, file_name = file_path.split('/', 3)
+        uuid, suffix = file_name.split('.', 2)
+        model_class = load_class('%s.%s' % (module_name, class_name))
+        return model_class, uuid
+
+    def load(self, file_path):
         """
         Load a file from the repository and return it as a Model instance.
 
@@ -348,9 +364,7 @@ class StorageManager(object):
         :returns:
             :py:class:`elasticgit.models.Model`
         """
-        module_name, class_name, file_name = file_path.split('/', 3)
-        uuid, suffix = file_name.split('.', 2)
-        model_class = load_class('%s.%s' % (module_name, class_name))
+        model_class, uuid = self.path_info(file_path)
         return self.get(model_class, uuid)
 
     def get(self, model_class, uuid):
@@ -507,6 +521,31 @@ class StorageManager(object):
         """
         return shutil.rmtree(self.workdir)
 
+    def pull(self, branch_name='master', remote_name='origin'):
+        """
+        Fetch & Merge in an upstream's commits.
+
+        :param str branch_name:
+            The name of the branch to fast forward & merge in
+        :param str remote_name:
+            The name of the remote to fetch from.
+        """
+        remote = self.repo.remote(name=remote_name)
+        fetch_list = remote.fetch()
+        fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
+
+        # NOTE: This can happen when we've not done anything yet on a
+        #       repository
+        if self.repo.heads:
+            hcommit = self.repo.head.commit
+            diff = hcommit.diff(fetch_info.commit)
+        else:
+            diff = DiffIndex()
+
+        self.repo.git.merge(fetch_info.commit)
+
+        return diff
+
 
 class Workspace(object):
     """
@@ -604,22 +643,73 @@ class Workspace(object):
         self.im.unindex(model)
 
     def fast_forward(self, branch_name='master', remote_name='origin'):
+        warnings.warn('This method is deprecated, use pull() instead',
+                      DeprecationWarning)
+        return self.pull(branch_name=branch_name, remote_name=remote_name)
+
+    def reindex_diff(self, diff_index):
+        changed_model_set = set([])
+        for diff in diff_index:
+            if diff.new_file:
+                changed_model_set.add(
+                    self.sm.path_info(diff.b_blob.path)[0])
+            elif diff.renamed:
+                changed_model_set.add(
+                    self.sm.path_info(diff.a_blob.path)[0])
+                changed_model_set.add(
+                    self.sm.path_info(diff.b_blob.path)[0])
+            else:
+                changed_model_set.add(
+                    self.sm.path_info(diff.a_blob.path)[0])
+
+        for model_class in changed_model_set:
+            self.reindex(model_class)
+
+    def pull(self, branch_name='master', remote_name='origin'):
         """
         Fetch & Merge in an upstream's commits.
-
-        .. note::
-            This should probably be renamed to `pull` instead as that
-            is essentially what a ``fetch`` + ``merge`` is in Git.
 
         :param str branch_name:
             The name of the branch to fast forward & merge in
         :param str remote_name:
             The name of the remote to fetch from.
         """
-        remote = self.repo.remote(name=remote_name)
-        fetch_list = remote.fetch()
-        fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
-        self.repo.git.merge(fetch_info.commit)
+        changes = self.sm.pull(branch_name=branch_name,
+                               remote_name=remote_name)
+
+        # NOTE: This is probably more complicated than it needs to be
+        #       If we have multiple remotes GitPython gets confused about
+        #       deletes. It marks things as deletes because it may not
+        #       exist on another remote.
+        #
+        #       Here we loop over all changes, track the models that've
+        #       changed and then reindex fully to make sure we're in sync.
+        if len(self.repo.remotes) > 1 and any(changes):
+            return self.reindex_diff(changes)
+
+        # NOTE: There's a very unlikely scenario where we're dealing with
+        #       renames. This generally can only happen when a repository
+        #       has been manually modififed. If that's the case then
+        #       reindex everything as well
+        if any(changes.iter_change_type('R')):
+            return self.reindex_diff(changes)
+
+        # unindex deleted blobs
+        for diff in changes.iter_change_type('D'):
+            model_class, uuid = self.sm.path_info(diff.a_blob.path)
+            self.im.raw_unindex(model_class, uuid)
+
+        # reindex added blobs
+        for diff in changes.iter_change_type('A'):
+            model_class, uuid = self.sm.path_info(diff.b_blob.path)
+            obj = self.sm.get(model_class, uuid)
+            self.im.index(obj)
+
+        # reindex modified blobs
+        for diff in changes.iter_change_type('M'):
+            model_class, uuid = self.sm.path_info(diff.a_blob.path)
+            obj = self.sm.get(model_class, uuid)
+            self.im.index(obj)
 
     def reindex_iter(self, model_class, refresh_index=True):
         """

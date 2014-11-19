@@ -69,7 +69,7 @@ class TestStorage(ModelBaseTest):
         self.sm.store(p, 'Saving a person.')
         self.sm.delete(p, 'Deleting a person.')
         repo = Repo(self.workspace.repo.working_dir)
-        delete_person, save_person = repo.iter_commits('master')
+        delete_person, save_person, _ = repo.iter_commits('master')
         self.assertEqual(save_person.message, 'Saving a person.')
         self.assertEqual(save_person.author.name, 'Test Kees')
         self.assertEqual(save_person.author.email, 'kees@example.org')
