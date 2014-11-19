@@ -1,6 +1,7 @@
 import os
 import json
 import tempfile
+import shutil
 
 from StringIO import StringIO
 
@@ -53,7 +54,8 @@ class ModelBaseTest(TestCase):
                      name=None,
                      url='http://localhost',
                      index_prefix=None,
-                     auto_destroy=None):
+                     auto_destroy=None,
+                     initial_commit=True):
         working_dir = working_dir or self.WORKING_DIR
         name = name or self.id()
         index_prefix = index_prefix or self.mk_index_prefix()
@@ -63,6 +65,11 @@ class ModelBaseTest(TestCase):
         }, index_prefix=index_prefix)
         if auto_destroy:
             self.addCleanup(workspace.destroy)
+
+        if initial_commit:
+            index = workspace.repo.index
+            index.commit('Initial Commit')
+
         return workspace
 
 
@@ -80,6 +87,11 @@ class ToolBaseTest(ModelBaseTest):
         return [field
                 for field in schema['fields']
                 if field['name'] == field_name][0]
+
+    def mk_tempdir(self):
+        abs_path = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(abs_path))
+        return abs_path
 
     def mk_tempfile(self, data):
         fd, name = tempfile.mkstemp(text=True)

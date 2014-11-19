@@ -217,11 +217,11 @@ class TestEG(ModelBaseTest):
         origin.fetch()
 
         self.workspace.fast_forward(branch_name='master')
-        self.workspace.reindex(TestPerson)
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
         self.workspace.fast_forward(branch_name='temp')
-        self.workspace.reindex(TestPerson)
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 2)
 
@@ -231,7 +231,8 @@ class TestEG(ModelBaseTest):
             'name': 'Name',
         })
         self.upstream_workspace = self.mk_workspace(
-            name='%s-upstream' % (self.id().lower()))
+            name='%s-upstream' % (self.id().lower()),
+            index_prefix='%s_upstream' % (self.workspace.index_prefix,))
         self.upstream_workspace.save(person, 'Saving upstream')
 
         repo = self.workspace.repo
@@ -241,47 +242,113 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
         self.workspace.fast_forward()
-        self.workspace.reindex(TestPerson)
+        self.workspace.refresh_index()
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
 
     def test_fast_forward_with_multiple_remotes(self):
-        person = TestPerson({
+        person1 = TestPerson({
             'age': 1,
             'name': 'Name',
         })
-        self.origin_workspace = self.mk_workspace(
-            name='%s-origin' % (self.id().lower()),
-            index_prefix='origin')
-        self.origin_workspace.save(person, 'Saving origin upstream')
 
         person2 = TestPerson({
             'age': 2,
             'name': 'Another Name',
         })
-        self.upstream_workspace = self.mk_workspace(
-            name='%s-upstream' % (self.id().lower()),
-            index_prefix='upstream')
-        self.upstream_workspace.save(person2, 'Saving upstream')
 
-        repo = self.workspace.repo
-        repo.create_remote(
-            'origin', self.origin_workspace.working_dir)
-        repo.create_remote(
-            'upstream', self.upstream_workspace.working_dir)
+        origin_workspace = self.create_upstream_for(
+            self.workspace, remote_name='origin', suffix='origin')
+        origin_workspace.save(person1, 'Saving person1 in origin')
+
+        upstream_workspace = self.create_upstream_for(
+            self.workspace, remote_name='upstream', suffix='upstream')
+        upstream_workspace.save(person2, 'Saving person2 in upstream')
 
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
 
         self.workspace.fast_forward()
-        self.workspace.reindex(TestPerson)
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 1)
 
         self.workspace.fast_forward(remote_name='upstream')
-        self.workspace.reindex(TestPerson)
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 2)
+
+    def test_fast_forwards_with_deletes(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+        self.upstream_workspace = self.mk_workspace(
+            name='%s-upstream' % (self.id().lower()),
+            index_prefix='%s_upstream' % (self.workspace.index_prefix,))
+        self.upstream_workspace.save(person, 'Saving upstream')
+        self.upstream_workspace.reindex(TestPerson)
+        self.assertEqual(
+            self.upstream_workspace.S(TestPerson).count(), 1)
+
+        repo = self.workspace.repo
+        repo.create_remote(
+            'origin', self.upstream_workspace.working_dir)
+
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+        self.workspace.fast_forward()
+        self.workspace.refresh_index()
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+
+        self.upstream_workspace.delete(person, 'Deleting upstream')
+        self.upstream_workspace.refresh_index()
+
+        self.assertEqual(
+            self.upstream_workspace.S(TestPerson).count(), 0)
+
+        self.workspace.fast_forward()
+        self.workspace.refresh_index()
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 0)
+
+    def create_upstream_for(self, workspace, create_remote=True,
+                            remote_name='origin',
+                            suffix='upstream'):
+        upstream_workspace = self.mk_workspace(
+            name='%s_%s' % (self.id().lower(), suffix),
+            index_prefix='%s_%s' % (self.workspace.index_prefix,
+                                    suffix))
+        if create_remote:
+            workspace.repo.create_remote(
+                remote_name, upstream_workspace.working_dir)
+        return upstream_workspace
+
+    def test_fast_forwards_with_modifications(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+
+        upstream_workspace = self.create_upstream_for(self.workspace)
+        upstream_workspace.save(person, 'Saving upstream')
+        self.workspace.fast_forward()
+        self.workspace.refresh_index()
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+
+        updated_person = person.update({'age': 2, 'name': 'Foo'})
+        upstream_workspace.save(updated_person, 'Updating a person')
+        self.workspace.fast_forward()
+        self.workspace.refresh_index()
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+        self.assertEqual(
+            self.workspace.S(TestPerson).filter(age=1).count(), 0)
+        self.assertEqual(
+            self.workspace.S(TestPerson).filter(age=2).count(), 1)
 
     def test_case_sensitivity(self):
         workspace = self.workspace
