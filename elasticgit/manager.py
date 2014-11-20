@@ -14,6 +14,10 @@ from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import introspect_properties, load_class
 from elasticgit.models import Model
 
+import logging
+
+log = logging.getLogger(__name__)
+
 
 class ModelMappingType(MappingType, Indexable):
 
@@ -356,11 +360,14 @@ class StorageManager(object):
             uuid, suffix = file_name.split('.', 2)
             model_class = load_class('%s.%s' % (module_name, class_name))
             if not issubclass(model_class, Model):
-                raise ValueError('%r does not subclass %r' % (
+                raise StorageException('%r does not subclass %r' % (
                     model_class, Model))
             return model_class, uuid
-        except ValueError:
-            pass
+        except ValueError, e:
+            log.warn('%s does not look like a model file path.' % (
+                file_path,))
+        except StorageException, e:
+            log.warn(e)
 
     def load(self, file_path):
         """
