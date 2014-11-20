@@ -726,7 +726,6 @@ class Workspace(object):
             path_info = self.sm.path_info(diff.b_blob.path)
             if path_info is None:
                 continue
-
             obj = self.sm.get(*path_info)
             self.im.index(obj)
 
