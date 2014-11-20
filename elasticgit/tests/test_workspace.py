@@ -367,6 +367,7 @@ class TestEG(ModelBaseTest):
             'file.txt', 'random', 'Writing a non-model file')
 
         self.workspace.fast_forward()
+        self.assertEqual('random', self.workspace.sm.get_data('file.txt'))
 
     def test_case_sensitivity(self):
         workspace = self.workspace
