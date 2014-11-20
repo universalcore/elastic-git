@@ -12,6 +12,7 @@ from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
 from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import introspect_properties, load_class
+from elasticgit.models import Model
 
 
 class ModelMappingType(MappingType, Indexable):
@@ -354,6 +355,9 @@ class StorageManager(object):
             module_name, class_name, file_name = file_path.split('/', 3)
             uuid, suffix = file_name.split('.', 2)
             model_class = load_class('%s.%s' % (module_name, class_name))
+            if not issubclass(model_class, Model):
+                raise ValueError('%r does not subclass %r' % (
+                    model_class, Model))
             return model_class, uuid
         except ValueError:
             pass
