@@ -1,5 +1,6 @@
 from elasticgit.tests.base import ModelBaseTest
-from elasticgit.models import ConfigError, IntegerField, TextField
+from elasticgit.models import (
+    ConfigError, IntegerField, TextField, ModelVersionField)
 
 import elasticgit
 
@@ -79,3 +80,9 @@ class TestModel(ModelBaseTest):
         self.assertEqual(new_model.name, model.name)
         self.assertTrue(model.is_read_only())
         self.assertFalse(new_model.is_read_only())
+
+    def test_version_check(self):
+        field = ModelVersionField('ModelVersionField')
+        self.assertTrue(field.compatible_version('0.2.10', '0.2.9'))
+        self.assertTrue(field.compatible_version('0.2.10', '0.2.10'))
+        self.assertFalse(field.compatible_version('0.2.9', '0.2.10'))
