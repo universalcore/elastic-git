@@ -2,7 +2,7 @@ import types
 import os
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
-from elasticgit.manager import ModelMappingType
+from elasticgit.search import ModelMappingType
 
 from git import Repo, GitCommandError
 
