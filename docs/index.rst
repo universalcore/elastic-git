@@ -84,6 +84,8 @@ it via elastic search.
 
    workspace
    models
+   storage_manager
+   search_manager
    utils
    tools
 
