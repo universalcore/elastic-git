@@ -82,7 +82,7 @@ it via elastic search.
    :maxdepth: 2
 
 
-   managers
+   workspace
    models
    utils
    tools

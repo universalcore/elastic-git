@@ -53,7 +53,7 @@ class ESManager(object):
     An interface to :py:class:`elasticgit.models.Model` instances stored
     in Git.
 
-    :param elasticgit.manager.Workspace workspace:
+    :param elasticgit.workspace.Workspace workspace:
         The workspace to operate on.
     :param elasticsearch.Elasticsearch es:
         An Elasticsearch client instance.

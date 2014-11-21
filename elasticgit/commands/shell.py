@@ -23,12 +23,12 @@ except ImportError:
 
 class EGShell(ToolCommand):
     """
-    Fire up a :py:class:`elasticgit.manager.Workspace` instance
+    Fire up a :py:class:`elasticgit.workspace.Workspace` instance
     for debugging straight from the command line.
 
     Sets the following variables in the local scope:
 
-    - ``workspace``, a :py:class:`elasticgit.manager.Workspace` pointing
+    - ``workspace``, a :py:class:`elasticgit.workspace.Workspace` pointing
       at the working directory provided.
     - ``Q``, ``F`` and ``EG`` already imported
     - all models loaded from the model class path provided.

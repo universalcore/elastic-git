@@ -46,7 +46,7 @@ class StorageManager(object):
 
         >>> from git import Repo
         >>> from elasticgit.tests.base import TestPerson
-        >>> from elasticgit.manager import StorageManager
+        >>> from elasticgit.storage import StorageManager
         >>> sm = StorageManager(Repo('.'))
         >>> sm.git_path(TestPerson)
         'elasticgit.tests.base/TestPerson'
@@ -71,7 +71,7 @@ class StorageManager(object):
 
         >>> from git import Repo
         >>> from elasticgit.tests.base import TestPerson
-        >>> from elasticgit.manager import StorageManager
+        >>> from elasticgit.storage import StorageManager
         >>> person = TestPerson({'age': 1, 'name': 'Foo', 'uuid': 'the-uuid'})
         >>> sm = StorageManager(Repo('.'))
         >>> sm.git_name(person)

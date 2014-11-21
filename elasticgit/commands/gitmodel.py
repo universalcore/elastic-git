@@ -2,11 +2,10 @@ import os
 import glob
 import json
 import warnings
-from contextlib import contextmanager
 
 from elasticgit.commands.base import ToolCommand, CommandArgument
 from elasticgit.commands import avro
-from elasticgit.manager import StorageManager
+from elasticgit.storage import StorageManager
 
 from git import Repo
 
