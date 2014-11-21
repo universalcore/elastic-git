@@ -12,6 +12,11 @@ from elasticutils import MappingType, Indexable, get_es, S, Q, F
 
 from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import introspect_properties, load_class
+from elasticgit.models import Model
+
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class ModelMappingType(MappingType, Indexable):
@@ -348,12 +353,21 @@ class StorageManager(object):
         :param str file_path:
             The path of the object we want a model instance for.
         :returns:
-            (model_class, uuid) tuple
+            (model_class, uuid) tuple or ``None`` if not a model file path.
         """
-        module_name, class_name, file_name = file_path.split('/', 3)
-        uuid, suffix = file_name.split('.', 2)
-        model_class = load_class('%s.%s' % (module_name, class_name))
-        return model_class, uuid
+        try:
+            module_name, class_name, file_name = file_path.split('/', 3)
+            uuid, suffix = file_name.split('.', 2)
+            model_class = load_class('%s.%s' % (module_name, class_name))
+            if not issubclass(model_class, Model):
+                raise StorageException('%r does not subclass %r' % (
+                    model_class, Model))
+            return model_class, uuid
+        except ValueError, e:
+            log.warn('%s does not look like a model file path.' % (
+                file_path,))
+        except StorageException, e:
+            log.warn(e)
 
     def load(self, file_path):
         """
@@ -364,8 +378,24 @@ class StorageManager(object):
         :returns:
             :py:class:`elasticgit.models.Model`
         """
-        model_class, uuid = self.path_info(file_path)
-        return self.get(model_class, uuid)
+        path_info = self.path_info(file_path)
+        if path_info is None:
+            raise StorageException(
+                '%s does not look like a model file.' % (file_path,))
+
+        return self.get(*path_info)
+
+    def get_data(self, repo_path):
+        """
+        Get the data for a file stored in git
+
+        :param str repo_path:
+            The path to the file in the Git repository
+        :returns:
+            str
+        """
+        current_branch = self.repo.active_branch.name
+        return self.repo.git.show('%s:%s' % (current_branch, repo_path))
 
     def get(self, model_class, uuid):
         """
@@ -379,14 +409,11 @@ class StorageManager(object):
         :returns:
             :py:class:elasticgit.models.Model
         """
-        current_branch = self.repo.active_branch.name
 
-        object_data = self.repo.git.show(
-            '%s:%s' % (
-                current_branch,
-                self.git_path(
-                    model_class,
-                    '%s.%s' % (uuid, self.serializer.suffix,))))
+        object_data = self.get_data(
+            self.git_path(
+                model_class,
+                '%s.%s' % (uuid, self.serializer.suffix,)))
 
         model = self.serializer.deserialize(model_class, object_data)
 
@@ -696,19 +723,25 @@ class Workspace(object):
 
         # unindex deleted blobs
         for diff in changes.iter_change_type('D'):
-            model_class, uuid = self.sm.path_info(diff.a_blob.path)
-            self.im.raw_unindex(model_class, uuid)
+            path_info = self.sm.path_info(diff.a_blob.path)
+            if path_info is None:
+                continue
+            self.im.raw_unindex(*path_info)
 
         # reindex added blobs
         for diff in changes.iter_change_type('A'):
-            model_class, uuid = self.sm.path_info(diff.b_blob.path)
-            obj = self.sm.get(model_class, uuid)
+            path_info = self.sm.path_info(diff.b_blob.path)
+            if path_info is None:
+                continue
+            obj = self.sm.get(*path_info)
             self.im.index(obj)
 
         # reindex modified blobs
         for diff in changes.iter_change_type('M'):
-            model_class, uuid = self.sm.path_info(diff.a_blob.path)
-            obj = self.sm.get(model_class, uuid)
+            path_info = self.sm.path_info(diff.a_blob.path)
+            if path_info is None:
+                continue
+            obj = self.sm.get(*path_info)
             self.im.index(obj)
 
     def reindex_iter(self, model_class, refresh_index=True):

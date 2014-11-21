@@ -350,6 +350,25 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).filter(age=2).count(), 1)
 
+    def test_fast_forward_of_non_model_data(self):
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+
+        upstream_workspace = self.create_upstream_for(self.workspace)
+        upstream_workspace.save(person, 'Saving upstream')
+        self.workspace.fast_forward()
+        self.workspace.refresh_index()
+        self.assertEqual(
+            self.workspace.S(TestPerson).count(), 1)
+
+        upstream_workspace.sm.store_data(
+            'file.txt', 'random', 'Writing a non-model file')
+
+        self.workspace.fast_forward()
+        self.assertEqual('random', self.workspace.sm.get_data('file.txt'))
+
     def test_case_sensitivity(self):
         workspace = self.workspace
         workspace.setup_mapping(TestPage)
