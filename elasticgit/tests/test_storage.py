@@ -4,7 +4,8 @@ import os
 import shutil
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson
-from elasticgit.manager import StorageException, EG, StorageManager
+from elasticgit import EG
+from elasticgit.storage import StorageException, StorageManager
 
 from git import Repo, GitCommandError
 
