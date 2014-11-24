@@ -9,7 +9,7 @@ from unittest import TestCase
 
 from elasticgit.models import (
     IntegerField, TextField, Model, SingleFieldFallback)
-from elasticgit.manager import EG
+from elasticgit.workspace import EG
 from elasticgit.utils import fqcn
 from elasticgit.commands.avro import (
     SchemaDumper, SchemaLoader, FieldMapType, RenameType)
