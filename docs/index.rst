@@ -82,8 +82,10 @@ it via elastic search.
    :maxdepth: 2
 
 
-   managers
+   workspace
    models
+   storage_manager
+   search_manager
    utils
    tools
 

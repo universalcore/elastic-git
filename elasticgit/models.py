@@ -175,13 +175,18 @@ class ModelVersionField(DictField):
         }
     }
 
+    def compatible_version(self, own_version, check_version):
+        own = map(int, own_version.split('.'))
+        check = map(int, check_version.split('.'))
+        return own >= check
+
     def validate(self, config):
         config._config_data.setdefault(
             self.name, elasticgit.version_info.copy())
         value = self.get_value(config)
         current_version = elasticgit.version_info['package_version']
         package_version = value['package_version']
-        if (current_version < package_version):
+        if not self.compatible_version(current_version, package_version):
             raise ConfigError(
                 'Got a version from the future, expecting: %r got %r' % (
                     current_version, package_version))

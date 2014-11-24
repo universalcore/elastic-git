@@ -23,7 +23,7 @@ Usage
 
 .. code-block:: python
 
-    from elasticgit.manager import EG
+    from elasticgit import EG
     from elasticgit.models import Model, IntegerField, TextField
 
 
@@ -54,7 +54,7 @@ Data is now persisted in a git repository and is queryable via elastic search:
 
 .. code-block:: python
 
-    >>> from elasticgit.manager import EG
+    >>> from elasticgit import EG
     >>> from elasticgit.tests.base import TestPerson as Person
     >>> workspace = EG.workspace('/Users/sdehaan/Desktop/test-repo/')
     >>> for person in workspace.S(Person).filter(age__gte=20):
