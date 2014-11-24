@@ -45,9 +45,9 @@ class TestStorage(ModelBaseTest):
             'name': 'Test Kees'
         })
         message = u'Saving a përsøn.'
-        self.assertRaises(
-            StorageException, self.sm.store, p, message)
-        self.assertTrue(self.sm.store(p, message.encode('utf-8')))
+        self.assertTrue(self.sm.store(p, message))
+        [log, _] = self.sm.repo.iter_commits()
+        self.assertEqual(log.message, 'Saving a person.')
 
     def test_store_readonly(self):
         self.workspace.setup('Test Kees', 'kees@example.org')
@@ -189,8 +189,10 @@ class TestStorage(ModelBaseTest):
         second_cloned_repo_path = '%s_second_clone' % (bare_repo_path,)
         EG.clone_repo(bare_repo_path, second_cloned_repo_path)
         second_workspace = EG.workspace(second_cloned_repo_path)
+        if self.destroy:
+            self.addCleanup(second_workspace.destroy)
+
         second_workspace.fast_forward()
-        self.addCleanup(second_workspace.destroy)
 
         [found_commit] = second_workspace.repo.iter_commits()
         self.assertEqual(found_commit, initial_commit)

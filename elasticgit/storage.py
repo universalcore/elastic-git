@@ -2,6 +2,8 @@ import os
 import shutil
 import logging
 
+from unidecode import unidecode
+
 from git import Repo
 from git.diff import DiffIndex
 
@@ -188,8 +190,8 @@ class StorageManager(object):
         :returns:
             The commit.
         """
-        if not isinstance(message, str):
-            raise StorageException('Messages need to be bytestrings.')
+        if isinstance(message, unicode):
+            message = unidecode(message)
 
         if model.uuid is None:
             raise StorageException('Cannot save a model without a UUID set.')
@@ -240,8 +242,8 @@ class StorageManager(object):
         :returns:
             The commit.
         """
-        if not isinstance(message, str):
-            raise StorageException('Messages need to be bytestrings.')
+        if isinstance(message, unicode):
+            message = unidecode(message)
 
         index = self.repo.index
         index.remove([self.git_name(model)])
@@ -313,16 +315,16 @@ class StorageManager(object):
         """
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
-        fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
+        if not fetch_list:
+            return DiffIndex()
 
         # NOTE: This can happen when we've not done anything yet on a
         #       repository
-        if self.repo.heads:
-            hcommit = self.repo.head.commit
-            diff = hcommit.diff(fetch_info.commit)
-        else:
-            diff = DiffIndex()
+        if not self.repo.heads:
+            return DiffIndex()
 
+        fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
+        hcommit = self.repo.head.commit
+        diff = hcommit.diff(fetch_info.commit)
         self.repo.git.merge(fetch_info.commit)
-
         return diff
