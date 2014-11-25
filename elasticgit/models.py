@@ -104,6 +104,18 @@ class BooleanField(ModelField):
         return bool(value)
 
 
+class TypeCheck(object):
+
+    def __init__(self, type_):
+        self.type_ = type_
+
+    def get_type(self):
+        return self.type_
+
+    def __call__(self, value):
+        return isinstance(value, self.type_)
+
+
 class ListField(ModelField):
     """
     A list field
@@ -115,11 +127,23 @@ class ListField(ModelField):
         'type': 'string',
     }
 
+    def __init__(self, doc, type_check=None, default=[], static=False,
+                 fallbacks=(), mapping={}):
+        super(ListField, self).__init__(
+            doc, default=default, static=static, fallbacks=fallbacks,
+            mapping=mapping)
+        self.type_check = type_check
+
     def clean(self, value):
         if isinstance(value, tuple):
             value = list(value)
         if not isinstance(value, list):
             self.raise_config_error("is not a list.")
+        if self.type_check is not None:
+            if not all([self.type_check(v) for v in value]):
+                self.raise_config_error(
+                    'Type check %r failed for some values.' % (
+                        self.type_check,))
         return deepcopy(value)
 
 

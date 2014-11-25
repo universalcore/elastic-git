@@ -1,6 +1,7 @@
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.models import (
-    ConfigError, IntegerField, TextField, ModelVersionField)
+    ConfigError, IntegerField, TextField, ModelVersionField,
+    ListField, TypeCheck)
 
 import elasticgit
 
@@ -86,3 +87,13 @@ class TestModel(ModelBaseTest):
         self.assertTrue(field.compatible_version('0.2.10', '0.2.9'))
         self.assertTrue(field.compatible_version('0.2.10', '0.2.10'))
         self.assertFalse(field.compatible_version('0.2.9', '0.2.10'))
+
+    def test_list_field(self):
+        model_class = self.mk_model({
+            'tags': ListField('list field', type_check=TypeCheck(int))
+        })
+        self.assertRaises(ConfigError, model_class, {'tags': ['1']})
+        self.assertRaises(ConfigError, model_class, {'tags': [2.0]})
+        self.assertRaises(ConfigError, model_class, {'tags': [None]})
+        self.assertTrue(model_class({'tags': []}))
+        self.assertTrue(model_class({'tags': [1, 2, 3]}))
