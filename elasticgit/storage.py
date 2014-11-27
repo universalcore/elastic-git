@@ -119,9 +119,11 @@ class StorageManager(object):
             return model_class, uuid
         except ValueError, e:
             log.warn('%s does not look like a model file path.' % (
-                file_path,))
+                file_path,), exc_info=True)
+        except ImportError, e:
+            log.warn(e, exc_info=True)
         except StorageException, e:
-            log.warn(e)
+            log.warn(e, exc_info=True)
 
     def load(self, file_path):
         """

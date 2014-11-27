@@ -119,16 +119,17 @@ class Workspace(object):
         changed_model_set = set([])
         for diff in diff_index:
             if diff.new_file:
-                changed_model_set.add(
-                    self.sm.path_info(diff.b_blob.path)[0])
+                path_info = self.sm.path_info(diff.b_blob.path)
+                if path_info is not None:
+                    changed_model_set.add(path_info[0])
             elif diff.renamed:
-                changed_model_set.add(
-                    self.sm.path_info(diff.a_blob.path)[0])
-                changed_model_set.add(
-                    self.sm.path_info(diff.b_blob.path)[0])
+                path_info = self.sm.path_info(diff.a_blob.path)
+                if path_info is not None:
+                    changed_model_set.add(path_info[0])
             else:
-                changed_model_set.add(
-                    self.sm.path_info(diff.a_blob.path)[0])
+                path_info = self.sm.path_info(diff.a_blob.path)
+                if path_info is not None:
+                    changed_model_set.add(path_info[0])
 
         for model_class in changed_model_set:
             self.reindex(model_class)
