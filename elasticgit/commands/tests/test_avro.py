@@ -47,6 +47,15 @@ class TestDumpSchemaTool(ToolBaseTest):
         age = self.get_field(schema, 'age')
         self.assertEqual(age['aliases'], ['length'])
 
+    def test_dump_array(self):
+        class TestModel(models.Model):
+            tags = models.ListField('The tags', type_check=str)
+
+        schema_dumper = self.mk_schema_dumper()
+        schema = json.loads(schema_dumper.dump_schema(TestModel))
+        from pprint import pprint
+        pprint(schema)
+
 
 class TestLoadSchemaTool(ToolBaseTest):
 

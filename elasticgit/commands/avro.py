@@ -306,7 +306,11 @@ class SchemaDumper(ToolCommand):
         TextField: 'string',
         FloatField: 'float',
         BooleanField: 'boolean',
-        ListField: 'array',
+        ListField: {
+            'type': 'array',
+            'name': 'list',
+            'items': 'string',
+        },
         DictField: 'record',
         UUIDField: 'string',
         ModelVersionField: {
