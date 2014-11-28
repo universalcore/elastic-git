@@ -400,6 +400,13 @@ class TestEG(ModelBaseTest):
         self.workspace.fast_forward(remote_name='upstream')
         self.assertEqual('random', self.workspace.sm.get_data('file.txt'))
 
+        upstream_workspace.sm.store_data(
+            'modelname/some-uuid-0000/data.json', 'random',
+            'Writing a non-model file')
+
+        self.workspace.fast_forward(remote_name='upstream')
+        self.assertEqual('random', self.workspace.sm.get_data('file.txt'))
+
     def test_case_sensitivity(self):
         workspace = self.workspace
         workspace.setup_mapping(TestPage)
