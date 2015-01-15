@@ -13,24 +13,21 @@ class TestWorkspace(ModelBaseTest):
         self.workspace = self.mk_workspace()
 
     def test_exists(self):
-        self.assertFalse(self.workspace.exists())
+        self.assertTrue(self.workspace.exists())
 
     def test_storage_exists(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         repo = self.workspace.repo
         self.workspace.im.destroy_index(repo.active_branch.name)
         self.assertTrue(self.workspace.sm.storage_exists())
         self.assertFalse(self.workspace.exists())
 
     def test_index_exists(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         repo = self.workspace.sm.repo
         branch = repo.active_branch
         self.workspace.sm.destroy_storage()
         self.assertTrue(self.workspace.im.index_exists(branch.name))
 
     def test_setup(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         self.assertTrue(self.workspace.sm.storage_exists())
         repo = self.workspace.sm.repo
         branch = repo.active_branch
@@ -55,7 +52,6 @@ class TestEG(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def test_saving(self):
         workspace = self.workspace
@@ -396,6 +392,13 @@ class TestEG(ModelBaseTest):
 
         upstream_workspace.sm.store_data(
             'file.txt', 'random', 'Writing a non-model file')
+
+        self.workspace.fast_forward(remote_name='upstream')
+        self.assertEqual('random', self.workspace.sm.get_data('file.txt'))
+
+        upstream_workspace.sm.store_data(
+            'modelname/some-uuid-0000/data.json', 'random',
+            'Writing a non-model file')
 
         self.workspace.fast_forward(remote_name='upstream')
         self.assertEqual('random', self.workspace.sm.get_data('file.txt'))

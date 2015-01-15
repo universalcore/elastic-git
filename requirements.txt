@@ -1,5 +1,5 @@
 confmodel==0.2.0
 elasticutils==0.10.1
-GitPython==0.3.2.RC1
+GitPython==0.3.5
 Jinja2==2.7.3
 Unidecode==0.04.16

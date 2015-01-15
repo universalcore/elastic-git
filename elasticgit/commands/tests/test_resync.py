@@ -129,7 +129,6 @@ class TestResyncTool(ToolBaseTest):
         self.assertEqual(
             output.strip(),
             "\n".join([
-                'Creating index for master.',
                 'Creating mapping for elasticgit.tests.base.TestPerson.',
                 'elasticgit.tests.base.TestPerson: 0 updated, 0 removed.',
             ]))
@@ -140,13 +139,12 @@ class TestResyncTool(ToolBaseTest):
         self.assertEqual(
             output.strip(),
             "\n".join([
+                'Destroying index for master.',
                 'Creating index for master.',
                 'elasticgit.tests.base.TestPerson: 0 updated, 0 removed.'
             ]))
 
     def test_recreate_existing_index(self):
-        branch = self.workspace.repo.active_branch
-        self.workspace.im.create_index(branch.name)
         output = self.resync(
             self.workspace, TestPerson, recreate_index=True)
         self.assertEqual(

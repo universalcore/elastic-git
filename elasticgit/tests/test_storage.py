@@ -31,7 +31,6 @@ class TestStorage(ModelBaseTest):
         self.assertFalse(self.sm.storage_exists())
 
     def test_store(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         p = TestPerson({
             'age': 1,
             'name': 'Test Kees'
@@ -39,7 +38,6 @@ class TestStorage(ModelBaseTest):
         self.sm.store(p, 'Saving a person.')
 
     def test_store_unicode_commit_message(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         p = TestPerson({
             'age': 1,
             'name': 'Test Kees'
@@ -47,10 +45,8 @@ class TestStorage(ModelBaseTest):
         message = u'Saving a përsøn.'
         self.assertRaises(
             StorageException, self.sm.store, p, message)
-        self.assertTrue(self.sm.store(p, message.encode('utf-8')))
 
     def test_store_readonly(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         p = TestPerson({
             'age': 1,
             'name': 'Test Kees'
@@ -61,7 +57,6 @@ class TestStorage(ModelBaseTest):
         self.assertTrue(self.sm.store(new_p, 'Saving a person.'))
 
     def test_delete(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         p = TestPerson({
             'age': 1,
             'name': 'Test Kees'
@@ -79,8 +74,6 @@ class TestStorage(ModelBaseTest):
         self.assertEqual(delete_person.author.email, 'kees@example.org')
 
     def test_delete_non_existent(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
-
         person = TestPerson({
             'age': 1,
             'name': 'Test Kees'
@@ -91,7 +84,6 @@ class TestStorage(ModelBaseTest):
             self.sm.delete, person, 'Deleting a person.')
 
     def test_get(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
             'name': 'Test Kees',
@@ -101,7 +93,6 @@ class TestStorage(ModelBaseTest):
             self.sm.get(person.__class__, person.uuid), person)
 
     def test_get_non_existent(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
             'name': 'Test Kees'
@@ -112,8 +103,6 @@ class TestStorage(ModelBaseTest):
             self.sm.get, person.__class__, person.uuid)
 
     def test_iterate(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
-
         person1 = TestPerson({
             'age': 1,
             'name': 'Test Kees 1'
@@ -131,7 +120,6 @@ class TestStorage(ModelBaseTest):
             set([person1.uuid, person2.uuid]))
 
     def test_load(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
             'name': 'Test Kees',
@@ -153,7 +141,8 @@ class TestStorage(ModelBaseTest):
         clone_source = workspace.working_dir
         clone_dest = '%s_clone' % (workspace.working_dir,)
         cloned_repo = EG.clone_repo(clone_source, clone_dest)
-        self.addCleanup(EG.workspace(cloned_repo.working_dir).destroy)
+        workspace = EG.workspace(cloned_repo.working_dir)
+        self.addCleanup(workspace.destroy)
 
         sm = StorageManager(cloned_repo)
         [cloned_person] = sm.iterate(TestPerson)

@@ -55,7 +55,9 @@ class ModelBaseTest(TestCase):
                      url='http://localhost',
                      index_prefix=None,
                      auto_destroy=None,
-                     initial_commit=True):
+                     initial_commit=True,
+                     config_name='Test Kees',
+                     config_email='kees@example.org'):
         working_dir = working_dir or self.WORKING_DIR
         name = name or self.id()
         index_prefix = index_prefix or self.mk_index_prefix()
@@ -69,6 +71,10 @@ class ModelBaseTest(TestCase):
         if initial_commit:
             index = workspace.repo.index
             index.commit('Initial Commit')
+
+        workspace.setup(config_name, config_email)
+        while not workspace.index_ready():
+            pass
 
         return workspace
 
