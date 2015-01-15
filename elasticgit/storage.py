@@ -283,9 +283,10 @@ class StorageManager(object):
             The keys & values of data to write
 
         """
-        config = self.repo.config_writer()
+        config_writer = self.repo.config_writer()
         for key, value in data.items():
-            config.set_value(section, key, value)
+            config_writer.set_value(section, key, value)
+        config_writer.release()
 
     def read_config(self, section):
         """
@@ -295,8 +296,10 @@ class StorageManager(object):
             The section to read.
         :returns: dict
         """
-        config = self.repo.config_reader()
-        return dict(config.items(section))
+        config_reader = self.repo.config_reader()
+        data = dict(config_reader.items(section))
+        config_reader.release()
+        return data
 
     def destroy_storage(self):
         """

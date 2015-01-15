@@ -14,20 +14,19 @@ class TestIndex(ModelBaseTest):
         self.im = self.workspace.im
 
     def test_exists(self):
-        self.assertFalse(self.im.index_exists(self.branch.name))
+        self.assertTrue(self.im.index_exists(self.branch.name))
 
     def test_create(self):
+        self.im.destroy_index(self.branch.name)
         self.im.create_index(self.branch.name)
         self.assertTrue(self.im.index_exists(self.branch.name))
 
     def test_destroy(self):
-        self.im.create_index(self.branch.name)
         self.assertTrue(self.im.index_exists(self.branch.name))
         self.im.destroy_index(self.branch.name)
         self.assertFalse(self.im.index_exists(self.branch.name))
 
     def test_extract_document_with_object(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
             'name': 'Kees',
@@ -43,7 +42,6 @@ class TestIndex(ModelBaseTest):
         })
 
     def test_extract_document_with_object_id(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
             'name': 'Kees',
@@ -59,7 +57,6 @@ class TestIndex(ModelBaseTest):
         })
 
     def test_indexing(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person = TestPerson({
             'age': 1,
             'name': 'Kees',
@@ -70,7 +67,6 @@ class TestIndex(ModelBaseTest):
             S(MappingType).query(name__match='Kees').count(), 1)
 
     def test_unindexing(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         person1 = TestPerson({
             'age': 1,
             'name': 'Kees',
