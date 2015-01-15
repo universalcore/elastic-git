@@ -2,25 +2,13 @@ language: python
 python:
   - "2.7"
   - "pypy"
-env:
-  matrix:
-    - SMMAP=smmap GITDB=gitdb GITPYTHON="GitPython==0.3.2.RC1"
-    - SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb GITPYTHON=git+git://github.com/gitpython-developers/GitPython.git#egg=GitPython
-matrix:
-  fast_finish: true
-  allow_failures:
-    - python: pypy
-    - env: SMMAP=git+https://github.com/Byron/smmap.git#egg=smmap GITDB=git+git://github.com/gitpython-developers/gitdb.git#egg=gitdb GITPYTHON=git+git://github.com/gitpython-developers/GitPython.git#egg=GitPython
 services:
   - elasticsearch
 install:
-  - pip install $SMMAP
-  - pip install $GITDB
-  - pip install $GITPYTHON
-  - pip install -r requirements.txt --use-wheel
-  - pip install -r requirements-dev.txt --use-wheel
-  - pip install -e . --use-wheel
-  - pip install coveralls --use-wheel
+  - pip install --upgrade pip
+  - pip install -r requirements-dev.txt 
+  - pip install -e .
+  - pip install coveralls 
 script:
   - py.test elasticgit -s
   - cd docs && make doctest && cd -
