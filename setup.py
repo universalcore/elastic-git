@@ -24,9 +24,11 @@ setup(name='elastic-git',
       url='http://github.com/universalcore/elastic-git',
       license='BSD',
       keywords='git elasticsearch json',
-      scripts=['scripts/eg-tools'],
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,
       install_requires=requires,
-      tests_require=requires)
+      tests_require=requires,
+      entry_points={
+          'console_scripts': ['eg-tools = elasticgit.tools:main'],
+      })

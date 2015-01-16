@@ -38,6 +38,7 @@ def run(parser):  # pragma: no cover
     dispatcher = dispatcher_class()
     dispatcher.run(**data)
 
-if __name__ == '__main__':  # pragma: no cover
+
+def main():  # pragma: no cover
     parser = get_parser()
     run(parser)
