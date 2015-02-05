@@ -65,6 +65,22 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
 
+    def test_saving_with_author_and_committer(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+
+        workspace.save(person, 'Saving a person',
+                       author=('Test Kees', 'test@example.org'),
+                       committer=('Kees Test', 'kees@example.org'))
+        commit, _ = workspace.repo.iter_commits('master')
+        self.assertEqual(commit.author.name, 'Test Kees')
+        self.assertEqual(commit.author.email, 'test@example.org')
+        self.assertEqual(commit.committer.name, 'Kees Test')
+        self.assertEqual(commit.committer.email, 'kees@example.org')
+
     def is_file(self, workspace, model, suffix):
         return os.path.isfile(
             os.path.join(

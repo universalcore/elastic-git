@@ -80,7 +80,7 @@ class Workspace(object):
                 self.im.destroy_index(branch.name)
             self.sm.destroy_storage()
 
-    def save(self, model, message):
+    def save(self, model, message, author=None, committer=None):
         """
         Save a :py:class:`elasticgit.models.Model` instance in Git and add it
         to the Elasticsearch index.
@@ -89,10 +89,16 @@ class Workspace(object):
             The model instance
         :param str message:
             The commit message to write the model to Git with.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         """
         if isinstance(message, unicode):
             message = unidecode(message)
-        self.sm.store(model, message)
+        self.sm.store(model, message, author=author, committer=committer)
         self.im.index(model)
 
     def delete(self, model, message):
