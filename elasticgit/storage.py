@@ -2,7 +2,7 @@ import os
 import shutil
 import logging
 
-from git import Repo
+from git import Repo, Actor
 from git.diff import DiffIndex
 
 from elasticgit.models import Model
@@ -179,7 +179,7 @@ class StorageManager(object):
                     model.uuid, uuid))
         return model
 
-    def store(self, model, message):
+    def store(self, model, message, author=None, committer=None):
         """
         Store an instance's data in Git.
 
@@ -187,6 +187,12 @@ class StorageManager(object):
             The model instance
         :param str message:
             The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         :returns:
             The commit.
         """
@@ -200,9 +206,13 @@ class StorageManager(object):
             raise StorageException('Trying to save a read only model.')
 
         return self.store_data(
-            self.git_name(model), self.serializer.serialize(model), message)
+            self.git_name(model),
+            self.serializer.serialize(model),
+            message,
+            author=author, committer=committer)
 
-    def store_data(self, repo_path, data, message):
+    def store_data(self, repo_path, data, message,
+                   author=None, committer=None):
         """
         Store some data in a file
 
@@ -212,6 +222,12 @@ class StorageManager(object):
             The data to write in the file.
         :param str message:
             The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         :returns:
             The commit
         """
@@ -226,10 +242,15 @@ class StorageManager(object):
             # write the object data
             fp.write(data)
 
+        author_actor = Actor(*author) if author else None
+        committer_actor = Actor(*committer) if committer else author_actor
+
         # add to the git index
         index = self.repo.index
         index.add([file_path])
-        return index.commit(message)
+        return index.commit(message,
+                            author=author_actor,
+                            committer=committer_actor)
 
     def delete(self, model, message):
         """
@@ -262,8 +283,7 @@ class StorageManager(object):
 
     def create_storage(self, bare=False):
         """
-        Creates a new :py:class:`git.Repo` and sets the committers
-        name & email.
+        Creates a new :py:class:`git.Repo`
 
         :param bool bare:
             Whether or not to create a bare repository. Defaults to ``False``.
