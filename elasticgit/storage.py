@@ -252,7 +252,7 @@ class StorageManager(object):
                             author=author_actor,
                             committer=committer_actor)
 
-    def delete(self, model, message):
+    def delete(self, model, message, author=None, committer=None):
         """
         Delete a model instance from Git.
 
@@ -260,15 +260,24 @@ class StorageManager(object):
             The model instance
         :param str message:
             The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         :returns:
             The commit.
         """
         if not isinstance(message, str):
             raise StorageException('Messages need to be bytestrings.')
 
+        author_actor = Actor(*author) if author else None
+        committer_actor = Actor(*committer) if committer else author_actor
+
         index = self.repo.index
         index.remove([self.git_name(model)])
-        index.commit(message)
+        index.commit(message, author=author_actor, committer=committer_actor)
         return os.remove(
             os.path.join(self.workdir, self.git_name(model)))
 
