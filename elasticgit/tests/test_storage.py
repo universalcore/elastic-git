@@ -63,15 +63,19 @@ class TestStorage(ModelBaseTest):
         })
 
         self.sm.store(p, 'Saving a person.')
-        self.sm.delete(p, 'Deleting a person.')
+        self.sm.delete(p, 'Deleting a person.',
+                       author=('Foo Bar', 'foo@example.org'),
+                       committer=('Bar Foo', 'bar@example.org'))
         repo = Repo(self.workspace.repo.working_dir)
         delete_person, save_person, _ = repo.iter_commits('master')
         self.assertEqual(save_person.message, 'Saving a person.')
         self.assertEqual(save_person.author.name, 'Test Kees')
         self.assertEqual(save_person.author.email, 'kees@example.org')
         self.assertEqual(delete_person.message, 'Deleting a person.')
-        self.assertEqual(delete_person.author.name, 'Test Kees')
-        self.assertEqual(delete_person.author.email, 'kees@example.org')
+        self.assertEqual(delete_person.author.name, 'Foo Bar')
+        self.assertEqual(delete_person.author.email, 'foo@example.org')
+        self.assertEqual(delete_person.committer.name, 'Bar Foo')
+        self.assertEqual(delete_person.committer.email, 'bar@example.org')
 
     def test_delete_non_existent(self):
         person = TestPerson({

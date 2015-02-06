@@ -101,7 +101,7 @@ class Workspace(object):
         self.sm.store(model, message, author=author, committer=committer)
         self.im.index(model)
 
-    def delete(self, model, message):
+    def delete(self, model, message, author=None, committer=None):
         """
         Delete a :py:class`elasticgit.models.Model` instance from Git and
         the Elasticsearch index.
@@ -110,10 +110,16 @@ class Workspace(object):
             The model instance
         :param str message:
             The commit message to remove the model from Git with.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         """
         if isinstance(message, unicode):
             message = unidecode(message)
-        self.sm.delete(model, message)
+        self.sm.delete(model, message, author=author, committer=committer)
         self.im.unindex(model)
 
     def fast_forward(self, branch_name='master', remote_name='origin'):
