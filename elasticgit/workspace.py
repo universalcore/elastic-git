@@ -22,8 +22,9 @@ class Workspace(object):
 
     :param git.Repo repo:
         A :py:class:`git.Repo` instance.
-    :param elasticsearch.Elasticsearch es:
-        An Elasticsearch object.
+    :param dit es:
+        A dictionary of values one would pass to elasticutils.get_es
+        to get an Elasticsearch connection
     :param str index_prefix:
         The prefix to use when generating index names for Elasticsearch
     """
@@ -31,7 +32,9 @@ class Workspace(object):
     def __init__(self, repo, es, index_prefix):
         self.repo = repo
         self.sm = StorageManager(repo)
-        self.im = ESManager(self.sm, es, index_prefix)
+        self.es_settings = es
+        self.im = ESManager(
+            self.sm, get_es(**self.es_settings), index_prefix)
         self.working_dir = self.repo.working_dir
         self.index_prefix = index_prefix
 
@@ -80,7 +83,7 @@ class Workspace(object):
                 self.im.destroy_index(branch.name)
             self.sm.destroy_storage()
 
-    def save(self, model, message):
+    def save(self, model, message, author=None, committer=None):
         """
         Save a :py:class:`elasticgit.models.Model` instance in Git and add it
         to the Elasticsearch index.
@@ -89,13 +92,19 @@ class Workspace(object):
             The model instance
         :param str message:
             The commit message to write the model to Git with.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         """
         if isinstance(message, unicode):
             message = unidecode(message)
-        self.sm.store(model, message)
+        self.sm.store(model, message, author=author, committer=committer)
         self.im.index(model)
 
-    def delete(self, model, message):
+    def delete(self, model, message, author=None, committer=None):
         """
         Delete a :py:class`elasticgit.models.Model` instance from Git and
         the Elasticsearch index.
@@ -104,10 +113,16 @@ class Workspace(object):
             The model instance
         :param str message:
             The commit message to remove the model from Git with.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         """
         if isinstance(message, unicode):
             message = unidecode(message)
-        self.sm.delete(model, message)
+        self.sm.delete(model, message, author=author, committer=committer)
         self.im.unindex(model)
 
     def fast_forward(self, branch_name='master', remote_name='origin'):
@@ -301,7 +316,7 @@ class Workspace(object):
             The class to provide a search interface for.
         """
         return S(
-            self.im.get_mapping_type(model_class))
+            self.im.get_mapping_type(model_class)).es(**self.es_settings)
 
 
 class EG(object):
@@ -331,7 +346,7 @@ class EG(object):
         repo = (cls.read_repo(workdir)
                 if cls.is_repo(workdir)
                 else cls.init_repo(workdir))
-        return Workspace(repo, get_es(**es), index_prefix)
+        return Workspace(repo, es, index_prefix)
 
     @classmethod
     def dot_git_path(cls, workdir):

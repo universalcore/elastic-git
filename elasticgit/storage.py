@@ -2,7 +2,7 @@ import os
 import shutil
 import logging
 
-from git import Repo
+from git import Repo, Actor
 from git.diff import DiffIndex
 
 from elasticgit.models import Model
@@ -119,9 +119,11 @@ class StorageManager(object):
             return model_class, uuid
         except ValueError, e:
             log.warn('%s does not look like a model file path.' % (
-                file_path,))
+                file_path,), exc_info=True)
+        except ImportError, e:
+            log.warn(e, exc_info=True)
         except StorageException, e:
-            log.warn(e)
+            log.warn(e, exc_info=True)
 
     def load(self, file_path):
         """
@@ -177,7 +179,7 @@ class StorageManager(object):
                     model.uuid, uuid))
         return model
 
-    def store(self, model, message):
+    def store(self, model, message, author=None, committer=None):
         """
         Store an instance's data in Git.
 
@@ -185,6 +187,12 @@ class StorageManager(object):
             The model instance
         :param str message:
             The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         :returns:
             The commit.
         """
@@ -198,9 +206,13 @@ class StorageManager(object):
             raise StorageException('Trying to save a read only model.')
 
         return self.store_data(
-            self.git_name(model), self.serializer.serialize(model), message)
+            self.git_name(model),
+            self.serializer.serialize(model),
+            message,
+            author=author, committer=committer)
 
-    def store_data(self, repo_path, data, message):
+    def store_data(self, repo_path, data, message,
+                   author=None, committer=None):
         """
         Store some data in a file
 
@@ -210,6 +222,12 @@ class StorageManager(object):
             The data to write in the file.
         :param str message:
             The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         :returns:
             The commit
         """
@@ -224,12 +242,17 @@ class StorageManager(object):
             # write the object data
             fp.write(data)
 
+        author_actor = Actor(*author) if author else None
+        committer_actor = Actor(*committer) if committer else author_actor
+
         # add to the git index
         index = self.repo.index
         index.add([file_path])
-        return index.commit(message)
+        return index.commit(message,
+                            author=author_actor,
+                            committer=committer_actor)
 
-    def delete(self, model, message):
+    def delete(self, model, message, author=None, committer=None):
         """
         Delete a model instance from Git.
 
@@ -237,15 +260,24 @@ class StorageManager(object):
             The model instance
         :param str message:
             The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
         :returns:
             The commit.
         """
         if not isinstance(message, str):
             raise StorageException('Messages need to be bytestrings.')
 
+        author_actor = Actor(*author) if author else None
+        committer_actor = Actor(*committer) if committer else author_actor
+
         index = self.repo.index
         index.remove([self.git_name(model)])
-        index.commit(message)
+        index.commit(message, author=author_actor, committer=committer_actor)
         return os.remove(
             os.path.join(self.workdir, self.git_name(model)))
 
@@ -260,8 +292,7 @@ class StorageManager(object):
 
     def create_storage(self, bare=False):
         """
-        Creates a new :py:class:`git.Repo` and sets the committers
-        name & email.
+        Creates a new :py:class:`git.Repo`
 
         :param bool bare:
             Whether or not to create a bare repository. Defaults to ``False``.
@@ -281,9 +312,10 @@ class StorageManager(object):
             The keys & values of data to write
 
         """
-        config = self.repo.config_writer()
+        config_writer = self.repo.config_writer()
         for key, value in data.items():
-            config.set_value(section, key, value)
+            config_writer.set_value(section, key, value)
+        config_writer.release()
 
     def read_config(self, section):
         """
@@ -293,8 +325,10 @@ class StorageManager(object):
             The section to read.
         :returns: dict
         """
-        config = self.repo.config_reader()
-        return dict(config.items(section))
+        config_reader = self.repo.config_reader()
+        data = dict(config_reader.items(section))
+        config_reader.release()
+        return data
 
     def destroy_storage(self):
         """

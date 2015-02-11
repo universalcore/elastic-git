@@ -13,7 +13,6 @@ class TestManager(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def test_workspace(self):
         workspace = self.mk_workspace(name='.foo')

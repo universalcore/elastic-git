@@ -13,7 +13,6 @@ class TestMigrateGitModelRepo(ToolBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def mk_gitmodel_category_data(self, workspace):
         uuid = uuid4().hex
