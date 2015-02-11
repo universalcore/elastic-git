@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from jinja2 import Environment, PackageLoader
 from functools import partial
 import argparse
@@ -6,6 +8,8 @@ import json
 import pprint
 
 from datetime import datetime
+
+import avro.schema
 
 from elasticgit import version_info
 from elasticgit.models import (
@@ -17,11 +21,11 @@ from elasticgit.commands.base import (
 from elasticgit.utils import load_class
 
 
-def deserialize(schema, field_mapping={}, module_name=None):
+def deserialize(data, field_mapping={}, module_name=None):
     """
     Deserialize an Avro schema and define it within a module (if specified)
 
-    :param dict schema:
+    :param dict data:
         The Avro schema
     :param dict field_mapping:
         Optional mapping to override the default mapping.
@@ -47,6 +51,7 @@ def deserialize(schema, field_mapping={}, module_name=None):
 
     """
     schema_loader = SchemaLoader()
+    schema = avro.schema.make_avsc_object(data, avro.schema.Names()).to_json()
     model_code = schema_loader.generate_model(schema)
     model_name = schema['name']
 

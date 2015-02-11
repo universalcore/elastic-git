@@ -215,6 +215,13 @@ class ModelVersionField(DictField):
         }
     }
 
+    def __init__(self, doc, type_check=TypeCheck(basestring),
+                 default=None, static=False,
+                 fallbacks=(), mapping={}):
+        super(ModelVersionField, self).__init__(
+            doc, type_check=type_check, default=default, static=static,
+            fallbacks=fallbacks, mapping=mapping)
+
     def compatible_version(self, own_version, check_version):
         own = map(int, own_version.split('.'))
         check = map(int, check_version.split('.'))
@@ -251,8 +258,7 @@ class Model(Config):
         A dictionary with keys & values to populate this Model
         instance with.
     """
-    _version = ModelVersionField('Model Version Identifier',
-                                 type_check=TypeCheck(basestring))
+    _version = ModelVersionField('Model Version Identifier')
     uuid = UUIDField('Unique Identifier')
 
     def __init__(self, config_data, static=False):
