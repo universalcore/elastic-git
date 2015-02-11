@@ -41,6 +41,10 @@ class ResyncTool(ToolCommand):
             dest='index_prefix',
             help='The index prefix to use'),
         CommandArgument(
+            '-u', '--es-host',
+            dest='es_host',
+            help='The elasticsearch url to use'),
+        CommandArgument(
             '-p', '--git-path',
             dest='git_path',
             help='The path to the repository.'),
@@ -60,7 +64,7 @@ class ResyncTool(ToolCommand):
 
     def run(self, config_file, model_class, index_prefix, git_path,
             mapping_file=None, recreate_index=False,
-            section_name=DEFAULT_SECTION):
+            section_name=DEFAULT_SECTION, es_host=None):
 
         mapping = (json.load(mapping_file)
                    if mapping_file is not None
@@ -68,8 +72,10 @@ class ResyncTool(ToolCommand):
 
         # resync
         if config_file is not None:
-            index_prefix, git_path = self.read_config_file(
+            index_prefix, git_path, es_host = self.read_config_file(
                 config_file, section_name)
+
+        es = {'urls': [es_host]} if es_host else {}
 
         if not all([index_prefix, git_path]):
             raise ToolCommandError(
@@ -77,7 +83,8 @@ class ResyncTool(ToolCommand):
                 '`--git-path`.')
 
         return self.resync(git_path, index_prefix, model_class,
-                           mapping=mapping, recreate_index=recreate_index)
+                           mapping=mapping, recreate_index=recreate_index,
+                           es=es)
 
     def read_config_file(self, config_file, section_name):
         # NOTE: ConfigParser's DEFAULT handling is kind of nuts
@@ -98,12 +105,17 @@ class ResyncTool(ToolCommand):
 
         working_dir = config.get(section_name, 'git.path')
         index_prefix = config.get(section_name, 'es.index_prefix')
-        return index_prefix, working_dir
+
+        es_host = None
+        if config.has_option(section_name, 'es.host'):
+            es_host = config.get(section_name, 'es.host')
+
+        return index_prefix, working_dir, es_host
 
     def resync(self, working_dir, index_prefix, model_class,
-               mapping=None, recreate_index=False):
+               mapping=None, recreate_index=False, es={}):
 
-        workspace = EG.workspace(working_dir, index_prefix=index_prefix)
+        workspace = EG.workspace(working_dir, index_prefix=index_prefix, es=es)
         branch = workspace.sm.repo.active_branch
 
         if recreate_index and workspace.im.index_exists(branch.name):
