@@ -49,10 +49,18 @@ class TestWorkspace(ModelBaseTest):
         self.assertFalse(self.workspace.exists())
 
     def test_workspace_es_parameters(self):
-        temp_ws = Workspace(self.workspace.repo, es='quack quack',
-                            index_prefix=self.workspace.index_prefix)
+        temp_ws = Workspace(
+            self.workspace.repo,
+            es={'urls': ['http://example.org:1234']},
+            index_prefix=self.workspace.index_prefix)
         qs = temp_ws.S(TestPerson)
-        self.assertEqual(qs.get_es(), 'quack quack')
+        transport = qs.get_es().transport
+        [host] = transport.hosts
+        self.assertEqual(host, {
+            u'host': 'example.org',
+            u'port': 1234,
+            u'scheme': 'http',
+        })
 
 
 class TestEG(ModelBaseTest):
