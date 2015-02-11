@@ -22,8 +22,9 @@ class Workspace(object):
 
     :param git.Repo repo:
         A :py:class:`git.Repo` instance.
-    :param elasticsearch.Elasticsearch es:
-        An Elasticsearch object.
+    :param dit es:
+        A dictionary of values one would pass to elasticutils.get_es
+        to get an Elasticsearch connection
     :param str index_prefix:
         The prefix to use when generating index names for Elasticsearch
     """
@@ -31,7 +32,9 @@ class Workspace(object):
     def __init__(self, repo, es, index_prefix):
         self.repo = repo
         self.sm = StorageManager(repo)
-        self.im = ESManager(self.sm, es, index_prefix)
+        self.es_settings = es
+        self.im = ESManager(
+            self.sm, get_es(**self.es_settings), index_prefix)
         self.working_dir = self.repo.working_dir
         self.index_prefix = index_prefix
 
@@ -313,7 +316,7 @@ class Workspace(object):
             The class to provide a search interface for.
         """
         return S(
-            self.im.get_mapping_type(model_class))
+            self.im.get_mapping_type(model_class)).es(**self.es_settings)
 
 
 class EG(object):
@@ -343,7 +346,7 @@ class EG(object):
         repo = (cls.read_repo(workdir)
                 if cls.is_repo(workdir)
                 else cls.init_repo(workdir))
-        return Workspace(repo, get_es(**es), index_prefix)
+        return Workspace(repo, es, index_prefix)
 
     @classmethod
     def dot_git_path(cls, workdir):
