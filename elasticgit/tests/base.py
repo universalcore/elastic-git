@@ -89,7 +89,9 @@ class ToolBaseTest(ModelBaseTest):
         return schema_dumper
 
     def get_schema(self, schema_dumper):
-        return avro.schema.parse(schema_dumper.stdout)
+        data = schema_dumper.stdout.getvalue()
+        schema = avro.schema.parse(data)
+        return schema.to_json()
 
     def get_field(self, schema, field_name):
         return [field

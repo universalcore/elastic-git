@@ -22,6 +22,7 @@ class {{model_class_for(schema.name)}}(models.Model):
     {{field.name}} = models.{{ field_class_for(field) }}(
         {%- if field.doc -%}u"""{{ field.doc }}"""{% else %}"""{{ field.name }}"""{% endif %}
         {%- if field.default is defined -%}, default={{ default_value(field) }}{% endif %}
+        {%- if is_complex(field) -%}, type_check=models.TypeCheck({{types_for(field)}}){% endif %}
         {%- if field.aliases -%}, fallbacks=[{% for alias in field.aliases -%}
             models.SingleFieldFallback('{{alias}}'),
             {%- endfor %}]{% endif %}){% endfor %}

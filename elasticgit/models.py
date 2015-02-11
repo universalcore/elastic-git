@@ -106,14 +106,18 @@ class BooleanField(ModelField):
 
 class TypeCheck(object):
 
-    def __init__(self, type_):
-        self.type_ = type_
+    def __init__(self, *types):
+        self.types = types
 
-    def get_type(self):
-        return self.type_
+    def get_types(self):
+        return self.types
 
     def __call__(self, value):
-        return isinstance(value, self.type_)
+        return any([isinstance(value, type_) for type_ in self.types])
+
+    def __repr__(self):
+        return '<TypeCheck %s>' % (
+            ', '.join([type_.__name__ for type_ in self.types]))
 
 
 class ListField(ModelField):
@@ -127,7 +131,7 @@ class ListField(ModelField):
         'type': 'string',
     }
 
-    def __init__(self, doc, type_check=None, default=[], static=False,
+    def __init__(self, doc, type_check, default=[], static=False,
                  fallbacks=(), mapping={}):
         super(ListField, self).__init__(
             doc, default=default, static=static, fallbacks=fallbacks,
@@ -158,9 +162,21 @@ class DictField(ModelField):
         'type': 'string',
     }
 
+    def __init__(self, doc, type_check, default=None, static=False,
+                 fallbacks=(), mapping={}):
+        super(DictField, self).__init__(
+            doc, default=default, static=static, fallbacks=fallbacks,
+            mapping=mapping)
+        self.type_check = type_check
+
     def clean(self, value):
         if not isinstance(value, dict):
             self.raise_config_error("is not a dict.")
+        if self.type_check is not None:
+            if not all([self.type_check(v) for v in value.values()]):
+                self.raise_config_error(
+                    'Type check %s failed for some values: %r' % (
+                        self.type_check, value))
         return deepcopy(value)
 
 
@@ -235,7 +251,8 @@ class Model(Config):
         A dictionary with keys & values to populate this Model
         instance with.
     """
-    _version = ModelVersionField('Model Version Identifier')
+    _version = ModelVersionField('Model Version Identifier',
+                                 type_check=TypeCheck(basestring))
     uuid = UUIDField('Unique Identifier')
 
     def __init__(self, config_data, static=False):

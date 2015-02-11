@@ -83,7 +83,8 @@ class TestModel(ModelBaseTest):
         self.assertFalse(new_model.is_read_only())
 
     def test_version_check(self):
-        field = ModelVersionField('ModelVersionField')
+        field = ModelVersionField('ModelVersionField',
+                                  type_check=TypeCheck(basestring))
         self.assertTrue(field.compatible_version('0.2.10', '0.2.9'))
         self.assertTrue(field.compatible_version('0.2.10', '0.2.10'))
         self.assertFalse(field.compatible_version('0.2.9', '0.2.10'))

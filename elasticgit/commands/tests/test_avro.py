@@ -49,7 +49,8 @@ class TestDumpSchemaTool(ToolBaseTest):
 
     def test_dump_array(self):
         class TestModel(models.Model):
-            tags = models.ListField('The tags', type_check=str)
+            tags = models.ListField('The tags',
+                                    type_check=models.TypeCheck(str))
 
         schema_dumper = self.mk_schema_dumper()
         schema = json.loads(schema_dumper.dump_schema(TestModel))
@@ -133,7 +134,10 @@ class TestLoadSchemaTool(ToolBaseTest):
     def test_array_field(self):
         self.assertFieldCreation({
             'name': 'array',
-            'type': 'array',
+            'type': {
+                'type': 'array',
+                'items': ['string'],
+            },
             'doc': 'The Array',
             'default': ['foo', 'bar', 'baz']
         }, models.ListField)
@@ -141,7 +145,14 @@ class TestLoadSchemaTool(ToolBaseTest):
     def test_dict_field(self):
         self.assertFieldCreation({
             'name': 'obj',
-            'type': 'record',
+            'type': {
+                'type': 'record',
+                'items': ['string'],
+                'fields': [{
+                    'name': 'hello',
+                    'type': 'string',
+                }]
+            },
             'doc': 'The Object',
             'default': {'hello': 'world'},
         }, models.DictField)
@@ -152,7 +163,12 @@ class TestLoadSchemaTool(ToolBaseTest):
             'type': {
                 'namespace': 'foo.bar',
                 'name': 'ItIsComplicated',
-                'type': 'record'
+                'type': 'record',
+                'items': ['string'],
+                'fields': [{
+                    'name': 'foo',
+                    'type': 'string',
+                }]
             },
             'doc': 'Super Complex',
             'default': {},
@@ -165,6 +181,7 @@ class TestLoadSchemaTool(ToolBaseTest):
                 'namespace': 'elasticgit.models',
                 'name': 'ModelVersionField',
                 'type': 'record',
+                'items': ['string'],
             },
             'doc': 'The Model Version',
             'default': elasticgit.version_info,
@@ -186,8 +203,8 @@ class DumpAndLoadModel(models.Model):
     integer = models.IntegerField('the integer')
     float_ = models.FloatField('the float')
     boolean = models.BooleanField('the boolean')
-    list_ = models.ListField('the list')
-    dict_ = models.DictField('the dict')
+    list_ = models.ListField('the list', type_check=models.TypeCheck(int))
+    dict_ = models.DictField('the dict', type_check=models.TypeCheck(str))
 
 
 class TestDumpAndLoad(ToolBaseTest):
@@ -198,7 +215,12 @@ class TestDumpAndLoad(ToolBaseTest):
         schema_loader = self.mk_schema_loader()
 
         schema = schema_dumper.dump_schema(DumpAndLoadModel)
+
+        print schema
+
         generated_code = schema_loader.generate_model(json.loads(schema))
+
+        print generated_code
 
         GeneratedModel = self.load_class(generated_code, 'DumpAndLoadModel')
 
@@ -207,7 +229,7 @@ class TestDumpAndLoad(ToolBaseTest):
             'integer': 1,
             'float': 1.1,
             'boolean': False,
-            'list': ['1', '2', '3'],
+            'list_': [1, 2, 3],
             'dict_': {'hello': 'world'}
         }
         record1 = DumpAndLoadModel(data)
@@ -229,8 +251,8 @@ class TestDumpAndLoad(ToolBaseTest):
             'integer': 1,
             'float': 1.1,
             'boolean': False,
-            'list': ['1', '2', '3'],
-            'dict_': {'hello': 1}
+            'list': [1, 2, 3],
+            'dict_': {'hello': '1'}
         }
         record1 = DumpAndLoadModel(data)
         record2 = GeneratedModel(data)
