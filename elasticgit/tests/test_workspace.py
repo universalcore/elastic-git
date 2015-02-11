@@ -3,6 +3,7 @@ import os
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
 from elasticgit.search import ModelMappingType
+from elasticgit.workspace import Workspace
 
 from git import Repo, GitCommandError
 
@@ -13,24 +14,21 @@ class TestWorkspace(ModelBaseTest):
         self.workspace = self.mk_workspace()
 
     def test_exists(self):
-        self.assertFalse(self.workspace.exists())
+        self.assertTrue(self.workspace.exists())
 
     def test_storage_exists(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         repo = self.workspace.repo
         self.workspace.im.destroy_index(repo.active_branch.name)
         self.assertTrue(self.workspace.sm.storage_exists())
         self.assertFalse(self.workspace.exists())
 
     def test_index_exists(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         repo = self.workspace.sm.repo
         branch = repo.active_branch
         self.workspace.sm.destroy_storage()
         self.assertTrue(self.workspace.im.index_exists(branch.name))
 
     def test_setup(self):
-        self.workspace.setup('Test Kees', 'kees@example.org')
         self.assertTrue(self.workspace.sm.storage_exists())
         repo = self.workspace.sm.repo
         branch = repo.active_branch
@@ -50,12 +48,25 @@ class TestWorkspace(ModelBaseTest):
         self.workspace.destroy()
         self.assertFalse(self.workspace.exists())
 
+    def test_workspace_es_parameters(self):
+        temp_ws = Workspace(
+            self.workspace.repo,
+            es={'urls': ['http://example.org:1234']},
+            index_prefix=self.workspace.index_prefix)
+        qs = temp_ws.S(TestPerson)
+        transport = qs.get_es().transport
+        [host] = transport.hosts
+        self.assertEqual(host, {
+            u'host': 'example.org',
+            u'port': 1234,
+            u'scheme': 'http',
+        })
+
 
 class TestEG(ModelBaseTest):
 
     def setUp(self):
         self.workspace = self.mk_workspace()
-        self.workspace.setup('Test Kees', 'kees@example.org')
 
     def test_saving(self):
         workspace = self.workspace
@@ -68,6 +79,22 @@ class TestEG(ModelBaseTest):
         workspace.refresh_index()
         self.assertEqual(
             workspace.S(TestPerson).query(name__match='Name').count(), 1)
+
+    def test_saving_with_author_and_committer(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': 'Name',
+        })
+
+        workspace.save(person, 'Saving a person',
+                       author=('Test Kees', 'test@example.org'),
+                       committer=('Kees Test', 'kees@example.org'))
+        commit, _ = workspace.repo.iter_commits('master')
+        self.assertEqual(commit.author.name, 'Test Kees')
+        self.assertEqual(commit.author.email, 'test@example.org')
+        self.assertEqual(commit.committer.name, 'Kees Test')
+        self.assertEqual(commit.committer.email, 'kees@example.org')
 
     def is_file(self, workspace, model, suffix):
         return os.path.isfile(

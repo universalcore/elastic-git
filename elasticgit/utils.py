@@ -12,9 +12,10 @@ def introspect_properties(model_class):
     ...
     >>> from elasticgit.utils import introspect_properties
     >>>
-    >>> introspect_properties(TestModel) # doctest: +ELLIPSIS
-    {'field': {'type': 'string'}, '_version': {'type': 'nested', ...}
+    >>> sorted(introspect_properties(TestModel).keys()) # doctest: +ELLIPSIS
+    ['_version', 'field', 'uuid']
     >>>
+
     """
     return dict([
         (field_name, field_object.mapping)

@@ -270,9 +270,9 @@ intersphinx_mapping = {
     'elasticsearch': (
         'http://elasticsearch-py.readthedocs.org/en/master/', None),
     'git': (
-        'https://pythonhosted.org/GitPython/0.3.1/', None),
+        'https://gitpython.readthedocs.org/en/latest/', None),
     'confmodel': (
         'http://confmodel.readthedocs.org/en/latest/', None),
     'python': (
-        'http://docs.python.org/3.2', None),
+        'http://docs.python.org/2.7', None),
 }
