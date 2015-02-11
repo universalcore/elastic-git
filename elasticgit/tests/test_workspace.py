@@ -3,6 +3,7 @@ import os
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
 from elasticgit.search import ModelMappingType
+from elasticgit.workspace import Workspace
 
 from git import Repo, GitCommandError
 
@@ -46,6 +47,12 @@ class TestWorkspace(ModelBaseTest):
         self.assertTrue(self.workspace.exists())
         self.workspace.destroy()
         self.assertFalse(self.workspace.exists())
+
+    def test_workspace_es_parameters(self):
+        temp_ws = Workspace(self.workspace.repo, es='quack quack',
+                            index_prefix=self.workspace.index_prefix)
+        qs = temp_ws.S(TestPerson)
+        self.assertEqual(qs.get_es(), 'quack quack')
 
 
 class TestEG(ModelBaseTest):
