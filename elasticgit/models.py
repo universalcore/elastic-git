@@ -121,22 +121,6 @@ class BooleanField(ModelField):
         return bool(value)
 
 
-class TypeCheck(object):
-
-    def __init__(self, *types):
-        self.types = types
-
-    def get_types(self):
-        return self.types
-
-    def __call__(self, value):
-        return any([isinstance(value, type_) for type_ in self.types])
-
-    def __repr__(self):
-        return '<TypeCheck %s>' % (
-            ', '.join([type_.__name__ for type_ in self.types]))
-
-
 class ListField(ModelField):
     """
     A list field
