@@ -11,10 +11,10 @@ from datetime import datetime
 
 import avro.schema
 
-from elasticgit import version_info
 from elasticgit.models import (
-    Model, IntegerField, TextField, ModelVersionField, FloatField,
-    BooleanField, ListField, DictField, UUIDField)
+    Model, IntegerField, TextField, FloatField,
+    BooleanField, ListField, DictField, UUIDField,
+    version_info)
 
 from elasticgit.commands.base import (
     ToolCommand, ToolCommandError, CommandArgument)
@@ -234,10 +234,6 @@ class SchemaLoader(ToolCommand):
         return handler(field)
 
     def field_class_for_complex_record_type(self, field):
-        field_type = field['type']
-        if (field_type.get('name') == 'ModelVersionField' and
-                field_type.get('namespace') == 'elasticgit.models'):
-            return ModelVersionField.__name__
         return DictField.__name__
 
     def field_class_for_complex_array_type(self, field):
@@ -296,18 +292,22 @@ class SchemaLoader(ToolCommand):
         env.globals['field_class_for'] = partial(
             self.field_class_for, field_mapping=field_mapping)
         env.globals['default_value'] = self.default_value
+        env.globals['is_complex'] = (
+            lambda field: isinstance(field['type'], dict))
+        env.globals['core_mapping'] = self.core_mapping
 
-        def python_types_for(field):
-            return ', '.join([self.core_type_mappings[type_].__name__
-                              for type_ in field['type']['items']])
+        # def complex_fields_for(complex_field):
+        #     field_type = complex_field['type']
+        #     if field_type['type'] == 'array':
+        #         items = field_type['items']
+        #     elif field_type['type'] == 'record':
+        #         items = [f['type'] for f in field_type['fields']]
+        #     from pprint import pprint
+        #     pprint(items)
 
-        env.globals['types_for'] = python_types_for
+        #     return '\n'.join([self.core_mapping[field].__name__ for field in items])
 
-        def is_complex(field):
-            return (
-                isinstance(field['type'], dict) or field['type'] == 'record')
-
-        env.globals['is_complex'] = is_complex
+        # env.globals['complex_fields_for'] = complex_fields_for
 
         template = env.get_template('model_generator.py.txt')
         return template.render(
@@ -396,49 +396,22 @@ class SchemaDumper(ToolCommand):
         return handler(field)
 
     def map_ListField_type(self, field):
-        avro_types = [self.core_type_mappings[type_]
-                      for type_ in field.type_check.get_types()]
         return {
             'type': 'array',
-            'items': avro_types
+            'name': field.name,
+            'namespace': field.__class__.__module__,
+            'items': [self.map_field_to_type(field) for field in field.fields],
         }
 
     def map_DictField_type(self, field):
-        avro_types = [self.core_type_mappings[type_]
-                      for type_ in field.type_check.get_types()]
         return {
             'type': 'record',
-            'items': avro_types,
-        }
-
-    def map_ModelVersionField_type(self, field):
-        return {
-            'type': 'record',
-            'name': 'ModelVersionField',
-            'namespace': 'elasticgit.models',
-            'items': ['string'],
-            'fields': [
-                {
-                    'name': 'language',
-                    'type': 'string',
-                },
-                {
-                    'name': 'language_version_string',
-                    'type': 'string',
-                },
-                {
-                    'name': 'language_version',
-                    'type': 'string',
-                },
-                {
-                    'name': 'package',
-                    'type': 'string',
-                },
-                {
-                    'name': 'package_version',
-                    'type': 'string',
-                }
-            ],
+            'name': field.name,
+            'namespace': field.__class__.__module__,
+            'fields': [{
+                'name': field.name,
+                'type': self.map_field_to_type(field),
+            } for field in field.fields],
         }
 
     def get_field_info(self, name, field):

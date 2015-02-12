@@ -152,5 +152,6 @@ class ToolBaseTest(ModelBaseTest):
                                      model_name,
                                      field_mapping=field_mapping,
                                      model_renames=model_renames)
+        print model_code
         model_name = model_renames.get(model_name, model_name)
         return self.load_class(model_code, model_name)

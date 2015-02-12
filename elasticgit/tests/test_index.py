@@ -1,8 +1,7 @@
+from elasticgit.models import version_info
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 
 from elasticutils import S
-
-import elasticgit
 
 
 class TestIndex(ModelBaseTest):
@@ -38,7 +37,7 @@ class TestIndex(ModelBaseTest):
             'age': 1,
             'name': 'Kees',
             'uuid': person.uuid,
-            '_version': elasticgit.version_info,
+            '_version': version_info,
         })
 
     def test_extract_document_with_object_id(self):
@@ -53,7 +52,7 @@ class TestIndex(ModelBaseTest):
             'age': 1,
             'name': 'Kees',
             'uuid': person.uuid,
-            '_version': elasticgit.version_info,
+            '_version': version_info,
         })
 
     def test_indexing(self):
