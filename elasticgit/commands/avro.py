@@ -177,16 +177,6 @@ class SchemaLoader(ToolCommand):
         'boolean': BooleanField,
     }
 
-    # How avro types map to Python types
-    core_type_mappings = {
-        'string': basestring,
-        'null': None,
-        'integer': int,
-        'number': float,
-        'record': dict,
-        'array': list,
-    }
-
     def run(self, schema_files, field_mappings=None, model_renames=None):
         """
         Inspect an Avro schema file and write the generated Python code
@@ -296,19 +286,6 @@ class SchemaLoader(ToolCommand):
             lambda field: isinstance(field['type'], dict))
         env.globals['core_mapping'] = self.core_mapping
 
-        # def complex_fields_for(complex_field):
-        #     field_type = complex_field['type']
-        #     if field_type['type'] == 'array':
-        #         items = field_type['items']
-        #     elif field_type['type'] == 'record':
-        #         items = [f['type'] for f in field_type['fields']]
-        #     from pprint import pprint
-        #     pprint(items)
-
-        #     return '\n'.join([self.core_mapping[field].__name__ for field in items])
-
-        # env.globals['complex_fields_for'] = complex_fields_for
-
         template = env.get_template('model_generator.py.txt')
         return template.render(
             datetime=datetime.utcnow(),
@@ -342,18 +319,6 @@ class SchemaDumper(ToolCommand):
         FloatField: 'float',
         BooleanField: 'boolean',
         UUIDField: 'string',
-    }
-
-    # How python types map to Avro types
-    core_type_mappings = {
-        basestring: 'string',
-        str: 'string',
-        unicode: 'string',
-        None: 'null',
-        int: 'integer',
-        float: 'number',
-        dict: 'record',
-        list: 'array',
     }
 
     def run(self, class_path):
@@ -400,7 +365,7 @@ class SchemaDumper(ToolCommand):
             'type': 'array',
             'name': field.name,
             'namespace': field.__class__.__module__,
-            'items': [self.map_field_to_type(field) for field in field.fields],
+            'items': [self.map_field_to_type(fld) for fld in field.fields],
         }
 
     def map_DictField_type(self, field):
@@ -409,9 +374,9 @@ class SchemaDumper(ToolCommand):
             'name': field.name,
             'namespace': field.__class__.__module__,
             'fields': [{
-                'name': field.name,
-                'type': self.map_field_to_type(field),
-            } for field in field.fields],
+                'name': fld.name,
+                'type': self.map_field_to_type(fld),
+            } for fld in field.fields],
         }
 
     def get_field_info(self, name, field):
