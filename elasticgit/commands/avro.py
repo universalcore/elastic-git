@@ -213,7 +213,7 @@ class SchemaLoader(ToolCommand):
         if field_name in field_mapping:
             return field_mapping[field_name].__name__
 
-        if field_type == 'record' or isinstance(field_type, dict):
+        if isinstance(field_type, dict):
             return self.field_class_for_complex_type(field)
         return self.core_mapping[field_type].__name__
 

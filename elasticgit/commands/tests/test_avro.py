@@ -52,8 +52,10 @@ class TestDumpSchemaTool(ToolBaseTest):
 
         schema_dumper = self.mk_schema_dumper()
         schema = json.loads(schema_dumper.dump_schema(TestModel))
-        from pprint import pprint
-        pprint(schema)
+        tags = self.get_field(schema, 'tags')
+        field_type = tags['type']
+        self.assertEqual(field_type['type'], 'array')
+        self.assertEqual(field_type['items'], ['int'])
 
 
 class TestLoadSchemaTool(ToolBaseTest):
