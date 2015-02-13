@@ -400,7 +400,9 @@ class TestAvroDataWriter(ToolBaseTest):
         with DataFileWriter(fp, DatumWriter(), schema) as writer:
             writer.append(dict(model))
 
-        with DataFileReader(open(file_name, 'rb'), DatumReader()) as reader:
+        with DataFileReader(
+                open(file_name, 'rb'),
+                DatumReader(readers_schema=schema)) as reader:
             [row] = reader
             self.assertEqual(model, model_class(row))
 
