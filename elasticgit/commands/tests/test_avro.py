@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
 
+import avro.schema
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter
+
 from elasticgit import models
 from elasticgit.tests.base import ToolBaseTest
 
@@ -383,3 +387,47 @@ class TestDumpAndLoad(ToolBaseTest):
             'uuid': 'the-uuid',
             '_version': new_version,
         })
+
+
+class TestAvroDataWriter(ToolBaseTest):
+
+    def assertBinaryRoundTrip(self, model_class, data):
+        model = model_class(data)
+        schema_dumper = self.mk_schema_dumper()
+        schema = avro.schema.parse(schema_dumper.dump_schema(model_class))
+
+        fp, file_name = self.get_tempfile(text=False)
+        with DataFileWriter(fp, DatumWriter(), schema) as writer:
+            writer.append(dict(model))
+
+        with DataFileReader(
+                open(file_name, 'rb'),
+                DatumReader(readers_schema=schema)) as reader:
+            [row] = reader
+            self.assertEqual(model, model_class(row))
+
+    def test_empty_model(self):
+
+        class Foo(models.Model):
+            pass
+
+        self.assertBinaryRoundTrip(Foo, {})
+
+    def test_list_model(self):
+        class Foo(models.Model):
+            list_ = models.ListField(
+                'list field!', fields=(models.IntegerField('ints!'),))
+
+        self.assertBinaryRoundTrip(Foo, {'list_': [1, 2, 3]})
+
+    def test_dict_model(self):
+        class Foo(models.Model):
+            dict_ = models.DictField(
+                'dict field!', fields=(
+                    models.IntegerField('ints', name='int'),
+                    models.TextField('texts', name='text'),
+                )
+            )
+
+        self.assertBinaryRoundTrip(
+            Foo, {'dict_': {'int': 1, 'text': 'texts'}})
