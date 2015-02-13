@@ -159,17 +159,21 @@ class DictField(ModelField):
     """
     field_type = 'dict'
 
-    #: Mapping for Elasticsearch
-    default_mapping = {
-        'type': 'string',
-    }
-
     def __init__(self, doc, fields, default=None, static=False,
                  fallbacks=(), mapping=()):
+        mapping = mapping or self.generate_default_mapping(fields)
         super(DictField, self).__init__(
             doc, default=default, static=static, fallbacks=fallbacks,
             mapping=mapping)
         self.fields = fields
+
+    def generate_default_mapping(self, fields):
+        field_names = [field.name for field in fields]
+        return {
+            'type': 'nested',
+            'properties': dict(
+                [(name, {'type': 'string'}) for name in field_names]),
+        }
 
     def clean(self, value):
         if not isinstance(value, dict):

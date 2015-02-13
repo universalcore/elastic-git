@@ -1,6 +1,7 @@
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.models import (
-    ConfigError, IntegerField, TextField, ListField, version_info)
+    ConfigError, IntegerField, TextField, ListField, version_info,
+    DictField)
 
 
 class TestModel(ModelBaseTest):
@@ -98,3 +99,19 @@ class TestModel(ModelBaseTest):
         self.assertTrue(model_class({'tags': []}))
         self.assertTrue(model_class({'tags': [1, 2, 3]}))
         self.assertTrue(model_class({'tags': ['1']}))
+
+    def test_dict_field(self):
+        model_class = self.mk_model({
+            'foo': DictField('dict field', fields=(
+                TextField('a', name='a'),
+                TextField('b', name='b'),
+            ))
+        })
+        self.assertEqual(
+            model_class._fields['foo'].mapping, {
+                'type': 'nested',
+                'properties': {
+                    'a': {'type': 'string'},
+                    'b': {'type': 'string'},
+                }
+            })
