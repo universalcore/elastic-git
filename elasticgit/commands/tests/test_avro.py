@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import json
 
+import avro.schema
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter
+
 from elasticgit import models
 from elasticgit.tests.base import ToolBaseTest
-
-import elasticgit
 
 
 class TestDumpSchemaTool(ToolBaseTest):
@@ -46,6 +48,18 @@ class TestDumpSchemaTool(ToolBaseTest):
         schema = json.loads(schema_dumper.dump_schema(TestModel))
         age = self.get_field(schema, 'age')
         self.assertEqual(age['aliases'], ['length'])
+
+    def test_dump_array(self):
+        class TestModel(models.Model):
+            tags = models.ListField('The tags',
+                                    fields=(models.IntegerField('doc'),))
+
+        schema_dumper = self.mk_schema_dumper()
+        schema = json.loads(schema_dumper.dump_schema(TestModel))
+        tags = self.get_field(schema, 'tags')
+        field_type = tags['type']
+        self.assertEqual(field_type['type'], 'array')
+        self.assertEqual(field_type['items'], ['int'])
 
 
 class TestLoadSchemaTool(ToolBaseTest):
@@ -124,7 +138,10 @@ class TestLoadSchemaTool(ToolBaseTest):
     def test_array_field(self):
         self.assertFieldCreation({
             'name': 'array',
-            'type': 'array',
+            'type': {
+                'type': 'array',
+                'items': ['string'],
+            },
             'doc': 'The Array',
             'default': ['foo', 'bar', 'baz']
         }, models.ListField)
@@ -132,7 +149,14 @@ class TestLoadSchemaTool(ToolBaseTest):
     def test_dict_field(self):
         self.assertFieldCreation({
             'name': 'obj',
-            'type': 'record',
+            'type': {
+                'type': 'record',
+                'items': ['string'],
+                'fields': [{
+                    'name': 'hello',
+                    'type': 'string',
+                }]
+            },
             'doc': 'The Object',
             'default': {'hello': 'world'},
         }, models.DictField)
@@ -143,7 +167,12 @@ class TestLoadSchemaTool(ToolBaseTest):
             'type': {
                 'namespace': 'foo.bar',
                 'name': 'ItIsComplicated',
-                'type': 'record'
+                'type': 'record',
+                'items': ['string'],
+                'fields': [{
+                    'name': 'foo',
+                    'type': 'string',
+                }]
             },
             'doc': 'Super Complex',
             'default': {},
@@ -154,12 +183,13 @@ class TestLoadSchemaTool(ToolBaseTest):
             'name': 'version',
             'type': {
                 'namespace': 'elasticgit.models',
-                'name': 'ModelVersionField',
+                'name': 'version',
                 'type': 'record',
+                'items': ['string'],
             },
             'doc': 'The Model Version',
-            'default': elasticgit.version_info,
-        }, models.ModelVersionField)
+            'default': models.version_info,
+        }, models.DictField)
 
     def test_mapping_hints(self):
         self.assertFieldCreation({
@@ -177,8 +207,12 @@ class DumpAndLoadModel(models.Model):
     integer = models.IntegerField('the integer')
     float_ = models.FloatField('the float')
     boolean = models.BooleanField('the boolean')
-    list_ = models.ListField('the list')
-    dict_ = models.DictField('the dict')
+    list_ = models.ListField('the list', fields=(
+        models.IntegerField('the int'),
+    ))
+    dict_ = models.DictField('the dict', fields=(
+        models.TextField('hello', name='hello'),
+    ))
 
 
 class TestDumpAndLoad(ToolBaseTest):
@@ -189,6 +223,7 @@ class TestDumpAndLoad(ToolBaseTest):
         schema_loader = self.mk_schema_loader()
 
         schema = schema_dumper.dump_schema(DumpAndLoadModel)
+
         generated_code = schema_loader.generate_model(json.loads(schema))
 
         GeneratedModel = self.load_class(generated_code, 'DumpAndLoadModel')
@@ -198,7 +233,7 @@ class TestDumpAndLoad(ToolBaseTest):
             'integer': 1,
             'float': 1.1,
             'boolean': False,
-            'list': ['1', '2', '3'],
+            'list_': [1, 2, 3],
             'dict_': {'hello': 'world'}
         }
         record1 = DumpAndLoadModel(data)
@@ -220,8 +255,8 @@ class TestDumpAndLoad(ToolBaseTest):
             'integer': 1,
             'float': 1.1,
             'boolean': False,
-            'list': ['1', '2', '3'],
-            'dict_': {'hello': 1}
+            'list_': [1, 2, 3],
+            'dict_': {'hello': '1'}
         }
         record1 = DumpAndLoadModel(data)
         record2 = GeneratedModel(data)
@@ -242,7 +277,7 @@ class TestDumpAndLoad(ToolBaseTest):
             'integer': 1,
             'float': 1.1,
             'boolean': False,
-            'list': [1, 2, 3],
+            'list_': [1, 2, 3],
             'dict_': {'hello': '1'}
         }
         record1 = DumpAndLoadModel(data)
@@ -264,7 +299,7 @@ class TestDumpAndLoad(ToolBaseTest):
             'integer': 1,
             'float': 1.1,
             'boolean': False,
-            'list': [1, 2, 3],
+            'list_': [1, 2, 3],
             'dict_': {'hello': '1'}
         }
         record1 = DumpAndLoadModel(data)
@@ -326,7 +361,7 @@ class TestDumpAndLoad(ToolBaseTest):
         class Foo(models.Model):
             pass
 
-        old_version_info = elasticgit.version_info.copy()
+        old_version_info = models.version_info.copy()
         old_version_info['package_version'] = '0.0.1'
 
         f = Foo({
@@ -341,9 +376,9 @@ class TestDumpAndLoad(ToolBaseTest):
             pass
 
         major, minor, micro = map(
-            int, elasticgit.version_info['package_version'].split('.'))
+            int, models.version_info['package_version'].split('.'))
 
-        new_version = elasticgit.version_info.copy()
+        new_version = models.version_info.copy()
         new_version['package_version'] = '%d.%d.%d' % (
             major + 1,
             minor,
@@ -352,3 +387,47 @@ class TestDumpAndLoad(ToolBaseTest):
             'uuid': 'the-uuid',
             '_version': new_version,
         })
+
+
+class TestAvroDataWriter(ToolBaseTest):
+
+    def assertBinaryRoundTrip(self, model_class, data):
+        model = model_class(data)
+        schema_dumper = self.mk_schema_dumper()
+        schema = avro.schema.parse(schema_dumper.dump_schema(model_class))
+
+        fp, file_name = self.get_tempfile(text=False)
+        with DataFileWriter(fp, DatumWriter(), schema) as writer:
+            writer.append(dict(model))
+
+        with DataFileReader(
+                open(file_name, 'rb'),
+                DatumReader(readers_schema=schema)) as reader:
+            [row] = reader
+            self.assertEqual(model, model_class(row))
+
+    def test_empty_model(self):
+
+        class Foo(models.Model):
+            pass
+
+        self.assertBinaryRoundTrip(Foo, {})
+
+    def test_list_model(self):
+        class Foo(models.Model):
+            list_ = models.ListField(
+                'list field!', fields=(models.IntegerField('ints!'),))
+
+        self.assertBinaryRoundTrip(Foo, {'list_': [1, 2, 3]})
+
+    def test_dict_model(self):
+        class Foo(models.Model):
+            dict_ = models.DictField(
+                'dict field!', fields=(
+                    models.IntegerField('ints', name='int'),
+                    models.TextField('texts', name='text'),
+                )
+            )
+
+        self.assertBinaryRoundTrip(
+            Foo, {'dict_': {'int': 1, 'text': 'texts'}})

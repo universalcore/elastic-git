@@ -22,6 +22,16 @@ class {{model_class_for(schema.name)}}(models.Model):
     {{field.name}} = models.{{ field_class_for(field) }}(
         {%- if field.doc -%}u"""{{ field.doc }}"""{% else %}"""{{ field.name }}"""{% endif %}
         {%- if field.default is defined -%}, default={{ default_value(field) }}{% endif %}
+        {%- if is_complex(field) -%}, fields=(
+            {%- set sub_type = field['type'] %}
+            {%- if sub_type['type'] == 'array' %}
+                {% for item in sub_type['items'] %}
+                    models.{{core_mapping[item].__name__}}('{{item}}'),{%- endfor %}
+            {%- elif sub_type['type'] == 'record' %}
+                {% for field in sub_type['fields'] %}
+                    models.{{core_mapping[field.type].__name__}}('{{field.name}}', name='{{field.name}}'),{%- endfor %}
+            {% endif %}
+        ){% endif %}
         {%- if field.aliases -%}, fallbacks=[{% for alias in field.aliases -%}
             models.SingleFieldFallback('{{alias}}'),
             {%- endfor %}]{% endif %}){% endfor %}

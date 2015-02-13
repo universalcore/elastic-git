@@ -175,3 +175,39 @@ class TestResyncToolWithConfigFile(TestResyncTool):
         tool.run(sio, models_module, None, None, mapping_file=mapping_file,
                  recreate_index=recreate_index)
         return tool.stdout.getvalue()
+
+
+class TestResyncToolConfigFileWithEsHost(TestResyncTool):
+
+    def resync(self, workspace, models_module, mapping_file=None,
+               recreate_index=False):
+        parser = ConfigParser()
+        parser.add_section(DEFAULT_SECTION)
+        parser.set(DEFAULT_SECTION, 'git.path',
+                   workspace.working_dir)
+        parser.set(DEFAULT_SECTION, 'es.index_prefix',
+                   workspace.index_prefix)
+        parser.set(DEFAULT_SECTION, 'es.host', 'http://localhost:9200')
+        sio = StringIO()
+        parser.write(sio)
+        sio.seek(0)
+
+        tool = ResyncTool()
+        tool.stdout = StringIO()
+        tool.run(sio, models_module, None, None, mapping_file=mapping_file,
+                 recreate_index=recreate_index)
+        return tool.stdout.getvalue()
+
+
+class TestResyncToolWithEsHost(TestResyncTool):
+
+    def resync(self, workspace, model_class, mapping_file=None,
+               recreate_index=False):
+        tool = ResyncTool()
+        tool.stdout = StringIO()
+        tool.run(None, model_class,
+                 workspace.index_prefix, workspace.working_dir,
+                 mapping_file=mapping_file,
+                 recreate_index=recreate_index,
+                 es_host='http://localhost:9200')
+        return tool.stdout.getvalue()

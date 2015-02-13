@@ -1,7 +1,7 @@
 import sys
 import json
 
-from elasticgit import version_info
+from elasticgit.models import version_info
 from elasticgit.commands.base import ToolCommand, CommandArgument
 
 

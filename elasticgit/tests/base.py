@@ -7,6 +7,8 @@ from StringIO import StringIO
 
 from unittest import TestCase
 
+import avro.schema
+
 from elasticgit.models import (
     IntegerField, TextField, Model, SingleFieldFallback)
 from elasticgit.workspace import EG
@@ -87,7 +89,9 @@ class ToolBaseTest(ModelBaseTest):
         return schema_dumper
 
     def get_schema(self, schema_dumper):
-        return json.loads(schema_dumper.stdout.getvalue())
+        data = schema_dumper.stdout.getvalue()
+        schema = avro.schema.parse(data)
+        return schema.to_json()
 
     def get_field(self, schema, field_name):
         return [field
@@ -99,12 +103,16 @@ class ToolBaseTest(ModelBaseTest):
         self.addCleanup(lambda: shutil.rmtree(abs_path))
         return abs_path
 
+    def get_tempfile(self, text=True):
+        fd, pathname = tempfile.mkstemp(text=text)
+        fp = os.fdopen(fd, 'w')
+        self.addCleanup(os.unlink, pathname)
+        return fp, pathname
+
     def mk_tempfile(self, data):
-        fd, name = tempfile.mkstemp(text=True)
-        with open(name, 'w') as fp:
+        fp, name = self.get_tempfile(text=True)
+        with fp:
             fp.write(data)
-        self.addCleanup(lambda: os.unlink(name))
-        os.close(fd)
         return name
 
     def mk_schema_loader(self):
