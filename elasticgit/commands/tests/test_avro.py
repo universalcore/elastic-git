@@ -397,14 +397,12 @@ class TestAvroDataWriter(ToolBaseTest):
         schema = avro.schema.parse(schema_dumper.dump_schema(model_class))
 
         fp, file_name = self.get_tempfile(text=False)
-        writer = DataFileWriter(fp, DatumWriter(), schema)
-        writer.append(dict(model))
-        writer.close()
+        with DataFileWriter(fp, DatumWriter(), schema) as writer:
+            writer.append(dict(model))
 
-        reader = DataFileReader(open(file_name, 'rb'), DatumReader())
-        [row] = reader
-        reader.close()
-        self.assertEqual(model, model_class(row))
+        with DataFileReader(open(file_name, 'rb'), DatumReader()) as reader:
+            [row] = reader
+            self.assertEqual(model, model_class(row))
 
     def test_empty_model(self):
 
