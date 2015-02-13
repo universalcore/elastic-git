@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
+from StringIO import StringIO
+
+import avro.schema
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter
 
 from elasticgit import models
 from elasticgit.tests.base import ToolBaseTest
@@ -383,3 +388,20 @@ class TestDumpAndLoad(ToolBaseTest):
             'uuid': 'the-uuid',
             '_version': new_version,
         })
+
+class TestAvroDataWriter(ToolBaseTest):
+
+    def test_write_data(self):
+
+        class Foo(models.Model):
+            pass
+
+        f = Foo({})
+
+        schema_dumper = self.mk_schema_dumper()
+        schema = avro.schema.parse(schema_dumper.dump_schema(Foo))
+
+        sio = StringIO()
+        writer = DataFileWriter(sio, DatumWriter(), schema)
+        writer.append(dict(f))
+        writer.close()
