@@ -104,16 +104,15 @@ class ToolBaseTest(ModelBaseTest):
         return abs_path
 
     def get_tempfile(self, text=True):
-        fp, pathname = tempfile.mkstemp(text=text)
+        fd, pathname = tempfile.mkstemp(text=text)
+        fp = os.fdopen(fd, 'w')
         self.addCleanup(os.unlink, pathname)
-        return os.fdopen(fp, 'w'), pathname
+        return fp, pathname
 
     def mk_tempfile(self, data):
-        fd, name = self.get_tempfile(text=True)
-        with open(name, 'w') as fp:
+        fp, name = self.get_tempfile(text=True)
+        with fp:
             fp.write(data)
-        self.addCleanup(lambda: os.unlink(name))
-        os.close(fd)
         return name
 
     def mk_schema_loader(self):
