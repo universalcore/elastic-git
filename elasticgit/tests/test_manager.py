@@ -3,7 +3,7 @@
 import os
 
 from elasticgit import EG
-from elasticgit.models import IntegerField, DictField
+from elasticgit.models import IntegerField
 from elasticgit.tests.base import ModelBaseTest, TestPage, TestPerson
 
 from elasticsearch.client import Elasticsearch
