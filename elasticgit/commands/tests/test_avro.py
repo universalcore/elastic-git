@@ -391,17 +391,43 @@ class TestDumpAndLoad(ToolBaseTest):
 
 class TestAvroDataWriter(ToolBaseTest):
 
-    def test_write_data(self):
+    def assertBinaryRoundTrip(self, model_class, data):
+        model = model_class(data)
+        schema_dumper = self.mk_schema_dumper()
+        schema = avro.schema.parse(schema_dumper.dump_schema(model_class))
+
+        fp, file_name = self.get_tempfile(text=False)
+        writer = DataFileWriter(fp, DatumWriter(), schema)
+        writer.append(dict(model))
+        writer.close()
+
+        reader = DataFileReader(open(file_name, 'rb'), DatumReader())
+        [row] = reader
+        reader.close()
+        self.assertEqual(model, model_class(row))
+
+    def test_empty_model(self):
 
         class Foo(models.Model):
             pass
 
-        f = Foo({})
+        self.assertBinaryRoundTrip(Foo, {})
 
-        schema_dumper = self.mk_schema_dumper()
-        schema = avro.schema.parse(schema_dumper.dump_schema(Foo))
+    def test_list_model(self):
+        class Foo(models.Model):
+            list_ = models.ListField(
+                'list field!', fields=(models.IntegerField('ints!'),))
 
-        sio = StringIO()
-        writer = DataFileWriter(sio, DatumWriter(), schema)
-        writer.append(dict(f))
-        writer.close()
+        self.assertBinaryRoundTrip(Foo, {'list_': [1, 2, 3]})
+
+    def test_dict_model(self):
+        class Foo(models.Model):
+            dict_ = models.DictField(
+                'dict field!', fields=(
+                    models.IntegerField('ints', name='int'),
+                    models.TextField('texts', name='text'),
+                )
+            )
+
+        self.assertBinaryRoundTrip(
+            Foo, {'dict_': {'int': 1, 'text': 'texts'}})

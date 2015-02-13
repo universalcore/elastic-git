@@ -103,8 +103,13 @@ class ToolBaseTest(ModelBaseTest):
         self.addCleanup(lambda: shutil.rmtree(abs_path))
         return abs_path
 
+    def get_tempfile(self, text=True):
+        fp, pathname = tempfile.mkstemp(text=text)
+        self.addCleanup(os.unlink, pathname)
+        return os.fdopen(fp, 'w'), pathname
+
     def mk_tempfile(self, data):
-        fd, name = tempfile.mkstemp(text=True)
+        fd, name = self.get_tempfile(text=True)
         with open(name, 'w') as fp:
             fp.write(data)
         self.addCleanup(lambda: os.unlink(name))
