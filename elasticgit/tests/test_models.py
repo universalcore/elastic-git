@@ -1,8 +1,7 @@
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.models import (
-    ConfigError, IntegerField, TextField, ModelVersionField)
-
-import elasticgit
+    ConfigError, IntegerField, TextField, ListField, version_info,
+    DictField)
 
 
 class TestModel(ModelBaseTest):
@@ -42,7 +41,7 @@ class TestModel(ModelBaseTest):
             'age': IntegerField('An age'),
             'name': TextField('A name'),
         })
-        data = {'age': 1, 'name': 'foo', '_version': elasticgit.version_info}
+        data = {'age': 1, 'name': 'foo', '_version': version_info}
         model = model_class(data)
         self.assertEqual(dict(model), data)
 
@@ -82,7 +81,37 @@ class TestModel(ModelBaseTest):
         self.assertFalse(new_model.is_read_only())
 
     def test_version_check(self):
-        field = ModelVersionField('ModelVersionField')
-        self.assertTrue(field.compatible_version('0.2.10', '0.2.9'))
-        self.assertTrue(field.compatible_version('0.2.10', '0.2.10'))
-        self.assertFalse(field.compatible_version('0.2.9', '0.2.10'))
+        model_class = self.mk_model({})
+        model = model_class({})
+        self.assertTrue(model.compatible_version('0.2.10', '0.2.9'))
+        self.assertTrue(model.compatible_version('0.2.10', '0.2.10'))
+        self.assertFalse(model.compatible_version('0.2.9', '0.2.10'))
+
+    def test_list_field(self):
+        model_class = self.mk_model({
+            'tags': ListField('list field', fields=(
+                IntegerField('int'),
+            ))
+        })
+        self.assertRaises(ConfigError, model_class, {'tags': ['a']})
+        self.assertRaises(ConfigError, model_class, {'tags': [2.0]})
+        self.assertRaises(ConfigError, model_class, {'tags': [None]})
+        self.assertTrue(model_class({'tags': []}))
+        self.assertTrue(model_class({'tags': [1, 2, 3]}))
+        self.assertTrue(model_class({'tags': ['1']}))
+
+    def test_dict_field(self):
+        model_class = self.mk_model({
+            'foo': DictField('dict field', fields=(
+                TextField('a', name='a'),
+                TextField('b', name='b'),
+            ))
+        })
+        self.assertEqual(
+            model_class._fields['foo'].mapping, {
+                'type': 'nested',
+                'properties': {
+                    'a': {'type': 'string'},
+                    'b': {'type': 'string'},
+                }
+            })

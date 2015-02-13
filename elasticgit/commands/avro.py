@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from jinja2 import Environment, PackageLoader
 from functools import partial
 import argparse
@@ -7,21 +9,23 @@ import pprint
 
 from datetime import datetime
 
-from elasticgit import version_info
+import avro.schema
+
 from elasticgit.models import (
-    Model, IntegerField, TextField, ModelVersionField, FloatField,
-    BooleanField, ListField, DictField, UUIDField)
+    Model, IntegerField, TextField, FloatField,
+    BooleanField, ListField, DictField, UUIDField,
+    version_info)
 
 from elasticgit.commands.base import (
     ToolCommand, ToolCommandError, CommandArgument)
 from elasticgit.utils import load_class
 
 
-def deserialize(schema, field_mapping={}, module_name=None):
+def deserialize(data, field_mapping={}, module_name=None):
     """
     Deserialize an Avro schema and define it within a module (if specified)
 
-    :param dict schema:
+    :param dict data:
         The Avro schema
     :param dict field_mapping:
         Optional mapping to override the default mapping.
@@ -47,6 +51,7 @@ def deserialize(schema, field_mapping={}, module_name=None):
 
     """
     schema_loader = SchemaLoader()
+    schema = avro.schema.make_avsc_object(data, avro.schema.Names()).to_json()
     model_code = schema_loader.generate_model(schema)
     model_name = schema['name']
 
@@ -165,13 +170,11 @@ class SchemaLoader(ToolCommand):
             action='append', type=RenameType),
     )
 
-    mapping = {
+    core_mapping = {
         'int': IntegerField,
         'string': TextField,
         'float': FloatField,
         'boolean': BooleanField,
-        'array': ListField,
-        'record': DictField,
     }
 
     def run(self, schema_files, field_mappings=None, model_renames=None):
@@ -212,14 +215,19 @@ class SchemaLoader(ToolCommand):
 
         if isinstance(field_type, dict):
             return self.field_class_for_complex_type(field)
-        return self.mapping[field_type].__name__
+        return self.core_mapping[field_type].__name__
 
     def field_class_for_complex_type(self, field):
         field_type = field['type']
-        if (field_type['name'] == 'ModelVersionField' and
-                field_type['namespace'] == 'elasticgit.models'):
-            return ModelVersionField.__name__
+        handler = getattr(
+            self, 'field_class_for_complex_%(type)s_type' % field_type)
+        return handler(field)
+
+    def field_class_for_complex_record_type(self, field):
         return DictField.__name__
+
+    def field_class_for_complex_array_type(self, field):
+        return ListField.__name__
 
     def default_value(self, field):
         return pprint.pformat(field['default'], indent=8)
@@ -274,6 +282,9 @@ class SchemaLoader(ToolCommand):
         env.globals['field_class_for'] = partial(
             self.field_class_for, field_mapping=field_mapping)
         env.globals['default_value'] = self.default_value
+        env.globals['is_complex'] = (
+            lambda field: isinstance(field['type'], dict))
+        env.globals['core_mapping'] = self.core_mapping
 
         template = env.get_template('model_generator.py.txt')
         return template.render(
@@ -301,41 +312,13 @@ class SchemaDumper(ToolCommand):
         CommandArgument('class_path', help='python path to Class.'),
     )
 
-    mapping = {
+    # How model fields map to types
+    core_field_mappings = {
         IntegerField: 'int',
         TextField: 'string',
         FloatField: 'float',
         BooleanField: 'boolean',
-        ListField: 'array',
-        DictField: 'record',
         UUIDField: 'string',
-        ModelVersionField: {
-            'type': 'record',
-            'name': 'ModelVersionField',
-            'namespace': 'elasticgit.models',
-            'fields': [
-                {
-                    'name': 'language',
-                    'type': 'string',
-                },
-                {
-                    'name': 'language_version_string',
-                    'type': 'string',
-                },
-                {
-                    'name': 'language_version',
-                    'type': 'string',
-                },
-                {
-                    'name': 'package',
-                    'type': 'string',
-                },
-                {
-                    'name': 'package_version',
-                    'type': 'string',
-                }
-            ]
-        }
     }
 
     def run(self, class_path):
@@ -370,6 +353,32 @@ class SchemaDumper(ToolCommand):
                        for name, field in model_class._fields.items()],
         }, indent=2)
 
+    def map_field_to_type(self, field):
+        if field.__class__ in self.core_field_mappings:
+            return self.core_field_mappings[field.__class__]
+
+        handler = getattr(self, 'map_%s_type' % (field.__class__.__name__,))
+        return handler(field)
+
+    def map_ListField_type(self, field):
+        return {
+            'type': 'array',
+            'name': field.name,
+            'namespace': field.__class__.__module__,
+            'items': [self.map_field_to_type(fld) for fld in field.fields],
+        }
+
+    def map_DictField_type(self, field):
+        return {
+            'type': 'record',
+            'name': field.name,
+            'namespace': field.__class__.__module__,
+            'fields': [{
+                'name': fld.name,
+                'type': self.map_field_to_type(fld),
+            } for fld in field.fields],
+        }
+
     def get_field_info(self, name, field):
         """
         Return the Avro field object for an
@@ -383,7 +392,7 @@ class SchemaDumper(ToolCommand):
         """
         return {
             'name': name,
-            'type': self.mapping[field.__class__],
+            'type': self.map_field_to_type(field),
             'doc': field.doc,
             'default': field.default,
             'aliases': [fallback.field_name for fallback in field.fallbacks]
