@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-from StringIO import StringIO
 
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
@@ -388,6 +387,7 @@ class TestDumpAndLoad(ToolBaseTest):
             'uuid': 'the-uuid',
             '_version': new_version,
         })
+
 
 class TestAvroDataWriter(ToolBaseTest):
 
