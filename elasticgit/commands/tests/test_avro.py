@@ -223,7 +223,6 @@ class TestDumpAndLoad(ToolBaseTest):
         schema_loader = self.mk_schema_loader()
 
         schema = schema_dumper.dump_schema(DumpAndLoadModel)
-        print 'schema', schema
 
         generated_code = schema_loader.generate_model(json.loads(schema))
 
