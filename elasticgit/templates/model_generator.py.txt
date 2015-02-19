@@ -25,8 +25,8 @@ class {{model_class_for(schema.name)}}(models.Model):
         {%- if is_complex(field) -%}, fields=(
             {%- set sub_type = field['type'] %}
             {%- if sub_type['type'] == 'array' %}
-                {% for item in sub_type['items'] %}
-                    models.{{field_class_for_core_type(item)}}('{{item}}'),{%- endfor %}
+                {% for item in sub_type['items'] %}{% if item != 'null' %}
+                    models.{{field_class_for_core_type([item])}}('{{item}}'),{% endif %}{%- endfor %}
             {%- elif sub_type['type'] == 'record' %}
                 {% for field in sub_type['fields'] %}
                     models.{{field_class_for_core_type(field.type)}}('{{field.name}}', name='{{field.name}}'),{%- endfor %}

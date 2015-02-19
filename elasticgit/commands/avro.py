@@ -214,8 +214,10 @@ class SchemaLoader(ToolCommand):
             return field_mapping[field_name].__name__
 
         if isinstance(field_type, dict):
+            print 'field dict', field
             return self.field_class_for_complex_type(field)
         if isinstance(field_type, list):
+            print 'field list', field
             return self.field_class_for_core_type(field_type)
 
         return self.core_mapping[field_type].__name__
@@ -227,9 +229,13 @@ class SchemaLoader(ToolCommand):
         return self.core_mapping[not_null_type].__name__
 
     def field_class_for_complex_type(self, field):
-        field_type = field['type']
+        field_type = field['type']['type']
+        if isinstance(field_type, list):
+            [field_type] = [ft
+                            for ft in field_type
+                            if ft != "null"]
         handler = getattr(
-            self, 'field_class_for_complex_%(type)s_type' % field_type)
+            self, 'field_class_for_complex_%s_type' % (field_type,))
         return handler(field)
 
     def field_class_for_complex_record_type(self, field):
@@ -376,10 +382,10 @@ class SchemaDumper(ToolCommand):
             'type': 'array',
             'name': field.name,
             'namespace': field.__class__.__module__,
-            'items': reduce(
+            'items': list(set(reduce(
                 lambda a, b: a + b,
                 [self.map_field_to_type(fld) for fld in field.fields],
-                []),
+                []))),
         }
 
     def map_DictField_type(self, field):
