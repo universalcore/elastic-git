@@ -214,10 +214,8 @@ class SchemaLoader(ToolCommand):
             return field_mapping[field_name].__name__
 
         if isinstance(field_type, dict):
-            print 'field dict', field
             return self.field_class_for_complex_type(field)
         if isinstance(field_type, list):
-            print 'field list', field
             return self.field_class_for_core_type(field_type)
 
         return self.core_mapping[field_type].__name__
