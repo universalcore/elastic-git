@@ -216,7 +216,7 @@ class StorageManager(object):
         """
         Store some data in a file
 
-        :param str file_path:
+        :param str repo_path:
             Where to store the file.
         :param obj data:
             The data to write in the file.
@@ -269,17 +269,43 @@ class StorageManager(object):
         :returns:
             The commit.
         """
+        return self.delete_data(
+            self.git_name(model), message, author=author, committer=committer)
+
+    def delete_data(self, repo_path, message,
+                    author=None, committer=None):
+        """
+        Delete a file that's not necessarily a model file.
+
+        :param str repo_path:
+            Which file to delete.
+        :param str message:
+            The commit message.
+        :param tuple author:
+            The author information (name, email address)
+            Defaults repo default if unspecified.
+        :param tuple committer:
+            The committer information (name, email address).
+            Defaults to the author if unspecified.
+        :returns:
+            The commit
+        """
         if not isinstance(message, str):
             raise StorageException('Messages need to be bytestrings.')
+
+        file_path = os.path.join(self.repo.working_dir, repo_path)
+        if not os.path.isfile(file_path):
+            raise StorageException('File does not exist.')
 
         author_actor = Actor(*author) if author else None
         committer_actor = Actor(*committer) if committer else author_actor
 
+        # Remove from the index
         index = self.repo.index
-        index.remove([self.git_name(model)])
-        index.commit(message, author=author_actor, committer=committer_actor)
-        return os.remove(
-            os.path.join(self.workdir, self.git_name(model)))
+        index.remove([file_path], working_tree=True)
+        return index.commit(message,
+                            author=author_actor,
+                            committer=committer_actor)
 
     def storage_exists(self):
         """
