@@ -201,7 +201,7 @@ class TestStorage(ModelBaseTest):
     def test_delete_data_non_existent(self):
         storage = self.workspace.sm
         foo_path = os.path.join(self.workspace.repo.working_dir,
-                                   'FOO.md')
+                                'FOO.md')
         self.assertFalse(os.path.isfile(foo_path))
         self.assertRaises(
             StorageException,
