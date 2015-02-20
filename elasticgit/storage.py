@@ -269,7 +269,6 @@ class StorageManager(object):
         :returns:
             The commit.
         """
-        index = self.repo.index
         return self.delete_data(
             self.git_name(model), message, author=author, committer=committer)
 
