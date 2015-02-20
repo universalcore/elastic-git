@@ -192,8 +192,17 @@ class TestStorage(ModelBaseTest):
         storage = self.workspace.sm
         readme_path = os.path.join(self.workspace.repo.working_dir,
                                    'README.md')
-        readme_commit = storage.store_data(
+        storage.store_data(
             'README.md', '# Hello World', 'Read me commit')
         self.assertTrue(os.path.isfile(readme_path))
-        delete_commit = storage.delete_data('README.md', 'Delete the readme')
+        storage.delete_data('README.md', 'Delete the readme')
         self.assertFalse(os.path.isfile(readme_path))
+
+    def test_delete_data_non_existent(self):
+        storage = self.workspace.sm
+        foo_path = os.path.join(self.workspace.repo.working_dir,
+                                   'FOO.md')
+        self.assertFalse(os.path.isfile(foo_path))
+        self.assertRaises(
+            StorageException,
+            storage.delete_data, 'FOO.md', 'Delete the readme')
