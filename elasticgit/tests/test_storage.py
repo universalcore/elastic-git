@@ -84,7 +84,7 @@ class TestStorage(ModelBaseTest):
         })
 
         self.assertRaises(
-            GitCommandError,
+            StorageException,
             self.sm.delete, person, 'Deleting a person.')
 
     def test_get(self):
@@ -206,3 +206,9 @@ class TestStorage(ModelBaseTest):
         self.assertRaises(
             StorageException,
             storage.delete_data, 'FOO.md', 'Delete the readme')
+
+    def test_delete_data_unicode_commit_message(self):
+        storage = self.workspace.sm
+        self.assertRaises(
+            StorageException,
+            storage.delete_data, 'FOO.md', u'Lørüm Ipsüm')
