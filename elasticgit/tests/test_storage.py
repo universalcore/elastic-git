@@ -187,3 +187,13 @@ class TestStorage(ModelBaseTest):
 
         [found_commit] = second_workspace.repo.iter_commits()
         self.assertEqual(found_commit, initial_commit)
+
+    def test_delete_data(self):
+        storage = self.workspace.sm
+        readme_path = os.path.join(self.workspace.repo.working_dir,
+                                   'README.md')
+        readme_commit = storage.store_data(
+            'README.md', '# Hello World', 'Read me commit')
+        self.assertTrue(os.path.isfile(readme_path))
+        delete_commit = storage.delete_data('README.md', 'Delete the readme')
+        self.assertFalse(os.path.isfile(readme_path))
