@@ -59,7 +59,7 @@ class TestDumpSchemaTool(ToolBaseTest):
         tags = self.get_field(schema, 'tags')
         field_type = tags['type']
         self.assertEqual(field_type['type'], 'array')
-        self.assertEqual(field_type['items'], ['int'])
+        self.assertEqual(set(field_type['items']), set(['null', 'int']))
 
 
 class TestLoadSchemaTool(ToolBaseTest):
@@ -139,7 +139,7 @@ class TestLoadSchemaTool(ToolBaseTest):
         self.assertFieldCreation({
             'name': 'array',
             'type': {
-                'type': 'array',
+                'type': ['null', 'array'],
                 'items': ['string'],
             },
             'doc': 'The Array',
@@ -154,7 +154,7 @@ class TestLoadSchemaTool(ToolBaseTest):
                 'items': ['string'],
                 'fields': [{
                     'name': 'hello',
-                    'type': 'string',
+                    'type': ['null', 'string'],
                 }]
             },
             'doc': 'The Object',
@@ -171,7 +171,7 @@ class TestLoadSchemaTool(ToolBaseTest):
                 'items': ['string'],
                 'fields': [{
                     'name': 'foo',
-                    'type': 'string',
+                    'type': ['null', 'string'],
                 }]
             },
             'doc': 'Super Complex',
@@ -391,7 +391,7 @@ class TestDumpAndLoad(ToolBaseTest):
 
 class TestAvroDataWriter(ToolBaseTest):
 
-    def assertBinaryRoundTrip(self, model_class, data):
+    def binary_roundtrip(self, model_class, data):
         model = model_class(data)
         schema_dumper = self.mk_schema_dumper()
         schema = avro.schema.parse(schema_dumper.dump_schema(model_class))
@@ -404,7 +404,11 @@ class TestAvroDataWriter(ToolBaseTest):
                 open(file_name, 'rb'),
                 DatumReader(readers_schema=schema)) as reader:
             [row] = reader
-            self.assertEqual(model, model_class(row))
+            return row
+
+    def assertBinaryRoundTrip(self, model_class, data):
+        round_tripped = self.binary_roundtrip(model_class, data)
+        self.assertEqual(model_class(data), model_class(round_tripped))
 
     def test_empty_model(self):
 
@@ -431,3 +435,13 @@ class TestAvroDataWriter(ToolBaseTest):
 
         self.assertBinaryRoundTrip(
             Foo, {'dict_': {'int': 1, 'text': 'texts'}})
+
+    def test_null_fields(self):
+        class Foo(models.Model):
+            name = models.TextField('name')
+            age = models.IntegerField('age', default=5)
+
+        data = self.binary_roundtrip(Foo, {})
+        model = Foo(data)
+        self.assertEqual(model.age, 5)
+        self.assertEqual(model.name, None)

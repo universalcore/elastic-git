@@ -215,12 +215,25 @@ class SchemaLoader(ToolCommand):
 
         if isinstance(field_type, dict):
             return self.field_class_for_complex_type(field)
+        if isinstance(field_type, list):
+            return self.field_class_for_core_type(field_type)
+
         return self.core_mapping[field_type].__name__
 
+    def field_class_for_core_type(self, core_types):
+        [not_null_type] = [core_type
+                           for core_type in core_types
+                           if core_type != "null"]
+        return self.core_mapping[not_null_type].__name__
+
     def field_class_for_complex_type(self, field):
-        field_type = field['type']
+        field_type = field['type']['type']
+        if isinstance(field_type, list):
+            [field_type] = [ft
+                            for ft in field_type
+                            if ft != "null"]
         handler = getattr(
-            self, 'field_class_for_complex_%(type)s_type' % field_type)
+            self, 'field_class_for_complex_%s_type' % (field_type,))
         return handler(field)
 
     def field_class_for_complex_record_type(self, field):
@@ -284,7 +297,9 @@ class SchemaLoader(ToolCommand):
         env.globals['default_value'] = self.default_value
         env.globals['is_complex'] = (
             lambda field: isinstance(field['type'], dict))
-        env.globals['core_mapping'] = self.core_mapping
+        env.globals['field_class_for_core_type'] = (
+            self.field_class_for_core_type)
+        # env.globals['core_mapping'] = self.core_mapping
 
         template = env.get_template('model_generator.py.txt')
         return template.render(
@@ -355,7 +370,7 @@ class SchemaDumper(ToolCommand):
 
     def map_field_to_type(self, field):
         if field.__class__ in self.core_field_mappings:
-            return self.core_field_mappings[field.__class__]
+            return ["null", self.core_field_mappings[field.__class__]]
 
         handler = getattr(self, 'map_%s_type' % (field.__class__.__name__,))
         return handler(field)
@@ -365,7 +380,10 @@ class SchemaDumper(ToolCommand):
             'type': 'array',
             'name': field.name,
             'namespace': field.__class__.__module__,
-            'items': [self.map_field_to_type(fld) for fld in field.fields],
+            'items': list(set(reduce(
+                lambda a, b: a + b,
+                [self.map_field_to_type(fld) for fld in field.fields],
+                []))),
         }
 
     def map_DictField_type(self, field):

@@ -76,8 +76,9 @@ class EGShell(ToolCommand):
 
         if introspect_models:
             possible_models = [m for m in os.listdir(workdir)
-                               if os.path.isdir(os.path.join(workdir, m))
-                               and not m.startswith('.')]
+                               if (
+                                   os.path.isdir(os.path.join(workdir, m)) and
+                                   not m.startswith('.'))]
             for models in possible_models:
                 try:
                     found_models = load_models(models)
