@@ -159,13 +159,13 @@ class TestEG(ModelBaseTest):
         workspace = self.workspace
         person = TestPerson({
             'age': 1,
-            'name': u'Name',
+            'name': u'2020-01-01T06:00:00',
             'uuid': u'foo',
         })
 
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
-        [result] = workspace.S(TestPerson).query(name__match='Name')
+        [result] = workspace.S(TestPerson).query(uuid__match='foo')
         self.assertTrue(isinstance(result, ModelMappingType))
         model = result.to_object()
         self.assertTrue(isinstance(model, TestPerson))
