@@ -155,6 +155,29 @@ class TestEG(ModelBaseTest):
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
 
+    def test_to_object(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': u'Name',
+            'uuid': u'foo',
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [result] = workspace.S(TestPerson).query(name__match='Name')
+        self.assertTrue(isinstance(result, ModelMappingType))
+        model = result.to_object()
+        self.assertTrue(isinstance(model, TestPerson))
+        self.assertEqual(model, person)
+        self.assertTrue(model.is_read_only())
+
+        person = person.update({'age': 2})
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        model = result.to_object()
+        self.assertNotEqual(model, person)
+
     def test_access_elastic_search_data(self):
         workspace = self.workspace
         person = TestPerson({
