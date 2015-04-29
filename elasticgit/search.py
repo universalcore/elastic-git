@@ -1,5 +1,4 @@
 from urllib import quote
-from datetime import date, datetime
 
 from elasticutils import MappingType, Indexable
 
