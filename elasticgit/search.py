@@ -27,6 +27,11 @@ class ModelMappingType(MappingType, Indexable):
     def get_object(self):
         return self.sm.get(self.model_class, self._id)
 
+    def to_object(self):
+        obj = self.model_class(self._results_dict)
+        obj.set_read_only()  # might not be in sync with Git
+        return obj
+
     @classmethod
     def get_es(cls):
         return cls.im.es
