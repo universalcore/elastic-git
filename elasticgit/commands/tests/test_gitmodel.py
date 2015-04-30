@@ -146,7 +146,10 @@ class TestMigrateGitModelRepo(ToolBaseTest):
             ('created_at', 'string'),
             ('featured_in_category', 'boolean'),
             ('modified_at', 'string'),
-            ('linked_pages', 'array'),
+            ('linked_pages', {
+                'type': 'array',
+                'items': ['string'],
+            }),
             ('slug', 'string'),
             ('content', 'string'),
             ('source', 'string'),  # inferred null but default type is string

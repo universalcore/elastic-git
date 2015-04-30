@@ -1,7 +1,7 @@
 from StringIO import StringIO
 import json
 
-from elasticgit import version_info
+from elasticgit.models import version_info
 from elasticgit.tests.base import ToolBaseTest
 from elasticgit.commands.version import VersionTool, DEFAULT_FILE_NAME
 

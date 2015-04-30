@@ -153,6 +153,9 @@ class MigrateGitModelRepo(ToolCommand):
             float: 'float',
             str: 'string',
             unicode: 'string',
-            list: 'array',
+            list: {
+                'type': 'array',
+                'items': ['string'],
+            },
             None: 'null',
         }[None if value is None else type(value)]

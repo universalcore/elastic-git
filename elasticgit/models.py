@@ -1,3 +1,5 @@
+import sys
+import pkg_resources
 from copy import deepcopy
 from urllib2 import urlparse
 import uuid
@@ -7,7 +9,17 @@ from confmodel.errors import ConfigError
 from confmodel.fallbacks import SingleFieldFallback
 
 
-import elasticgit
+version_info = {
+    'language': 'python',
+    'language_version_string': sys.version,
+    'language_version': '%d.%d.%d' % (
+        sys.version_info.major,
+        sys.version_info.minor,
+        sys.version_info.micro,
+    ),
+    'package': 'elastic-git',
+    'package_version': pkg_resources.require('elastic-git')[0].version
+}
 
 
 class ModelField(ConfigField):
@@ -17,12 +29,17 @@ class ModelField(ConfigField):
     }
 
     def __init__(self, doc, required=False, default=None, static=False,
-                 fallbacks=(), mapping={}):
+                 fallbacks=(), mapping={}, name=None):
         super(ModelField, self).__init__(
             doc, required=required, default=default, static=static,
             fallbacks=fallbacks)
+        self.name = name
         self.mapping = self.__class__.default_mapping.copy()
         self.mapping.update(mapping)
+
+    def __repr__(self):
+        return '<%s.%s %r>' % (
+            self.__class__.__module__, self.__class__.__name__, self.name)
 
 
 class TextField(ModelField):
@@ -115,11 +132,24 @@ class ListField(ModelField):
         'type': 'string',
     }
 
+    def __init__(self, doc, fields, default=[], static=False,
+                 fallbacks=(), mapping={}):
+        super(ListField, self).__init__(
+            doc, default=default, static=static, fallbacks=fallbacks,
+            mapping=mapping)
+        self.fields = fields
+
     def clean(self, value):
         if isinstance(value, tuple):
             value = list(value)
         if not isinstance(value, list):
             self.raise_config_error("is not a list.")
+
+        if len(value) > 0:
+            for field in self.fields:
+                if not any([field.clean(v) for v in value]):
+                    self.raise_config_error(
+                        'All field checks failed for some values.')
         return deepcopy(value)
 
 
@@ -129,15 +159,33 @@ class DictField(ModelField):
     """
     field_type = 'dict'
 
-    #: Mapping for Elasticsearch
-    default_mapping = {
-        'type': 'string',
-    }
+    def __init__(self, doc, fields, default=None, static=False,
+                 fallbacks=(), mapping=()):
+        mapping = mapping or self.generate_default_mapping(fields)
+        super(DictField, self).__init__(
+            doc, default=default, static=static, fallbacks=fallbacks,
+            mapping=mapping)
+        self.fields = fields
+
+    def generate_default_mapping(self, fields):
+        field_names = [field.name for field in fields]
+        return {
+            'type': 'nested',
+            'properties': dict(
+                [(name, {'type': 'string'}) for name in field_names]),
+        }
 
     def clean(self, value):
         if not isinstance(value, dict):
-            self.raise_config_error("is not a dict.")
+            self.raise_config_error('is not a dict.')
         return deepcopy(value)
+
+    def validate(self, config):
+        data = self.get_value(config)
+        if data:
+            for key, value in data.items():
+                [field] = [field for field in self.fields if field.name == key]
+                field.clean(value)
 
 
 class URLField(ModelField):
@@ -160,39 +208,6 @@ class URLField(ModelField):
         return urlparse.urlparse(value)
 
 
-class ModelVersionField(DictField):
-    """
-    A field holding the version information for a model
-    """
-    default_mapping = {
-        'type': 'nested',
-        'properties': {
-            'language': {'type': 'string'},
-            'language_version_string': {'type': 'string'},
-            'language_version': {'type': 'string'},
-            'package': {'type': 'string'},
-            'package_version': {'type': 'string'}
-        }
-    }
-
-    def compatible_version(self, own_version, check_version):
-        own = map(int, own_version.split('.'))
-        check = map(int, check_version.split('.'))
-        return own >= check
-
-    def validate(self, config):
-        config._config_data.setdefault(
-            self.name, elasticgit.version_info.copy())
-        value = self.get_value(config)
-        current_version = elasticgit.version_info['package_version']
-        package_version = value['package_version']
-        if not self.compatible_version(current_version, package_version):
-            raise ConfigError(
-                'Got a version from the future, expecting: %r got %r' % (
-                    current_version, package_version))
-        return super(ModelVersionField, self).validate(config)
-
-
 class UUIDField(TextField):
 
     def validate(self, config):
@@ -211,7 +226,28 @@ class Model(Config):
         A dictionary with keys & values to populate this Model
         instance with.
     """
-    _version = ModelVersionField('Model Version Identifier')
+    _version = DictField(
+        'Model Version Identifier',
+        default=version_info,
+        fields=(
+            TextField('language', name='language'),
+            TextField('language_version_string',
+                      name='language_version_string'),
+            TextField('language_version', name='language_version'),
+            TextField('package', name='package'),
+            TextField('package_version', name='package_version'),
+        ),
+        mapping={
+            'type': 'nested',
+            'properties': {
+                'language': {'type': 'string'},
+                'language_version_string': {'type': 'string'},
+                'language_version': {'type': 'string'},
+                'package': {'type': 'string'},
+                'package_version': {'type': 'string'}
+            }
+        })
+
     uuid = UUIDField('Unique Identifier')
 
     def __init__(self, config_data, static=False):
@@ -244,6 +280,22 @@ class Model(Config):
     def __iter__(self):
         for field in self._get_fields():
             yield field.name, field.get_value(self)
+
+    def compatible_version(self, own_version, check_version):
+        own = map(int, own_version.split('.'))
+        check = map(int, check_version.split('.'))
+        return own >= check
+
+    def post_validate(self):
+        value = self._version
+        current_version = version_info['package_version']
+        package_version = value['package_version']
+        if not self.compatible_version(current_version, package_version):
+            raise ConfigError(
+                'Got a version from the future, expecting: %r got %r' % (
+                    current_version, package_version))
+        super(Model, self).post_validate()
+
 
 ConfigError
 SingleFieldFallback

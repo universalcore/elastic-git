@@ -9,7 +9,9 @@ install:
   - pip install -r requirements-dev.txt
   - pip install -e .
   - pip install coveralls
+  - pip install flake8
 script:
+  - flake8 elasticgit
   - py.test elasticgit -s --cov ./elasticgit
 after_success:
   - coveralls

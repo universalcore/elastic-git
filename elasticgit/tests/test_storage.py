@@ -84,7 +84,7 @@ class TestStorage(ModelBaseTest):
         })
 
         self.assertRaises(
-            GitCommandError,
+            StorageException,
             self.sm.delete, person, 'Deleting a person.')
 
     def test_get(self):
@@ -187,3 +187,28 @@ class TestStorage(ModelBaseTest):
 
         [found_commit] = second_workspace.repo.iter_commits()
         self.assertEqual(found_commit, initial_commit)
+
+    def test_delete_data(self):
+        storage = self.workspace.sm
+        readme_path = os.path.join(self.workspace.repo.working_dir,
+                                   'README.md')
+        storage.store_data(
+            'README.md', '# Hello World', 'Read me commit')
+        self.assertTrue(os.path.isfile(readme_path))
+        storage.delete_data('README.md', 'Delete the readme')
+        self.assertFalse(os.path.isfile(readme_path))
+
+    def test_delete_data_non_existent(self):
+        storage = self.workspace.sm
+        foo_path = os.path.join(self.workspace.repo.working_dir,
+                                'FOO.md')
+        self.assertFalse(os.path.isfile(foo_path))
+        self.assertRaises(
+            StorageException,
+            storage.delete_data, 'FOO.md', 'Delete the readme')
+
+    def test_delete_data_unicode_commit_message(self):
+        storage = self.workspace.sm
+        self.assertRaises(
+            StorageException,
+            storage.delete_data, 'FOO.md', u'Lørüm Ipsüm')
