@@ -181,6 +181,10 @@ class TestEG(ModelBaseTest):
         model = result.to_object()
         self.assertNotEqual(model, person)
 
+    def test_search_class(self):
+        workspace = self.workspace
+        self.assertIsInstance(workspace.S(TestPerson), S)
+
     def test_search_results_to_python(self):
         person_es_data = {
             'age': 1,
