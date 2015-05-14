@@ -34,7 +34,7 @@ class Workspace(object):
 
     :param git.Repo repo:
         A :py:class:`git.Repo` instance.
-    :param dit es:
+    :param dict es:
         A dictionary of values one would pass to elasticutils.get_es
         to get an Elasticsearch connection
     :param str index_prefix:
@@ -42,13 +42,44 @@ class Workspace(object):
     """
 
     def __init__(self, repo, es, index_prefix):
-        self.repo = repo
-        self.sm = StorageManager(repo)
+        self.repos = [repo] if isinstance(repo, Repo) else repo
+        #self.sm = StorageManager(repo)
         self.es_settings = es
-        self.im = ESManager(
-            self.sm, get_es(**self.es_settings), index_prefix)
-        self.working_dir = self.repo.working_dir
+        #self.im = ESManager(
+        #    self.sm, get_es(**self.es_settings), index_prefix)
         self.index_prefix = index_prefix
+
+        if isinstance(self.index_prefix, basestring):
+            self.repo_index_prefix = dict(
+                (r, self.index_prefix) for r in self.repos)
+        else:
+            self.repo_index_prefix = dict(zip(self.repos, self.index_prefix))
+
+    def __getitem__(self, key):
+        """
+        Get a repo by index_prefix or working_dir.
+
+        :param string key:
+            The Elasticsearch index_prefix or :py:class:`git.Repo`
+            working_dir.
+        :returns:
+            :py:class:`git.Repo`
+        """
+        for repo in self.repos:
+            if os.path.samefile(repo.working_dir, key):
+                return repo
+            if self.repo_index_prefix[repo] == key:
+                return repo
+
+        raise KeyError('%r' % (key, ))
+
+    def __iter__(self):
+        """
+        Iterate over the workspace's repos.
+
+        :returns: iterator repos
+        """
+        return iter(self.repos)
 
     def setup(self, name, email):
         """
@@ -331,45 +362,6 @@ class Workspace(object):
             self.im.get_mapping_type(model_class)).es(**self.es_settings)
 
 
-class WorkspaceCollection(object):
-    """
-    The API exposing a dictionary-like interface to a collection
-    of Workspace objects.
-
-    :param list workspaces:
-        A list of `.Workspace` instances.
-    :param dict es:
-        A dictionary of values one would pass to elasticutils.get_es
-        to get an Elasticsearch connection.
-    """
-
-    def __init__(self, workspaces, es):
-        self.workspaces = workspaces
-        self.es_settings = es
-        self.index_prefix = ','.join(ws.index_prefix for ws in self)
-
-    def __getitem__(self, key):
-        """
-        Get a workspace by index_prefix or working_dir.
-
-        :param string key:
-            The Elasticsearch index_prefix or :py:class:`git.Repo`
-            working_dir of the workspace.
-        :returns:
-            :py:class:`.Workspace`
-        """
-        for workspace in self.workspaces:
-            if key == workspace.index_prefix:
-                return workspace
-            elif os.path.samefile(key, workspace.working_dir):
-                return workspace
-
-        raise KeyError('%r' % (key, ))
-
-    def __iter__(self):
-        return iter(self.workspaces)
-
-
 class EG(object):
 
     """
@@ -393,34 +385,24 @@ class EG(object):
         :returns:
             :py:class:`.Workspace`
         """
-        index_prefix = index_prefix or os.path.basename(workdir)
-        repo = (cls.read_repo(workdir)
-                if cls.is_repo(workdir)
-                else cls.init_repo(workdir))
-        return Workspace(repo, es, index_prefix)
+        workdirs = [workdir] if isinstance(workdir, basestring) else workdir
+        index_prefix = index_prefix or cls.combined_index_prefix(workdirs)
+
+        if not isinstance(index_prefix, basestring):
+            if len(index_prefix) != len(workdirs):
+                raise ValueError('If workdir and index_prefix are iterables, '
+                                 'one index_prefix per workdir must be '
+                                 'provided')
+
+        repos = [(cls.read_repo(wd)
+                 if cls.is_repo(wd)
+                 else cls.init_repo(wd))
+                 for wd in workdirs]
+        return Workspace(repos, es, index_prefix)
 
     @classmethod
-    def workspaces(cls, workdirs, index_prefixes=None, es={}):
-        """
-        Create a collection of workspaces
-
-        :param list workdirs:
-            The list of paths to directories where git repositories
-            can be found or need to be created when
-            :py:meth:`.Workspace.setup` is called.
-        :param list index_prefixes:
-            The list of index_prefix strings corresponding to `workdirs`
-            used when generating index names for Elasticsearch.
-        :param dict es:
-            The parameters to pass along to :func:`elasticutils.get_es`.
-        :returns:
-            :py:class:`.WorkspaceCollection`
-        """
-        index_prefixes = (index_prefixes or
-                          [os.path.basename(wd) for wd in workdirs])
-        workspaces = [cls.workspace(workdir=wd, es=es, index_prefix=ip)
-                      for wd, ip in zip(workdirs, index_prefixes)]
-        return WorkspaceCollection(workspaces, es=es)
+    def combined_index_prefix(cls, workdirs):
+        return '_'.join(sorted(os.path.basename(wd) for wd in workdirs))
 
     @classmethod
     def dot_git_path(cls, workdir):
