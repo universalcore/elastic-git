@@ -41,9 +41,9 @@ class Workspace(object):
         The prefix to use when generating index names for Elasticsearch
     """
 
-    def __init__(self, repo, es, index_prefix):
-        self.repos = [repo] if isinstance(repo, Repo) else repo
-        #self.sm = StorageManager(repo)
+    def __init__(self, repos, es, index_prefix):
+        self.repos = repos
+        self.sm = StorageManager(self.repos)
         self.es_settings = es
         #self.im = ESManager(
         #    self.sm, get_es(**self.es_settings), index_prefix)
@@ -57,7 +57,7 @@ class Workspace(object):
 
     def __getitem__(self, key):
         """
-        Get a repo by index_prefix or working_dir.
+        Get a repo by index_prefix or working_dir basename.
 
         :param string key:
             The Elasticsearch index_prefix or :py:class:`git.Repo`
@@ -66,7 +66,7 @@ class Workspace(object):
             :py:class:`git.Repo`
         """
         for repo in self.repos:
-            if os.path.samefile(repo.working_dir, key):
+            if os.path.basename(repo.working_dir) == key:
                 return repo
             if self.repo_index_prefix[repo] == key:
                 return repo
@@ -105,7 +105,7 @@ class Workspace(object):
     def exists(self):
         """
         Check if the Git repository or the ES index exists.
-        Returns ``True`` if either of them exist.
+        Returns ``True`` if both of them exist.
 
         :returns: bool
         """
