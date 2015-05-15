@@ -45,41 +45,9 @@ class Workspace(object):
         self.repos = repos
         self.sm = StorageManager(self.repos)
         self.es_settings = es
-        #self.im = ESManager(
-        #    self.sm, get_es(**self.es_settings), index_prefix)
+        self.im = ESManager(
+            self.sm, get_es(**self.es_settings), index_prefix)
         self.index_prefix = index_prefix
-
-        if isinstance(self.index_prefix, basestring):
-            self.repo_index_prefix = dict(
-                (r, self.index_prefix) for r in self.repos)
-        else:
-            self.repo_index_prefix = dict(zip(self.repos, self.index_prefix))
-
-    def __getitem__(self, key):
-        """
-        Get a repo by index_prefix or working_dir basename.
-
-        :param string key:
-            The Elasticsearch index_prefix or :py:class:`git.Repo`
-            working_dir.
-        :returns:
-            :py:class:`git.Repo`
-        """
-        for repo in self.repos:
-            if os.path.basename(repo.working_dir) == key:
-                return repo
-            if self.repo_index_prefix[repo] == key:
-                return repo
-
-        raise KeyError('%r' % (key, ))
-
-    def __iter__(self):
-        """
-        Iterate over the workspace's repos.
-
-        :returns: iterator repos
-        """
-        return iter(self.repos)
 
     def setup(self, name, email):
         """

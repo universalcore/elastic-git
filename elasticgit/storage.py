@@ -354,10 +354,7 @@ class StorageManager(object):
 
         :returns: bool
         """
-        for repo in self.repos:
-            if not os.path.isdir(repo.working_dir):
-                return False
-        return True
+        return all(os.path.isdir(r.working_dir) for r in self.repos)
 
     def create_storage(self, bare=False):
         """
@@ -416,8 +413,7 @@ class StorageManager(object):
         """
         Destroy the repository's working dir.
         """
-        for repo in self.repos:
-            shutil.rmtree(repo.working_dir)
+        return list(shutil.rmtree(r.working_dir) for r in self.repos)
 
     def pull(self, branch_name='master', remote_name='origin'):
         """
