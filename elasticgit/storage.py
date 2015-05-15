@@ -33,7 +33,8 @@ class StorageRouter(object):
                 if not repo_name
                 else self.repo_by_name.get(repo_name))
         if not repo:
-            raise ValueError('Cannot route %r to a repo for storage' % model)
+            raise StorageException('Cannot route %r to a repo for storage' % (
+                model, ))
         return repo
 
 
