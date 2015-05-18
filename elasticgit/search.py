@@ -1,17 +1,28 @@
+import os
 from urllib import quote
 
-from elasticutils import MappingType, Indexable
+from git import Repo
 
+from elasticutils import MappingType, Indexable, S as SBase
+
+from elasticgit.models import Model
 from elasticgit.utils import introspect_properties
 
 
-class ModelMappingType(MappingType, Indexable):
+def index_name(prefix, name):
+    """
+    Generate an Elasticsearch index name using given name and prefixing
+    it with the given ``index_prefix``. The resulting generated index name
+    is URL quoted.
 
-    @classmethod
-    def get_index(cls):
-        im = cls.im
-        repo = cls.sm.repo
-        return im.index_name(repo.active_branch.name)
+    :param str name:
+        The name to use for the index.
+    """
+    return '-'.join(map(quote, [prefix, name]))
+
+
+class ModelMappingTypeBase(MappingType):
+    short_name = 'MappingType'
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -24,23 +35,55 @@ class ModelMappingType(MappingType, Indexable):
     def get_model(self):
         return self.model_class
 
-    def get_object(self):
-        return self.sm.get(self.model_class, self._id)
-
     def to_object(self):
         obj = self.model_class(self._results_dict)
         obj.set_read_only()  # might not be in sync with Git
         return obj
 
     @classmethod
-    def get_es(cls):
-        return cls.im.es
-
-    @classmethod
     def get_mapping(cls):
         return {
             'properties': introspect_properties(cls.model_class)
         }
+
+    @classmethod
+    def subclass(cls, **attributes):
+        model_class = attributes.get('model_class')
+        return type(
+            '%s%s' % (model_class.__name__, cls.short_name),
+            (cls,), attributes)
+
+
+class ReadOnlyModelMappingType(ModelMappingTypeBase):
+    short_name = 'ROMappingType'
+
+    @classmethod
+    def get_index(cls):
+        return cls.s.get_indexes()
+
+    def get_object(self):
+        raise NotImplementedError
+
+    @classmethod
+    def get_es(cls):
+        return cls.s.get_es()
+
+
+class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
+    short_name = 'RWMappingType'
+
+    @classmethod
+    def get_index(cls):
+        im = cls.im
+        repo = cls.sm.repo
+        return im.index_name(repo.active_branch.name)
+
+    def get_object(self):
+        return self.sm.get(self.model_class, self._id)
+
+    @classmethod
+    def get_es(cls):
+        return cls.im.es
 
     @classmethod
     def extract_document(cls, obj_id, obj=None):
@@ -51,6 +94,53 @@ class ModelMappingType(MappingType, Indexable):
     @classmethod
     def get_indexable(cls):
         return cls.sm.iterate(cls.model_class)
+
+
+class S(SBase):
+
+    def __init__(self, type_=None, in_=None, index_prefixes=None):
+        if type_ and issubclass(type_, Model):
+            type_ = ReadOnlyModelMappingType.subclass(
+                s=self,
+                model_class=type_)
+
+        super(S, self).__init__(type_=type_)
+
+        self.repos = in_
+        self.index_prefixes = index_prefixes
+
+        if self.repos:
+            if isinstance(self.repos[0], basestring):
+                self.repos = map(lambda wd: Repo(wd), self.repos)
+
+            if not self.index_prefixes:
+                self.index_prefixes = map(
+                    lambda r: os.path.basename(r.working_dir),
+                    self.repos)
+
+            self.steps.append(('indexes', self.get_repo_indexes()))
+
+    def get_repo_indexes(self):
+        """
+        Generate the indexes corresponding to the ``repos``.
+
+        :returns: list
+        """
+        if not self.repos:
+            return []
+
+        return map(
+            lambda ip, r: index_name(ip, r.active_branch.name),
+            zip(self.index_prefixes, self.repos))
+
+    def to_python(self, obj):
+        """
+        Override `PythonMixin.to_python` to skip in-place datetime conversion.
+        The original method's only function is to convert datetime-ish strings
+        to datetime objects. This is done irrespective of mapping type and the
+        timezone-aware ISO format is not recognized.
+        """
+        return obj
 
 
 class ESManager(object):
@@ -69,13 +159,10 @@ class ESManager(object):
         self.index_prefix = index_prefix
 
     def get_mapping_type(self, model_class):
-        return type(
-            '%sMappingType' % (model_class.__name__,),
-            (ModelMappingType,), {
-                'im': self,
-                'sm': self.sm,
-                'model_class': model_class,
-            })
+        return ReadWriteModelMappingType.subclass(
+            im=self,
+            sm=self.sm,
+            model_class=model_class)
 
     def index_exists(self, name):
         """
@@ -195,7 +282,7 @@ class ESManager(object):
         :param str name:
             The name to use for the index.
         """
-        return '-'.join(map(quote, [self.index_prefix, name]))
+        return index_name(self.index_prefix, name)
 
     def refresh_indices(self, name):
         """

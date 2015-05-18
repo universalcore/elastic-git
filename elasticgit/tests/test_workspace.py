@@ -5,7 +5,7 @@ import os
 from elasticutils import S as SBase
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
-from elasticgit.search import ModelMappingType
+from elasticgit.search import ReadWriteModelMappingType
 from elasticgit.workspace import Workspace, S
 
 from git import Repo, GitCommandError
@@ -153,7 +153,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         model = result.get_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
@@ -169,7 +169,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(uuid__match='foo')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         model = result.to_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
@@ -215,7 +215,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         self.assertEqual(result.age, 1)
         self.assertEqual(result.name, 'Name')
 
