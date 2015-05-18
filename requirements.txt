@@ -5,3 +5,5 @@ Jinja2==2.7.3
 Unidecode==0.04.16
 avro==1.7.7
 zope.interface
+requests
+mock
