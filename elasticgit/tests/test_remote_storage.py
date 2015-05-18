@@ -55,3 +55,6 @@ class TestRemoteStorage(ModelBaseTest):
     def test_destroy_storage(self):
         self.assertRaises(
             RemoteStorageException, self.rsm.destroy_storage)
+
+    def test_iterate(self):
+        self.assertEqual(self.rsm.iterate(TestPerson), [])

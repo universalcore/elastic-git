@@ -58,7 +58,8 @@ class RemoteStorageManager(object):
             'Remote storage is read only.')
 
     def iterate(self, model_class):
-        return self.url(fqcn(model_class))
+        response = self.mk_request('GET', self.url(fqcn(model_class)))
+        response.raise_for_status()
 
     def get(self, model_class, uuid):
         pass
