@@ -2,12 +2,15 @@ import os
 import shutil
 import logging
 
+from zope.interface import implements
+
 from git import Repo, Actor
 from git.diff import DiffIndex
 
 from elasticgit.models import Model
 from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import load_class
+from elasticgit.istorage import IStorageManager
 
 
 log = logging.getLogger(__name__)
@@ -25,6 +28,7 @@ class StorageManager(object):
     :param git.Repo repo:
         The repository to operate on.
     """
+    implements(IStorageManager)
 
     serializer_class = JSONSerializer
 
