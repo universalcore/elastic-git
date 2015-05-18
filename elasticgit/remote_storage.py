@@ -9,7 +9,7 @@ from elasticgit.istorage import IStorageManager
 from elasticgit.utils import fqcn
 
 
-class RemoteStorageManagerException(Exception):
+class RemoteStorageException(Exception):
     pass
 
 
@@ -42,11 +42,11 @@ class RemoteStorageManager(object):
         )
 
     def write_config(self, section, data):
-        raise RemoteStorageManagerException(
+        raise RemoteStorageException(
             'Remote storage is read only.')
 
     def read_config(Self, section):
-        raise RemoteStorageManagerException(
+        raise RemoteStorageException(
             'Not implemented for remote storage.')
 
     def storage_exists(self):
@@ -54,7 +54,7 @@ class RemoteStorageManager(object):
         return response.status_code == requests.codes.ok
 
     def destroy_storage(self):
-        raise RemoteStorageManagerException(
+        raise RemoteStorageException(
             'Remote storage is read only.')
 
     def iterate(self, model_class):
