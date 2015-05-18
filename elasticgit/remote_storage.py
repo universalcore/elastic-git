@@ -51,7 +51,7 @@ class RemoteStorageManager(object):
 
     def storage_exists(self):
         response = self.mk_request('GET', self.repo_url)
-        return response.status_code == requests.codes.ok
+        return response.ok
 
     def destroy_storage(self):
         raise RemoteStorageException(
