@@ -59,7 +59,7 @@ class ReadOnlyModelMappingType(ModelMappingTypeBase):
 
     @classmethod
     def get_index(cls):
-        return cls.s.get_indexes()
+        return cls.s.get_repo_indexes()
 
     def get_object(self):
         raise NotImplementedError
@@ -130,7 +130,7 @@ class S(SBase):
             return []
 
         return map(
-            lambda ip, r: index_name(ip, r.active_branch.name),
+            lambda (ip, r): index_name(ip, r.active_branch.name),
             zip(self.index_prefixes, self.repos))
 
     def to_python(self, obj):

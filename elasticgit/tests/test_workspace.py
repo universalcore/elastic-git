@@ -1,8 +1,5 @@
-from datetime import datetime
 import types
 import os
-
-from elasticutils import S as SBase
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
 from elasticgit.search import ReadWriteModelMappingType
@@ -184,27 +181,6 @@ class TestEG(ModelBaseTest):
     def test_search_class(self):
         workspace = self.workspace
         self.assertIsInstance(workspace.S(TestPerson), S)
-
-    def test_search_results_to_python(self):
-        person_es_data = {
-            'age': 1,
-            'name': u'2020-01-01T06:00:00',
-            'uuid': u'foo',
-        }
-        person_es_data2 = person_es_data.copy()
-
-        S_eg = S()
-        S_original = SBase()
-        eg_person = S_eg.to_python(person_es_data)
-        original_person = S_original.to_python(person_es_data2)
-
-        # check that both methods operate in place
-        self.assertIs(person_es_data, eg_person)
-        self.assertIs(original_person, person_es_data2)
-        # check equality aside from datetime conversion
-        self.assertIsInstance(eg_person.pop('name'), basestring)
-        self.assertIsInstance(original_person.pop('name'), datetime)
-        self.assertEqual(eg_person, original_person)
 
     def test_access_elastic_search_data(self):
         workspace = self.workspace
