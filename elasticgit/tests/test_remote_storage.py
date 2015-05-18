@@ -32,6 +32,8 @@ class TestRemoteStorage(ModelBaseTest):
             response.status_code = 200
             mock.return_value = response
             self.assertTrue(self.rsm.storage_exists())
+            mock.assert_called_with(
+                'GET', 'http://www.example.org/repos/foo.json')
 
     def test_storage_doesnot_exist(self):
         with patch.object(self.rsm, 'mk_request') as mock:
@@ -39,6 +41,8 @@ class TestRemoteStorage(ModelBaseTest):
             response.status_code = 404
             mock.return_value = response
             self.assertFalse(self.rsm.storage_exists())
+            mock.assert_called_with(
+                'GET', 'http://www.example.org/repos/foo.json')
 
     def test_write_config(self):
         self.assertRaises(
