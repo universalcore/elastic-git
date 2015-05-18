@@ -17,27 +17,6 @@ class StorageException(Exception):
     pass
 
 
-class StorageRouter(object):
-
-    def __init__(self, repos):
-        self.repos = repos
-        self.repo_by_name = dict(
-            (os.path.basename(r.working_dir), r) for r in repos)
-
-    def __call__(self, model=None, repo_name=None):
-        if len(self.repos) == 1:
-            return self.repos[0]
-
-        repo_name = repo_name or os.path.basename(model._repo_path)
-        repo = (None
-                if not repo_name
-                else self.repo_by_name.get(repo_name))
-        if not repo:
-            raise StorageException('Cannot route %r to a repo for storage' % (
-                model, ))
-        return repo
-
-
 class StorageManager(object):
     """
     An interface to :py:class:`elasticgit.models.Model` instances stored
@@ -49,9 +28,9 @@ class StorageManager(object):
 
     serializer_class = JSONSerializer
 
-    def __init__(self, repos):
-        self.repos = repos
-        self.repo = StorageRouter(repos)
+    def __init__(self, repo):
+        self.repo = repo
+        self.workdir = self.repo.working_dir
         self.serializer = self.serializer_class()
 
     def git_path(self, model_class, *args):
@@ -115,12 +94,11 @@ class StorageManager(object):
         :returns: generator
         """
         path = self.git_path(model_class, '*.%s' % (self.serializer.suffix,))
-        for repo in self.repos:
-            list_of_files = repo.git.ls_files(path)
-            for file_path in filter(None, list_of_files.split('\n')):
-                module_name, class_name, file_name = file_path.split('/', 3)
-                uuid, suffix = file_name.split('.', 2)
-                yield self.get(model_class, uuid)
+        list_of_files = self.repo.git.ls_files(path)
+        for file_path in filter(None, list_of_files.split('\n')):
+            module_name, class_name, file_name = file_path.split('/', 3)
+            uuid, suffix = file_name.split('.', 2)
+            yield self.get(model_class, uuid)
 
     def path_info(self, file_path):
         """
@@ -163,7 +141,7 @@ class StorageManager(object):
 
         return self.get(*path_info)
 
-    def get_data(self, repo_path, repo=None):
+    def get_data(self, repo_path):
         """
         Get the data for a file stored in git
 
@@ -172,9 +150,8 @@ class StorageManager(object):
         :returns:
             str
         """
-        repo = repo or self.repo()
-        current_branch = repo.active_branch.name
-        return repo.git.show('%s:%s' % (current_branch, repo_path))
+        current_branch = self.repo.active_branch.name
+        return self.repo.git.show('%s:%s' % (current_branch, repo_path))
 
     def get(self, model_class, uuid):
         """
@@ -188,20 +165,12 @@ class StorageManager(object):
         :returns:
             :py:class:elasticgit.models.Model
         """
-        git_path = self.git_path(
-            model_class, '%s.%s' % (uuid, self.serializer.suffix,))
-        repo = filter(
-            lambda r: os.path.exists(os.path.join(r.working_dir, git_path)),
-            self.repos)
-        if not repo:
-            raise StorageException('%s object with uuid %s does not exist' % (
-                model_class.__name__, uuid))
-        if len(repo) > 1:
-            raise StorageException(
-                'Multiple repos contain %s object with uuid %s' % (
-                    model_class.__name__, uuid))
 
-        object_data = self.get_data(git_path, repo[0])
+        object_data = self.get_data(
+            self.git_path(
+                model_class,
+                '%s.%s' % (uuid, self.serializer.suffix,)))
+
         model = self.serializer.deserialize(model_class, object_data)
 
         if model.uuid != uuid:
@@ -210,8 +179,7 @@ class StorageManager(object):
                     model.uuid, uuid))
         return model
 
-    def store(self, model, message, author=None, committer=None,
-              repo_name=None):
+    def store(self, model, message, author=None, committer=None):
         """
         Store an instance's data in Git.
 
@@ -237,20 +205,14 @@ class StorageManager(object):
         if model.is_read_only():
             raise StorageException('Trying to save a read only model.')
 
-        if repo_name:
-            repo = self.repo(repo_name=repo_name)
-        else:
-            repo = self.repo(model=model)
-        model._repo_path = repo.working_dir
-
         return self.store_data(
             self.git_name(model),
             self.serializer.serialize(model),
             message,
-            author=author, committer=committer, repo=repo)
+            author=author, committer=committer)
 
     def store_data(self, repo_path, data, message,
-                   author=None, committer=None, repo=None):
+                   author=None, committer=None):
         """
         Store some data in a file
 
@@ -269,9 +231,9 @@ class StorageManager(object):
         :returns:
             The commit
         """
+
         # ensure the directory exists
-        repo = repo or self.repo()
-        file_path = os.path.join(repo.working_dir, repo_path)
+        file_path = os.path.join(self.repo.working_dir, repo_path)
         dir_name = os.path.dirname(file_path)
         if not (os.path.isdir(dir_name)):
             os.makedirs(dir_name)
@@ -284,7 +246,7 @@ class StorageManager(object):
         committer_actor = Actor(*committer) if committer else author_actor
 
         # add to the git index
-        index = repo.index
+        index = self.repo.index
         index.add([file_path])
         return index.commit(message,
                             author=author_actor,
@@ -308,11 +270,10 @@ class StorageManager(object):
             The commit.
         """
         return self.delete_data(
-            self.git_name(model), message, author=author, committer=committer,
-            repo=self.repo(model=model))
+            self.git_name(model), message, author=author, committer=committer)
 
     def delete_data(self, repo_path, message,
-                    author=None, committer=None, repo=None):
+                    author=None, committer=None):
         """
         Delete a file that's not necessarily a model file.
 
@@ -332,8 +293,7 @@ class StorageManager(object):
         if not isinstance(message, str):
             raise StorageException('Messages need to be bytestrings.')
 
-        repo = repo or self.repo()
-        file_path = os.path.join(repo.working_dir, repo_path)
+        file_path = os.path.join(self.repo.working_dir, repo_path)
         if not os.path.isfile(file_path):
             raise StorageException('File does not exist.')
 
@@ -341,7 +301,7 @@ class StorageManager(object):
         committer_actor = Actor(*committer) if committer else author_actor
 
         # Remove from the index
-        index = repo.index
+        index = self.repo.index
         index.remove([file_path], working_tree=True)
         return index.commit(message,
                             author=author_actor,
@@ -354,7 +314,7 @@ class StorageManager(object):
 
         :returns: bool
         """
-        return all(os.path.isdir(r.working_dir) for r in self.repos)
+        return os.path.isdir(self.workdir)
 
     def create_storage(self, bare=False):
         """
@@ -363,15 +323,12 @@ class StorageManager(object):
         :param bool bare:
             Whether or not to create a bare repository. Defaults to ``False``.
         """
-        init_commits = []
-        for repo in self.repos:
-            if not os.path.isdir(repo.working_dir):
-                os.makedirs(repo.working_dir)
-            repo = Repo.init(repo.working_dir, bare)
-            init_commits.append(repo.index.commit('Initialize repository.'))
-        return init_commits
+        if not os.path.isdir(self.workdir):
+            os.makedirs(self.workdir)
+        repo = Repo.init(self.workdir, bare)
+        return repo.index.commit('Initialize repository.')
 
-    def write_config(self, section, data, repo_name=None):
+    def write_config(self, section, data):
         """
         Write a config block for a git repository.
 
@@ -381,16 +338,12 @@ class StorageManager(object):
             The keys & values of data to write
 
         """
-        repos = ([self.repo(repo_name=repo_name)]
-                 if repo_name
-                 else self.repos)
-        for repo in repos:
-            config_writer = repo.config_writer()
-            for key, value in data.items():
-                config_writer.set_value(section, key, value)
-            config_writer.release()
+        config_writer = self.repo.config_writer()
+        for key, value in data.items():
+            config_writer.set_value(section, key, value)
+        config_writer.release()
 
-    def read_config(self, section, repo_name=None):
+    def read_config(self, section):
         """
         Read a config block for a git repository.
 
@@ -398,22 +351,16 @@ class StorageManager(object):
             The section to read.
         :returns: dict
         """
-        repos = ([self.repo(repo_name=repo_name)]
-                 if repo_name
-                 else self.repos)
-        data_all = []
-        for repo in repos:
-            config_reader = repo.config_reader()
-            data = dict(config_reader.items(section))
-            config_reader.release()
-            data_all.append(data)
-        return data_all
+        config_reader = self.repo.config_reader()
+        data = dict(config_reader.items(section))
+        config_reader.release()
+        return data
 
     def destroy_storage(self):
         """
         Destroy the repository's working dir.
         """
-        return list(shutil.rmtree(r.working_dir) for r in self.repos)
+        return shutil.rmtree(self.workdir)
 
     def pull(self, branch_name='master', remote_name='origin'):
         """
@@ -424,7 +371,6 @@ class StorageManager(object):
         :param str remote_name:
             The name of the remote to fetch from.
         """
-        # TODO - update for multiple repos
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]

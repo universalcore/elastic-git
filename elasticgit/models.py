@@ -247,7 +247,6 @@ class Model(Config):
                 'package_version': {'type': 'string'}
             }
         })
-    _repo_path = UnicodeTextField('Git Repository Path', default=None)
 
     uuid = UUIDField('Unique Identifier')
 
@@ -260,7 +259,6 @@ class Model(Config):
         other_data = dict(other)
         own_version_info = own_data.pop('_version')
         other_version_info = other_data.pop('_version')
-        # TODO: should _repo_path be used in the comparison?
         return (own_data == other_data and
                 own_version_info == other_version_info)
 
