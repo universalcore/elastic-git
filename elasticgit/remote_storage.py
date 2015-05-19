@@ -27,6 +27,9 @@ class RemoteStorageManager(object):
         self.repo_name, _, self.suffix = basename.partition('.')
 
     def mk_request(self, *args, **kwargs):
+        """
+        Mocked out in tests
+        """
         return requests.request(*args, **kwargs)
 
     def url(self, *parts):

@@ -58,6 +58,26 @@ class TestRemoteStorage(ModelBaseTest):
         self.assertRaises(
             RemoteStorageException, self.rsm.destroy_storage)
 
+    def test_store(self):
+        self.assertRaises(
+            RemoteStorageException, self.rsm.store, TestPerson({}),
+            'commit message')
+
+    def test_store_data(self):
+        self.assertRaises(
+            RemoteStorageException, self.rsm.store_data, 'foo/bar',
+            'data', 'commit message')
+
+    def test_delete(self):
+        self.assertRaises(
+            RemoteStorageException, self.rsm.delete, TestPerson({}),
+            'commit message')
+
+    def test_delete_data(self):
+        self.assertRaises(
+            RemoteStorageException, self.rsm.delete_data, 'foo/bar',
+            'commit message')
+
     def test_iterate(self):
         with patch.object(self.rsm, 'mk_request') as mock:
             response = Response()
