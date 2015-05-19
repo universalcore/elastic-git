@@ -5,7 +5,6 @@ from git import Repo
 
 from elasticutils import MappingType, Indexable, S as SBase
 
-from elasticgit.models import Model
 from elasticgit.utils import introspect_properties
 
 
@@ -137,8 +136,9 @@ class SM(S):
         self.repos = in_
         self.index_prefixes = index_prefixes
 
-        if isinstance(self.repos[0], basestring):
-            self.repos = map(lambda wd: Repo(wd), self.repos)
+        self.repos = map(
+            lambda repo: (repo if isinstance(repo, Repo) else Repo(repo)),
+            self.repos)
 
         if not self.index_prefixes:
             self.index_prefixes = map(
@@ -162,7 +162,7 @@ class SM(S):
         # S._clone is re-implemented, because SM.__init__'s
         # signature differs from S.__init__.
         # Original method:
-        # https://github.com/mozilla/elasticutils/blob/master/elasticutils/__init__.py#L557 noqa
+        # https://github.com/mozilla/elasticutils/blob/master/elasticutils/__init__.py#L557  # noqa
         new = self.__class__(
             self.type.model_class,
             in_=self.repos,
