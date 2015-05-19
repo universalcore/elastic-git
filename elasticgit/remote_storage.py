@@ -60,26 +60,30 @@ class RemoteStorageManager(object):
     def iterate(self, model_class):
         response = self.mk_request('GET', self.url(fqcn(model_class)))
         response.raise_for_status()
+        return [model_class(obj).set_read_only() for obj in response.json()]
 
     def get(self, model_class, uuid):
-        pass
+        response = self.mk_request('GET', self.url(fqcn(model_class), uuid))
+        response.raise_for_status()
+        return model_class(response.json()).set_read_only()
 
     def store(self, model, message, author=None, committer=None):
-        pass
+        raise RemoteStorageException(
+            'Remote storage is read only.')
 
     def store_data(self, repo_path, data, message,
                    author=None, committer=None):
-        pass
+        raise RemoteStorageException(
+            'Remote storage is read only.')
 
     def delete(self, model, message, author=None, committer=None):
-        pass
+        raise RemoteStorageException(
+            'Remote storage is read only.')
 
     def delete_data(self, repo_path, message,
                     author=None, committer=None):
-        pass
+        raise RemoteStorageException(
+            'Remote storage is read only.')
 
     def pull(self, branch_name='master', remote_name='origin'):
-        pass
-
-    def path_info(self, path):
         pass

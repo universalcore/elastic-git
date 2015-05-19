@@ -1,3 +1,5 @@
+import json
+
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.istorage import IStorageManager
 from elasticgit.remote_storage import (
@@ -57,4 +59,48 @@ class TestRemoteStorage(ModelBaseTest):
             RemoteStorageException, self.rsm.destroy_storage)
 
     def test_iterate(self):
-        self.assertEqual(self.rsm.iterate(TestPerson), [])
+        with patch.object(self.rsm, 'mk_request') as mock:
+            response = Response()
+            response.encoding = 'utf-8'
+            response._content = json.dumps([{
+                'uuid': 'person1',
+                'age': 1,
+                'name': 'person1'
+            }, {
+                'uuid': 'person2',
+                'age': 2,
+                'name': 'person2'
+            }])
+            mock.return_value = response
+            person1, person2 = self.rsm.iterate(TestPerson)
+            self.assertEqual(person1.uuid, 'person1')
+            self.assertEqual(person1.age, 1)
+            self.assertEqual(person1.name, 'person1')
+            self.assertTrue(person1.is_read_only())
+
+            self.assertEqual(person2.uuid, 'person2')
+            self.assertEqual(person2.age, 2)
+            self.assertEqual(person2.name, 'person2')
+            self.assertTrue(person2.is_read_only())
+
+            mock.assert_called_with(
+                'GET', 'http://www.example.org/repos/foo/%s.json' % (
+                    fqcn(TestPerson),))
+
+    def test_get(self):
+        with patch.object(self.rsm, 'mk_request') as mock:
+            response = Response()
+            response.encoding = 'utf-8'
+            response._content = json.dumps({
+                'uuid': 'person1',
+                'age': 1,
+                'name': 'person1'
+            })
+            mock.return_value = response
+            person1 = self.rsm.get(TestPerson, 'person1')
+            self.assertEqual(person1.uuid, 'person1')
+            self.assertEqual(person1.age, 1)
+            self.assertEqual(person1.name, 'person1')
+            mock.assert_called_with(
+                'GET', 'http://www.example.org/repos/foo/%s/person1.json' % (
+                    fqcn(TestPerson),))
