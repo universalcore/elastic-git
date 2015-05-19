@@ -2,7 +2,7 @@ import json
 
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.istorage import IStorageManager
-from elasticgit.remote_storage import (
+from elasticgit.storage import (
     RemoteStorageManager, RemoteStorageException)
 from elasticgit.tests.base import TestPerson
 from elasticgit.utils import fqcn
