@@ -1,4 +1,5 @@
 import json
+import urllib
 
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.istorage import IStorageManager
@@ -124,3 +125,17 @@ class TestRemoteStorage(ModelBaseTest):
             mock.assert_called_with(
                 'GET', 'http://www.example.org/repos/foo/%s/person1.json' % (
                     fqcn(TestPerson),))
+
+    def test_pull(self):
+        with patch.object(self.rsm, 'mk_request') as mock:
+            response = Response()
+            response.status_code = 200
+            mock.return_value = response
+            self.assertTrue(
+                self.rsm.pull(branch_name='foo', remote_name='bar'))
+            mock.assert_called_with(
+                'POST', 'http://www.example.org/repos/foo.json?%s' % (
+                    urllib.urlencode({
+                        'branch_name': 'foo',
+                        'remote_name': 'bar',
+                    }),))
