@@ -35,10 +35,17 @@ class ModelMappingTypeBase(MappingType):
     def get_model(self):
         return self.model_class
 
+    def get_object(self):
+        raise NotImplementedError
+
     def to_object(self):
         obj = self.model_class(self._results_dict)
         obj.set_read_only()  # might not be in sync with Git
         return obj
+
+    @classmethod
+    def get_es(cls):
+        raise NotImplementedError
 
     @classmethod
     def get_mapping(cls):
@@ -47,8 +54,9 @@ class ModelMappingTypeBase(MappingType):
         }
 
     @classmethod
-    def subclass(cls, **attributes):
-        model_class = attributes.get('model_class')
+    def subclass(cls, model_class, **attributes):
+        attributes = attributes.copy()
+        attributes['model_class'] = model_class
         return type(
             '%s%s' % (model_class.__name__, cls.short_name),
             (cls,), attributes)
@@ -61,12 +69,14 @@ class ReadOnlyModelMappingType(ModelMappingTypeBase):
     def get_index(cls):
         return cls.s.get_repo_indexes()
 
-    def get_object(self):
-        raise NotImplementedError
-
     @classmethod
     def get_es(cls):
         return cls.s.get_es()
+
+    @classmethod
+    def subclass(cls, model_class, s):
+        return super(ReadOnlyModelMappingType, cls).subclass(
+            model_class, s=s)
 
 
 class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
@@ -94,6 +104,11 @@ class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
     @classmethod
     def get_indexable(cls):
         return cls.sm.iterate(cls.model_class)
+
+    @classmethod
+    def subclass(cls, model_class, im, sm):
+        return super(ReadWriteModelMappingType, cls).subclass(
+            model_class, im=im, sm=sm)
 
 
 class S(SBase):
