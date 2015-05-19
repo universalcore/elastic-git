@@ -126,7 +126,23 @@ class S(SBase):
 
 
 class SM(S):
+    """
+    A search interface similar to :py:class:`elasticutils.S` to
+    retrieve :py:class:`elasticgit.search.ReadOnlyModelMappingType`
+    instances stored in Elasticsearch. These can be converted to
+    :py:class:`elasticgit.model.Model` instances using
+    :py:func:`ReadOnlyModelMappingType.to_object`.
 
+    :param type model_class:
+        A subclass of :py:class:`elasticgit.models.Model` for generating
+        a mapping type.
+    :param list in_:
+        A list of :py:class:`git.Repo` instances, or a list of repo working
+        dirs.
+    :param list index_prefixes:
+        An optional list of index prefixes corresponding to the repos
+        in `in_`.
+    """
     def __init__(self, model_class, in_, index_prefixes=None):
         type_ = ReadOnlyModelMappingType.subclass(
             s=self,
