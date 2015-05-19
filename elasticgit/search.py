@@ -116,27 +116,34 @@ class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
 
 class S(SBase):
 
-    def __init__(self, type_=None, in_=None, index_prefixes=None):
-        if type_ and issubclass(type_, Model):
-            type_ = ReadOnlyModelMappingType.subclass(
-                s=self,
-                model_class=type_)
+    def to_python(self, obj):
+        """
+        Override `PythonMixin.to_python` to skip in-place datetime conversion.
+        The original method's only function is to convert datetime-ish strings
+        to datetime objects. This is done irrespective of mapping type and the
+        timezone-aware ISO format is not recognized.
+        """
+        return obj
 
-        super(S, self).__init__(type_=type_)
+
+class SM(S):
+
+    def __init__(self, model_class, in_, index_prefixes=None):
+        type_ = ReadOnlyModelMappingType.subclass(
+            s=self,
+            model_class=model_class)
+        super(SM, self).__init__(type_=type_)
 
         self.repos = in_
         self.index_prefixes = index_prefixes
 
-        if self.repos:
-            if isinstance(self.repos[0], basestring):
-                self.repos = map(lambda wd: Repo(wd), self.repos)
+        if isinstance(self.repos[0], basestring):
+            self.repos = map(lambda wd: Repo(wd), self.repos)
 
-            if not self.index_prefixes:
-                self.index_prefixes = map(
-                    lambda r: os.path.basename(r.working_dir),
-                    self.repos)
-
-            self.steps.append(('indexes', self.get_repo_indexes()))
+        if not self.index_prefixes:
+            self.index_prefixes = map(
+                lambda r: os.path.basename(r.working_dir),
+                self.repos)
 
     def get_repo_indexes(self):
         """
@@ -151,14 +158,22 @@ class S(SBase):
             lambda (ip, r): index_name(ip, r.active_branch.name),
             zip(self.index_prefixes, self.repos))
 
-    def to_python(self, obj):
-        """
-        Override `PythonMixin.to_python` to skip in-place datetime conversion.
-        The original method's only function is to convert datetime-ish strings
-        to datetime objects. This is done irrespective of mapping type and the
-        timezone-aware ISO format is not recognized.
-        """
-        return obj
+    def _clone(self, next_step=None):
+        # S._clone is re-implemented, because SM.__init__'s
+        # signature differs from S.__init__.
+        # Original method:
+        # https://github.com/mozilla/elasticutils/blob/master/elasticutils/__init__.py#L557 noqa
+        new = self.__class__(
+            self.type.model_class,
+            in_=self.repos,
+            index_prefixes=self.index_prefixes)
+        new.steps = list(self.steps)
+        if next_step:
+            new.steps.append(next_step)
+        new.start = self.start
+        new.stop = self.stop
+        new.field_boosts = self.field_boosts.copy()
+        return new
 
 
 class ESManager(object):
