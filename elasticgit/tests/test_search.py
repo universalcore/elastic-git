@@ -13,8 +13,12 @@ class TestSearch(ModelBaseTest):
     def setUp(self):
         self.index_prefix1 = '%s-1' % self.mk_index_prefix()
         self.index_prefix2 = '%s-2' % self.mk_index_prefix()
-        self.workspace1 = self.mk_workspace(index_prefix=self.index_prefix1)
-        self.workspace2 = self.mk_workspace(index_prefix=self.index_prefix2)
+        self.workspace1 = self.mk_workspace(
+            index_prefix=self.index_prefix1,
+            name=self.index_prefix1)
+        self.workspace2 = self.mk_workspace(
+            index_prefix=self.index_prefix2,
+            name=self.index_prefix2)
         self.repo1 = self.workspace1.repo
         self.repo2 = self.workspace2.repo
 
