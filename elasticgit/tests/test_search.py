@@ -8,6 +8,7 @@ from elasticgit.search import ReadOnlyModelMappingType, index_name, S, SM
 
 
 class TestSearch(ModelBaseTest):
+    maxDiff = None
 
     def setUp(self):
         self.index_prefix1 = '%s-1' % self.mk_index_prefix()
@@ -68,12 +69,32 @@ class TestSearch(ModelBaseTest):
                 self.repo1.active_branch.name)])
 
     def test_mapping_type(self):
-        s_obj = SM(TestPerson, in_=[self.repo1])
+        s_obj = SM(TestPerson, in_=[])
         self.assertTrue(issubclass(s_obj.type, ReadOnlyModelMappingType))
 
     def test_read_only(self):
         obj = ReadOnlyModelMappingType()
         self.assertRaises(NotImplementedError, obj.get_object)
+
+    def test_get_es(self):
+        s_obj = SM(TestPerson, in_=[]).es(urls=['http://localhost'])
+        self.assertEqual(s_obj.get_es(), s_obj.type().get_es())
+
+    def test_clone(self):
+        s_obj = SM(
+            TestPerson,
+            in_=[self.repo1],
+            index_prefixes=[self.index_prefix1])
+        s_obj_cloned = s_obj._clone(next_step=('indexes', []))
+
+        self.assertFalse(s_obj is s_obj_cloned)
+        self.assertNotEqual(
+            s_obj.__dict__.pop('steps'),
+            s_obj_cloned.__dict__.pop('steps'))
+        self.assertEqual(
+            s_obj.__dict__.pop('type').__name__,
+            s_obj_cloned.__dict__.pop('type').__name__)
+        self.assertEqual(s_obj.__dict__, s_obj_cloned.__dict__)
 
     def test_to_python(self):
         person_es_data = {
