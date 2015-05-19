@@ -93,8 +93,8 @@ class RemoteStorageManager(object):
     def pull(self, branch_name='master', remote_name='origin'):
         response = self.mk_request('POST', '%s?%s' % (
             self.url(), urllib.urlencode({
-                'branch_name': branch_name,
-                'remote_name': remote_name,
+                'branch': branch_name,
+                'remote': remote_name,
             })))
         response.raise_for_status()
         return True

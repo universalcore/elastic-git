@@ -136,6 +136,6 @@ class TestRemoteStorage(ModelBaseTest):
             mock.assert_called_with(
                 'POST', 'http://www.example.org/repos/foo.json?%s' % (
                     urllib.urlencode({
-                        'branch_name': 'foo',
-                        'remote_name': 'bar',
+                        'branch': 'foo',
+                        'remote': 'bar',
                     }),))
