@@ -15,8 +15,11 @@ def index_name(prefix, name):
     it with the given ``index_prefix``. The resulting generated index name
     is URL quoted.
 
+    :param str prefix:
+        The prefix to use for the index.
     :param str name:
         The name to use for the index.
+    :returns: str
     """
     return '-'.join(map(quote, [prefix, name]))
 
