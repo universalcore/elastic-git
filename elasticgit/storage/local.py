@@ -2,12 +2,15 @@ import os
 import shutil
 import logging
 
+from zope.interface import implements
+
 from git import Repo, Actor
 from git.diff import DiffIndex
 
 from elasticgit.models import Model
 from elasticgit.serializers import JSONSerializer
 from elasticgit.utils import load_class
+from elasticgit.istorage import IStorageManager
 
 
 log = logging.getLogger(__name__)
@@ -25,6 +28,7 @@ class StorageManager(object):
     :param git.Repo repo:
         The repository to operate on.
     """
+    implements(IStorageManager)
 
     serializer_class = JSONSerializer
 
@@ -32,6 +36,9 @@ class StorageManager(object):
         self.repo = repo
         self.workdir = self.repo.working_dir
         self.serializer = self.serializer_class()
+
+    def active_branch(self):
+        return self.repo.active_branch.name
 
     def git_path(self, model_class, *args):
         """
@@ -150,8 +157,7 @@ class StorageManager(object):
         :returns:
             str
         """
-        current_branch = self.repo.active_branch.name
-        return self.repo.git.show('%s:%s' % (current_branch, repo_path))
+        return self.repo.git.show('%s:%s' % (self.active_branch(), repo_path))
 
     def get(self, model_class, uuid):
         """
@@ -362,7 +368,7 @@ class StorageManager(object):
         """
         return shutil.rmtree(self.workdir)
 
-    def pull(self, branch_name='master', remote_name='origin'):
+    def pull(self, branch_name='master', remote_name=None):
         """
         Fetch & Merge in an upstream's commits.
 
@@ -371,6 +377,7 @@ class StorageManager(object):
         :param str remote_name:
             The name of the remote to fetch from.
         """
+        remote_name = remote_name or 'origin'
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]

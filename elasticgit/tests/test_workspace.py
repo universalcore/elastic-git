@@ -2,8 +2,8 @@ import types
 import os
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
-from elasticgit.search import ModelMappingType
-from elasticgit.workspace import Workspace
+from elasticgit.search import ReadWriteModelMappingType
+from elasticgit.workspace import Workspace, S
 
 from git import Repo, GitCommandError
 
@@ -150,10 +150,37 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         model = result.get_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
+
+    def test_to_object(self):
+        workspace = self.workspace
+        person = TestPerson({
+            'age': 1,
+            'name': u'2020-01-01T06:00:00',
+            'uuid': u'foo',
+        })
+
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        [result] = workspace.S(TestPerson).query(uuid__match='foo')
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
+        model = result.to_object()
+        self.assertTrue(isinstance(model, TestPerson))
+        self.assertEqual(model, person)
+        self.assertTrue(model.is_read_only())
+
+        person = person.update({'age': 2})
+        workspace.save(person, 'Saving a person')
+        workspace.refresh_index()
+        model = result.to_object()
+        self.assertNotEqual(model, person)
+
+    def test_search_class(self):
+        workspace = self.workspace
+        self.assertIsInstance(workspace.S(TestPerson), S)
 
     def test_access_elastic_search_data(self):
         workspace = self.workspace
@@ -164,7 +191,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         self.assertEqual(result.age, 1)
         self.assertEqual(result.name, 'Name')
 

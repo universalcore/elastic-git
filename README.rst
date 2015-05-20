@@ -1,8 +1,8 @@
 Elastic Git
 ===========
 
-Adventures in an declarative object-y thing backed by Git and using Elastic
-Search as a query backend.
+Adventures in an declarative object-y thing backed by Git and using
+Elasticsearch as a query backend.
 
 .. note:: Here be massive dragons.
 
@@ -50,7 +50,7 @@ Usage
     workspace.save(person3, 'Saving Person 3')
 
 
-Data is now persisted in a git repository and is queryable via elastic search:
+Data is now persisted in a git repository and is queryable via elasticsearch:
 
 .. code-block:: python
 
