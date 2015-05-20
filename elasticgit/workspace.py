@@ -5,26 +5,14 @@ from unidecode import unidecode
 
 from git import Repo
 
-from elasticutils import get_es, S as SBase, Q, F
+from elasticutils import get_es, Q, F
 
 from elasticgit.storage import StorageManager
-from elasticgit.search import ESManager
+from elasticgit.search import ESManager, S
 
 import logging
 
 log = logging.getLogger(__name__)
-
-
-class S(SBase):
-
-    def to_python(self, obj):
-        """
-        Override `PythonMixin.to_python` to skip in-place datetime conversion.
-        The original method's only function is to convert datetime-ish strings
-        to datetime objects. This is done irrespective of mapping type and the
-        timezone-aware ISO format is not recognized.
-        """
-        return obj
 
 
 class Workspace(object):
