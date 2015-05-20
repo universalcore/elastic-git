@@ -336,22 +336,25 @@ class RemoteWorkspace(Workspace):
 
     This is a read only version of the :py:class:`Workspace`
     """
-    def __init__(self, url, es=None):
+    def __init__(self, url, es=None, index_prefix=None):
         """
         :param str url:
             The URL of the unicore.distribute server.
-        :param es dict:
+        :param dict es:
             The parameters for connecting to Elasticsearch to. If not specified
             then the default unicore.distribute ES proxy would be used.
             This defaults to ``/esapi`` on the host of the ``url`` parameter
             provided.
+        :param str index_prefix:
+            The prefix to use when generating index names for Elasticsearch
         """
         self.es_settings = es or {'urls': urljoin(url, '/esapi')}
+        self.index_prefix = index_prefix or self.sm.repo_name
         self.sm = RemoteStorageManager(url)
         self.im = ESManager(
             self.sm,
             es=get_es(**self.es_settings),
-            index_prefix=self.sm.repo_name)
+            index_prefix=self.index_prefix)
 
     def pull(self, branch_name='master', remote_name='origin'):
         # TOOD: In the local storage we're diffing the changes pulled in
@@ -415,7 +418,6 @@ class EG(object):
     @classmethod
     def clone_repo(cls, repo_url, workdir):
         return Repo.clone_from(repo_url, workdir)
-
 
 Q
 F
