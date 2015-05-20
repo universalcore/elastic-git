@@ -3,6 +3,11 @@ from zope.interface import Interface
 
 class IStorageManager(Interface):
 
+    def active_branch(self):
+        """
+        Return the name of the currently active branch
+        """
+
     def write_config(section, data):
         """
         Write a config block for a git repository.

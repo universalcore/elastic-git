@@ -10,8 +10,7 @@ class ModelMappingType(MappingType, Indexable):
     @classmethod
     def get_index(cls):
         im = cls.im
-        repo = cls.sm.repo
-        return im.index_name(repo.active_branch.name)
+        return im.index_name(cls.sm.active_branch())
 
     @classmethod
     def get_mapping_type_name(cls):

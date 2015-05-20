@@ -22,7 +22,7 @@ class RemoteStorageManager(object):
         self.repo_url = repo_url
         parse_result = urlparse(self.repo_url)
         self.scheme = parse_result.scheme
-        self.host = parse_result.netloc
+        self.netloc = parse_result.netloc
         self.port = parse_result.port
         self.dir_name = os.path.dirname(parse_result.path)
         basename = os.path.basename(parse_result.path)
@@ -34,13 +34,17 @@ class RemoteStorageManager(object):
         """
         return requests.request(*args, **kwargs)
 
+    def active_branch(self):
+        response = self.mk_request('GET', self.url())
+        response.raise_for_status()
+        return response.json()['branch']
+
     def url(self, *parts):
         path = [self.repo_name]
         path.extend(parts)
-        return '%s://%s%s%s/%s.%s' % (
+        return '%s://%s%s/%s.%s' % (
             self.scheme,
-            self.host,
-            ':%s' % (self.port,) if self.port else '',
+            self.netloc,
             self.dir_name,
             '/'.join(path),
             self.suffix

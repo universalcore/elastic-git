@@ -1,5 +1,6 @@
 import os
 import warnings
+from urlparse import urljoin
 
 from unidecode import unidecode
 
@@ -7,7 +8,7 @@ from git import Repo
 
 from elasticutils import get_es, S as SBase, Q, F
 
-from elasticgit.storage import StorageManager
+from elasticgit.storage import StorageManager, RemoteStorageManager
 from elasticgit.search import ESManager
 
 import logging
@@ -68,8 +69,8 @@ class Workspace(object):
             'email': email,
         })
 
-        if not self.im.index_exists(self.repo.active_branch.name):
-            self.im.create_index(self.repo.active_branch.name)
+        if not self.im.index_exists(self.sm.active_branch()):
+            self.im.create_index(self.sm.active_branch())
 
     def exists(self):
         """
@@ -79,8 +80,7 @@ class Workspace(object):
         :returns: bool
         """
         if self.sm.storage_exists():
-            branch = self.sm.repo.active_branch
-            return self.im.index_exists(branch.name)
+            return self.im.index_exists(self.sm.active_branch())
 
         return False
 
@@ -90,9 +90,8 @@ class Workspace(object):
         Guaranteed to remove things completely, use with caution.
         """
         if self.sm.storage_exists():
-            branch = self.sm.repo.active_branch
-            if self.im.index_exists(branch.name):
-                self.im.destroy_index(branch.name)
+            if self.im.index_exists(self.sm.active_branch()):
+                self.im.destroy_index(self.sm.active_branch())
             self.sm.destroy_storage()
 
     def save(self, model, message, author=None, committer=None):
@@ -223,9 +222,8 @@ class Workspace(object):
             been indexed. Defaults to ``True``
 
         """
-        branch = self.repo.active_branch
-        if not self.im.index_exists(branch.name):
-            self.im.create_index(branch.name)
+        if not self.im.index_exists(self.sm.active_branch()):
+            self.im.create_index(self.sm.active_branch())
         iterator = self.sm.iterate(model_class)
         for model in iterator:
             yield self.im.index(model)
@@ -246,7 +244,7 @@ class Workspace(object):
         Manually refresh the Elasticsearch index. In production this is
         not necessary but it is useful when running tests.
         """
-        self.im.refresh_indices(self.repo.active_branch.name)
+        self.im.refresh_indices(self.sm.active_branch())
 
     def index_ready(self):
         """
@@ -254,7 +252,7 @@ class Workspace(object):
 
         :returns: bool
         """
-        return self.im.index_ready(self.repo.active_branch.name)
+        return self.im.index_ready(self.sm.active_branch())
 
     def sync(self, model_class, refresh_index=True):
         """
@@ -292,7 +290,7 @@ class Workspace(object):
         :param elasticgit.models.Model model_class:
         :returns: dict, the decoded dictionary from Elasticsearch
         """
-        return self.im.setup_mapping(self.repo.active_branch.name, model_class)
+        return self.im.setup_mapping(self.sm.active_branch(), model_class)
 
     def setup_custom_mapping(self, model_class, mapping):
         """
@@ -305,7 +303,7 @@ class Workspace(object):
         """
 
         return self.im.setup_custom_mapping(
-            self.repo.active_branch.name, model_class, mapping)
+            self.sm.active_branch(), model_class, mapping)
 
     def get_mapping(self, model_class):
         """
@@ -313,7 +311,7 @@ class Workspace(object):
         :param elasticgit.models.Model model_class:
         :returns: dict
         """
-        return self.im.get_mapping(self.repo.active_branch.name, model_class)
+        return self.im.get_mapping(self.sm.active_branch(), model_class)
 
     def S(self, model_class):
         """
@@ -329,6 +327,40 @@ class Workspace(object):
         """
         return S(
             self.im.get_mapping_type(model_class)).es(**self.es_settings)
+
+
+class RemoteWorkspace(Workspace):
+    """
+    A workspace that connects to a unicore.distribute server hosted
+    somewhere on the network.
+
+    This is a read only version of the :py:class:`Workspace`
+    """
+    def __init__(self, url, es=None):
+        """
+        :param str url:
+            The URL of the unicore.distribute server.
+        :param es dict:
+            The parameters for connecting to Elasticsearch to. If not specified
+            then the default unicore.distribute ES proxy would be used.
+            This defaults to ``/esapi`` on the host of the ``url`` parameter
+            provided.
+        """
+        self.es_settings = es or {'urls': urljoin(url, '/esapi')}
+        self.sm = RemoteStorageManager(url)
+        self.im = ESManager(
+            self.sm,
+            es=get_es(**self.es_settings),
+            index_prefix=self.sm.repo_name)
+
+    def pull(self, branch_name='master', remote_name='origin'):
+        # TOOD: In the local storage we're diffing the changes pulled in
+        #       So that we can re-index those, unicore.distribute doesn't
+        #       expose that diff yet and so we cannot yet reindex.
+        import warnings
+        warnings.warn('Pulling without updating the index!')
+        self.sm.pull(branch_name=branch_name,
+                     remote_name=remote_name)
 
 
 class EG(object):
@@ -383,6 +415,7 @@ class EG(object):
     @classmethod
     def clone_repo(cls, repo_url, workdir):
         return Repo.clone_from(repo_url, workdir)
+
 
 Q
 F
