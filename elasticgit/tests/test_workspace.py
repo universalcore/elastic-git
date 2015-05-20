@@ -1,11 +1,8 @@
-from datetime import datetime
 import types
 import os
 
-from elasticutils import S as SBase
-
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
-from elasticgit.search import ModelMappingType
+from elasticgit.search import ReadWriteModelMappingType
 from elasticgit.workspace import Workspace, S
 
 from git import Repo, GitCommandError
@@ -153,7 +150,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         model = result.get_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
@@ -169,7 +166,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(uuid__match='foo')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         model = result.to_object()
         self.assertTrue(isinstance(model, TestPerson))
         self.assertEqual(model, person)
@@ -185,27 +182,6 @@ class TestEG(ModelBaseTest):
         workspace = self.workspace
         self.assertIsInstance(workspace.S(TestPerson), S)
 
-    def test_search_results_to_python(self):
-        person_es_data = {
-            'age': 1,
-            'name': u'2020-01-01T06:00:00',
-            'uuid': u'foo',
-        }
-        person_es_data2 = person_es_data.copy()
-
-        S_eg = S()
-        S_original = SBase()
-        eg_person = S_eg.to_python(person_es_data)
-        original_person = S_original.to_python(person_es_data2)
-
-        # check that both methods operate in place
-        self.assertIs(person_es_data, eg_person)
-        self.assertIs(original_person, person_es_data2)
-        # check equality aside from datetime conversion
-        self.assertIsInstance(eg_person.pop('name'), basestring)
-        self.assertIsInstance(original_person.pop('name'), datetime)
-        self.assertEqual(eg_person, original_person)
-
     def test_access_elastic_search_data(self):
         workspace = self.workspace
         person = TestPerson({
@@ -215,7 +191,7 @@ class TestEG(ModelBaseTest):
         workspace.save(person, 'Saving a person')
         workspace.refresh_index()
         [result] = workspace.S(TestPerson).query(name__match='Name')
-        self.assertTrue(isinstance(result, ModelMappingType))
+        self.assertTrue(isinstance(result, ReadWriteModelMappingType))
         self.assertEqual(result.age, 1)
         self.assertEqual(result.name, 'Name')
 

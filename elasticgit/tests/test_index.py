@@ -1,7 +1,6 @@
 from elasticgit.models import version_info
 from elasticgit.tests.base import ModelBaseTest, TestPerson
-
-from elasticutils import S
+from elasticgit.workspace import S
 
 
 class TestIndex(ModelBaseTest):
