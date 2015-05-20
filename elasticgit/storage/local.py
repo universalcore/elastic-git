@@ -368,7 +368,7 @@ class StorageManager(object):
         """
         return shutil.rmtree(self.workdir)
 
-    def pull(self, branch_name='master', remote_name='origin'):
+    def pull(self, branch_name='master', remote_name=None):
         """
         Fetch & Merge in an upstream's commits.
 
@@ -377,6 +377,7 @@ class StorageManager(object):
         :param str remote_name:
             The name of the remote to fetch from.
         """
+        remote_name = remote_name or 'origin'
         remote = self.repo.remote(name=remote_name)
         fetch_list = remote.fetch()
         fetch_info = fetch_list['%s/%s' % (remote_name, branch_name)]
