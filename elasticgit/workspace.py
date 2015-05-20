@@ -344,14 +344,66 @@ class RemoteWorkspace(Workspace):
             es=get_es(**self.es_settings),
             index_prefix=self.index_prefix)
 
+    def reindex_changes(self, changes):
+        changed_model_set = set([])
+        for change in changes:
+            if change['type'] == 'A':
+                path_info = self.sm.path_info(change['path'])
+                if path_info is not None:
+                    changed_model_set.add(path_info[0])
+            elif change['type'] == 'R':
+                path_info = self.sm.path_info(change['path'])
+                if path_info is not None:
+                    changed_model_set.add(path_info[0])
+            else:
+                path_info = self.sm.path_info(
+                    change.get('path') or change.get('rename_to'))
+                if path_info is not None:
+                    changed_model_set.add(path_info[0])
+
+        for model_class in changed_model_set:
+            self.reindex(model_class)
+
     def pull(self, branch_name='master', remote_name='origin'):
         # TOOD: In the local storage we're diffing the changes pulled in
         #       So that we can re-index those, unicore.distribute doesn't
         #       expose that diff yet and so we cannot yet reindex.
-        import warnings
-        warnings.warn('Pulling without updating the index!')
-        self.sm.pull(branch_name=branch_name,
-                     remote_name=remote_name)
+        changes = self.sm.pull(branch_name=branch_name,
+                               remote_name=remote_name)
+
+        def pick_type(change_type):
+            return filter(
+                lambda change: change['type'] == change_type, changes)
+
+        # NOTE: There's a very unlikely scenario where we're dealing with
+        #       renames. This generally can only happen when a repository
+        #       has been manually modififed. If that's the case then
+        #       reindex everything as well
+        if pick_type('R'):
+            return self.reindex_diff(changes)
+
+        # unindex deleted blobs
+        for diff in pick_type('D'):
+            path_info = self.sm.path_info(diff['path'])
+            if path_info is None:
+                continue
+            self.im.raw_unindex(*path_info)
+
+        # reindex added blobs
+        for diff in pick_type('A'):
+            path_info = self.sm.path_info(diff['path'])
+            if path_info is None:
+                continue
+            obj = self.sm.get(*path_info)
+            self.im.index(obj)
+
+        # reindex modified blobs
+        for diff in pick_type('M'):
+            path_info = self.sm.path_info(diff['path'])
+            if path_info is None:
+                continue
+            obj = self.sm.get(*path_info)
+            self.im.index(obj)
 
 
 class EG(object):

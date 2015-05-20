@@ -7,8 +7,9 @@ import requests
 
 from zope.interface import implements
 
+from elasticgit.models import Model
 from elasticgit.istorage import IStorageManager
-from elasticgit.utils import fqcn
+from elasticgit.utils import fqcn, load_class
 
 
 class RemoteStorageException(Exception):
@@ -71,6 +72,31 @@ class RemoteStorageManager(object):
         response.raise_for_status()
         return [model_class(obj).set_read_only() for obj in response.json()]
 
+    def path_info(self, file_path):
+        """
+        Analyze a file path and return the object's class and the uuid.
+
+        :param str file_path:
+            The path of the object we want a model instance for.
+        :returns:
+            (model_class, uuid) tuple or ``None`` if not a model file path.
+        """
+        try:
+            module_name, class_name, file_name = file_path.split('/', 3)
+            uuid, suffix = file_name.split('.', 2)
+            model_class = load_class('%s.%s' % (module_name, class_name))
+            if not issubclass(model_class, Model):
+                raise RemoteStorageException('%r does not subclass %r' % (
+                    model_class, Model))
+            return model_class, uuid
+        except ValueError, e:
+            log.warn('%s does not look like a model file path.' % (
+                file_path,), exc_info=True)
+        except ImportError, e:
+            log.warn(e, exc_info=True)
+        except RemoteStorageException, e:
+            log.warn(e, exc_info=True)
+
     def get(self, model_class, uuid):
         response = self.mk_request('GET', self.url(fqcn(model_class), uuid))
         response.raise_for_status()
@@ -101,4 +127,4 @@ class RemoteStorageManager(object):
                 'remote': remote_name,
             })))
         response.raise_for_status()
-        return True
+        return response.json()
