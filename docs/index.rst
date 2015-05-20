@@ -78,6 +78,37 @@ it via elastic search.
    workspace.destroy()
 
 
+Using a Remote workspace
+------------------------
+
+When paired with unicore.distribute_ it is possible to connect to a Git
+repository hosted on a network somewhere instead of needing file system
+access. This is done via the RemoteWorkspace.
+
+In a distributed hosting environment this can help eliminate issues
+where applications may run on different servers than where the Git content
+repositories live.
+
+.. code::
+
+   >>> from elasticgit.workspace import RemoteWorkspace
+   >>> from unicore.content.models import Page
+   >>> rws = RemoteWorkspace('http://localhost:6543/repos/unicore-sample-content.json')
+   >>> rws.sync(Page)
+   ({u'c63477768fe745809b411878ac9c0023'}, set())
+   >>> rws.S(Page).count()
+   1
+   >>> [page] = rws.S(Page)
+   >>> page.title
+   u'page title'
+   >>> page.uuid
+   u'c63477768fe745809b411878ac9c0023'
+
+.. note::
+
+   Please note that the RemoteWorkspace is currently read only.
+
+
 .. toctree::
    :maxdepth: 2
 
@@ -97,3 +128,5 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+
+.. _unicore.distribute: http://unicoredistribute.readthedocs.org/

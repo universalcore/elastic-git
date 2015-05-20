@@ -348,9 +348,9 @@ class RemoteWorkspace(Workspace):
         :param str index_prefix:
             The prefix to use when generating index names for Elasticsearch
         """
-        self.es_settings = es or {'urls': urljoin(url, '/esapi')}
-        self.index_prefix = index_prefix or self.sm.repo_name
         self.sm = RemoteStorageManager(url)
+        self.index_prefix = index_prefix or self.sm.repo_name
+        self.es_settings = es or {'urls': urljoin(url, '/esapi')}
         self.im = ESManager(
             self.sm,
             es=get_es(**self.es_settings),
