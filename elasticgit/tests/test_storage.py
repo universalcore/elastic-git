@@ -6,6 +6,7 @@ import shutil
 from elasticgit.tests.base import ModelBaseTest, TestPerson
 from elasticgit import EG
 from elasticgit.storage import StorageException, StorageManager
+from elasticgit.istorage import IStorageManager
 
 from git import Repo, GitCommandError
 
@@ -15,6 +16,10 @@ class TestStorage(ModelBaseTest):
     def setUp(self):
         self.workspace = self.mk_workspace()
         self.sm = self.workspace.sm
+
+    def test_interface(self):
+        self.assertTrue(IStorageManager.implementedBy(StorageManager))
+        self.assertTrue(IStorageManager.providedBy(self.sm))
 
     def test_storage_exists(self):
         self.workspace.destroy()

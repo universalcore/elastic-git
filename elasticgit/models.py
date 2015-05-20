@@ -272,7 +272,14 @@ class Model(Config):
         return new_instance
 
     def set_read_only(self):
+        """
+        Mark this model instance as being read only.
+        Returns self to allow it to be chainable.
+
+        :returns: self
+        """
         self._read_only = True
+        return self
 
     def is_read_only(self):
         return self._read_only
