@@ -1,5 +1,6 @@
 import os
 import urllib
+import logging
 
 from urlparse import urlparse
 
@@ -10,6 +11,9 @@ from zope.interface import implements
 from elasticgit.models import Model
 from elasticgit.istorage import IStorageManager
 from elasticgit.utils import fqcn, load_class
+
+
+log = logging.getLogger(__name__)
 
 
 class RemoteStorageException(Exception):

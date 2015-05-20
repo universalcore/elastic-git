@@ -352,12 +352,11 @@ class RemoteWorkspace(Workspace):
                 if path_info is not None:
                     changed_model_set.add(path_info[0])
             elif change['type'] == 'R':
-                path_info = self.sm.path_info(change['path'])
+                path_info = self.sm.path_info(change['rename_to'])
                 if path_info is not None:
                     changed_model_set.add(path_info[0])
             else:
-                path_info = self.sm.path_info(
-                    change.get('path') or change.get('rename_to'))
+                path_info = self.sm.path_info(change.get('path'))
                 if path_info is not None:
                     changed_model_set.add(path_info[0])
 
@@ -380,7 +379,7 @@ class RemoteWorkspace(Workspace):
         #       has been manually modififed. If that's the case then
         #       reindex everything as well
         if pick_type('R'):
-            return self.reindex_diff(changes)
+            return self.reindex_changes(changes)
 
         # unindex deleted blobs
         for diff in pick_type('D'):
