@@ -3,9 +3,13 @@ import os
 
 from elasticgit.tests.base import ModelBaseTest, TestPerson, TestPage
 from elasticgit.search import ReadWriteModelMappingType
-from elasticgit.workspace import Workspace, S
+from elasticgit.workspace import RemoteWorkspace, Workspace, S
+from elasticgit.storage import RemoteStorageManager
+from elasticgit.search import ESManager
 
 from git import Repo, GitCommandError
+
+from mock import patch
 
 
 class TestWorkspace(ModelBaseTest):
@@ -365,18 +369,6 @@ class TestEG(ModelBaseTest):
         self.assertEqual(
             self.workspace.S(TestPerson).count(), 0)
 
-    def create_upstream_for(self, workspace, create_remote=True,
-                            remote_name='origin',
-                            suffix='upstream'):
-        upstream_workspace = self.mk_workspace(
-            name='%s_%s' % (self.id().lower(), suffix),
-            index_prefix='%s_%s' % (self.workspace.index_prefix,
-                                    suffix))
-        if create_remote:
-            workspace.repo.create_remote(
-                remote_name, upstream_workspace.working_dir)
-        return upstream_workspace
-
     def test_fast_forwards_with_modifications(self):
         person = TestPerson({
             'age': 1,
@@ -496,3 +488,75 @@ class TestEG(ModelBaseTest):
 
         self.assertEqual(
             workspace.S(TestPage).filter(slug='sample-title-3').count(), 1)
+
+
+class TestRemoteWorkspace(ModelBaseTest):
+
+    @patch.object(RemoteStorageManager, 'pull')
+    @patch.object(RemoteWorkspace, 'reindex')
+    def test_pull_renames(self, mocked_reindex, mocked_pull):
+        mocked_pull.return_value = [{
+            'type': 'R',
+            'rename_from': 'elasticgit.tests.base/TestPerson/a.json',
+            'rename_to': 'elasticgit.tests.base/TestPerson/b.json',
+        }]
+
+        rws = RemoteWorkspace('http://www.example.org/repos/foo.json')
+        rws.pull(branch_name='foo', remote_name='bar')
+
+        mocked_pull.assert_called_with(
+            branch_name='foo', remote_name='bar')
+        mocked_reindex.assert_called_with(TestPerson)
+
+    @patch.object(RemoteStorageManager, 'get')
+    @patch.object(RemoteStorageManager, 'pull')
+    @patch.object(ESManager, 'index')
+    def test_pull_add(self, mocked_index, mocked_pull, mocked_get):
+        person1 = TestPerson({'age': 1, 'name': 'person1'})
+        mocked_get.return_value = person1
+        mocked_pull.return_value = [{
+            'type': 'A',
+            'path': 'elasticgit.tests.base/TestPerson/added.json',
+        }]
+
+        rws = RemoteWorkspace('http://www.example.org/repos/foo.json')
+        rws.pull(branch_name='foo', remote_name='bar')
+
+        mocked_pull.assert_called_with(
+            branch_name='foo', remote_name='bar')
+        mocked_get.assert_called_with(TestPerson, 'added')
+        mocked_index.assert_called_with(person1)
+
+    @patch.object(RemoteStorageManager, 'get')
+    @patch.object(RemoteStorageManager, 'pull')
+    @patch.object(ESManager, 'index')
+    def test_pull_modified(self, mocked_index, mocked_pull, mocked_get):
+        person1 = TestPerson({'age': 1, 'name': 'person1'})
+        mocked_get.return_value = person1
+        mocked_pull.return_value = [{
+            'type': 'M',
+            'path': 'elasticgit.tests.base/TestPerson/modified.json',
+        }]
+
+        rws = RemoteWorkspace('http://www.example.org/repos/foo.json')
+        rws.pull(branch_name='foo', remote_name='bar')
+
+        mocked_pull.assert_called_with(
+            branch_name='foo', remote_name='bar')
+        mocked_get.assert_called_with(TestPerson, 'modified')
+        mocked_index.assert_called_with(person1)
+
+    @patch.object(RemoteStorageManager, 'pull')
+    @patch.object(ESManager, 'raw_unindex')
+    def test_pull_deleted(self, mocked_unindex, mocked_pull):
+        mocked_pull.return_value = [{
+            'type': 'D',
+            'path': 'elasticgit.tests.base/TestPerson/deleted.json',
+        }]
+
+        rws = RemoteWorkspace('http://www.example.org/repos/foo.json')
+        rws.pull(branch_name='foo', remote_name='bar')
+
+        mocked_pull.assert_called_with(
+            branch_name='foo', remote_name='bar')
+        mocked_unindex.assert_called_with(TestPerson, 'deleted')

@@ -130,9 +130,10 @@ class TestRemoteStorage(ModelBaseTest):
         with patch.object(self.rsm, 'mk_request') as mock:
             response = Response()
             response.status_code = 200
+            response._content = json.dumps([])
             mock.return_value = response
-            self.assertTrue(
-                self.rsm.pull(branch_name='foo', remote_name='bar'))
+            self.assertEqual(
+                self.rsm.pull(branch_name='foo', remote_name='bar'), [])
             mock.assert_called_with(
                 'POST', 'http://www.example.org/repos/foo.json?%s' % (
                     urllib.urlencode({

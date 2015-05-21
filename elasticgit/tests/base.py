@@ -80,6 +80,18 @@ class ModelBaseTest(TestCase):
 
         return workspace
 
+    def create_upstream_for(self, workspace, create_remote=True,
+                            remote_name='origin',
+                            suffix='upstream'):
+        upstream_workspace = self.mk_workspace(
+            name='%s_%s' % (self.id().lower(), suffix),
+            index_prefix='%s_%s' % (self.workspace.index_prefix,
+                                    suffix))
+        if create_remote:
+            workspace.repo.create_remote(
+                remote_name, upstream_workspace.working_dir)
+        return upstream_workspace
+
 
 class ToolBaseTest(ModelBaseTest):
 
