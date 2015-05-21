@@ -364,9 +364,6 @@ class RemoteWorkspace(Workspace):
             self.reindex(model_class)
 
     def pull(self, branch_name='master', remote_name='origin'):
-        # TOOD: In the local storage we're diffing the changes pulled in
-        #       So that we can re-index those, unicore.distribute doesn't
-        #       expose that diff yet and so we cannot yet reindex.
         changes = self.sm.pull(branch_name=branch_name,
                                remote_name=remote_name)
 
