@@ -43,7 +43,7 @@ class ModelMappingTypeBase(MappingType):
         raise NotImplementedError
 
     def to_object(self):
-        obj = self.model_class(self._results_dict)
+        obj = self.model_class(self._results_dict, es_meta=self.es_meta)
         obj.set_read_only()  # might not be in sync with Git
         return obj
 

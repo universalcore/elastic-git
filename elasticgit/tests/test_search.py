@@ -161,3 +161,4 @@ class TestSearch(ModelBaseTest):
         self.assertTrue(hasattr(person.es_meta, 'index'))
         self.assertEqual(person.es_meta.index,
                          '%s-master' % self.workspace1.index_prefix)
+        self.assertEqual(person.to_object().es_meta, person.es_meta)
