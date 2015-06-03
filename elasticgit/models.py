@@ -250,9 +250,10 @@ class Model(Config):
 
     uuid = UUIDField('Unique Identifier')
 
-    def __init__(self, config_data, static=False):
+    def __init__(self, config_data, static=False, es_meta=None):
         super(Model, self).__init__(config_data, static=static)
         self._read_only = False
+        self.es_meta = es_meta
 
     def __eq__(self, other):
         own_data = dict(self)
