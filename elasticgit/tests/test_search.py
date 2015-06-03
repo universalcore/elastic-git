@@ -149,3 +149,16 @@ class TestSearch(ModelBaseTest):
         self.assertEqual(
             persons,
             [person1, person2])
+
+    def test_mapping_type_metadata(self):
+        person = TestPerson({
+            'age': 12,
+            'name': 'Foo'
+        })
+        self.workspace1.save(person, 'Saving person')
+        self.workspace1.refresh_index()
+        [person] = self.workspace1.S(TestPerson)
+        self.assertTrue(hasattr(person.es_meta, 'index'))
+        self.assertEqual(person.es_meta.index,
+                         '%s-master' % self.workspace1.index_prefix)
+        self.assertEqual(person.to_object().es_meta, person.es_meta)
