@@ -3,7 +3,9 @@ from urllib import quote
 
 from git import Repo
 
-from elasticutils import MappingType, Indexable, S as SBase
+from elasticutils import (
+    MappingType, Indexable, S as SBase,
+    ObjectSearchResults, DictSearchResults, ListSearchResults)
 
 from elasticgit.utils import introspect_properties
 
@@ -41,7 +43,7 @@ class ModelMappingTypeBase(MappingType):
         raise NotImplementedError
 
     def to_object(self):
-        obj = self.model_class(self._results_dict)
+        obj = self.model_class(self._results_dict, es_meta=self.es_meta)
         obj.set_read_only()  # might not be in sync with Git
         return obj
 
@@ -113,6 +115,31 @@ class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
             model_class, im=im, sm=sm)
 
 
+class SearchResultsMixin(object):
+
+    def set_objects(self, results):
+        """
+        Adds the index returned by Elasticsearch to :py:class:`Metadata`
+        instances. See also:
+        https://github.com/mozilla/elasticutils/blob/master/elasticutils/__init__.py#L1918
+        """
+        super(SearchResultsMixin, self).set_objects(results)
+        for obj, result in zip(self.objects, self.results):
+            obj.es_meta.index = result.get('_index')
+
+
+class CustomDictSearchResults(SearchResultsMixin, DictSearchResults):
+    pass
+
+
+class CustomListSearchResults(SearchResultsMixin, ListSearchResults):
+    pass
+
+
+class CustomObjectSearchResults(SearchResultsMixin, ObjectSearchResults):
+    pass
+
+
 class S(SBase):
 
     def to_python(self, obj):
@@ -123,6 +150,17 @@ class S(SBase):
         timezone-aware ISO format is not recognized.
         """
         return obj
+
+    def get_results_class(self):
+        """
+        Returns the custom results class to use
+        """
+        results_class = super(S, self).get_results_class()
+        return {
+            DictSearchResults: CustomDictSearchResults,
+            ListSearchResults: CustomListSearchResults,
+            ObjectSearchResults: CustomObjectSearchResults,
+        }.get(results_class)
 
 
 class SM(S):
