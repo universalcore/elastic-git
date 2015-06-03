@@ -115,27 +115,29 @@ class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
             model_class, im=im, sm=sm)
 
 
-def search_results_set_objects(self, results):
-    """
-    Adds the index returned by Elasticsearch to :py:class:`Metadata` instances.
-    See also:
-    https://github.com/mozilla/elasticutils/blob/master/elasticutils/__init__.py#L1918
-    """
-    super(self.__class__, self).set_objects(results)
-    for obj, result in zip(self.objects, self.results):
+class SearchResultsMixin(object):
+
+    def set_objects(self, results):
+        """
+        Adds the index returned by Elasticsearch to :py:class:`Metadata`
+        instances. See also:
+        https://github.com/mozilla/elasticutils/blob/master/elasticutils/__init__.py#L1918
+        """
+        super(SearchResultsMixin, self).set_objects(results)
+        for obj, result in zip(self.objects, self.results):
             obj.es_meta.index = result.get('_index')
 
 
-class CustomDictSearchResults(DictSearchResults):
-    set_objects = search_results_set_objects
+class CustomDictSearchResults(SearchResultsMixin, DictSearchResults):
+    pass
 
 
-class CustomListSearchResults(ListSearchResults):
-    set_objects = search_results_set_objects
+class CustomListSearchResults(SearchResultsMixin, ListSearchResults):
+    pass
 
 
-class CustomObjectSearchResults(ObjectSearchResults):
-    set_objects = search_results_set_objects
+class CustomObjectSearchResults(SearchResultsMixin, ObjectSearchResults):
+    pass
 
 
 class S(SBase):
