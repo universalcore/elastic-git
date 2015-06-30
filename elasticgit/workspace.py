@@ -129,6 +129,47 @@ class Workspace(object):
                       DeprecationWarning)
         return self.pull(branch_name=branch_name, remote_name=remote_name)
 
+    def index_diff(self, diff_index):
+        # NOTE: This is probably more complicated than it needs to be
+        #       If we have multiple remotes GitPython gets confused about
+        #       deletes. It marks things as deletes because it may not
+        #       exist on another remote.
+        #
+        #       Here we loop over all changes, track the models that've
+        #       changed and then reindex fully to make sure we're in sync.
+        if len(self.repo.remotes) > 1 and any(diff_index):
+            return self.reindex_diff(diff_index)
+
+        # NOTE: There's a very unlikely scenario where we're dealing with
+        #       renames. This generally can only happen when a repository
+        #       has been manually modififed. If that's the case then
+        #       reindex everything as well
+        if any(diff_index.iter_change_type('R')):
+            return self.reindex_diff(diff_index)
+
+        # unindex deleted blobs
+        for diff in diff_index.iter_change_type('D'):
+            path_info = self.sm.path_info(diff.a_blob.path)
+            if path_info is None:
+                continue
+            self.im.raw_unindex(*path_info)
+
+        # reindex added blobs
+        for diff in diff_index.iter_change_type('A'):
+            path_info = self.sm.path_info(diff.b_blob.path)
+            if path_info is None:
+                continue
+            obj = self.sm.get(*path_info)
+            self.im.index(obj)
+
+        # reindex modified blobs
+        for diff in diff_index.iter_change_type('M'):
+            path_info = self.sm.path_info(diff.a_blob.path)
+            if path_info is None:
+                continue
+            obj = self.sm.get(*path_info)
+            self.im.index(obj)
+
     def reindex_diff(self, diff_index):
         changed_model_set = set([])
         for diff in diff_index:
@@ -159,46 +200,7 @@ class Workspace(object):
         """
         changes = self.sm.pull(branch_name=branch_name,
                                remote_name=remote_name)
-
-        # NOTE: This is probably more complicated than it needs to be
-        #       If we have multiple remotes GitPython gets confused about
-        #       deletes. It marks things as deletes because it may not
-        #       exist on another remote.
-        #
-        #       Here we loop over all changes, track the models that've
-        #       changed and then reindex fully to make sure we're in sync.
-        if len(self.repo.remotes) > 1 and any(changes):
-            return self.reindex_diff(changes)
-
-        # NOTE: There's a very unlikely scenario where we're dealing with
-        #       renames. This generally can only happen when a repository
-        #       has been manually modififed. If that's the case then
-        #       reindex everything as well
-        if any(changes.iter_change_type('R')):
-            return self.reindex_diff(changes)
-
-        # unindex deleted blobs
-        for diff in changes.iter_change_type('D'):
-            path_info = self.sm.path_info(diff.a_blob.path)
-            if path_info is None:
-                continue
-            self.im.raw_unindex(*path_info)
-
-        # reindex added blobs
-        for diff in changes.iter_change_type('A'):
-            path_info = self.sm.path_info(diff.b_blob.path)
-            if path_info is None:
-                continue
-            obj = self.sm.get(*path_info)
-            self.im.index(obj)
-
-        # reindex modified blobs
-        for diff in changes.iter_change_type('M'):
-            path_info = self.sm.path_info(diff.a_blob.path)
-            if path_info is None:
-                continue
-            obj = self.sm.get(*path_info)
-            self.im.index(obj)
+        return self.index_diff(changes)
 
     def reindex_iter(self, model_class, refresh_index=True):
         """
