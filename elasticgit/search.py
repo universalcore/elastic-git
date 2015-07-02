@@ -1,6 +1,5 @@
 import os
 from urllib import quote
-from urlparse import urlparse
 
 from git import Repo
 
