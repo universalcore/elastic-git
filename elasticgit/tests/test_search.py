@@ -26,8 +26,10 @@ class TestSearch(ModelBaseTest):
         repos = [self.repo1, self.repo2]
         repo_workdirs = map(lambda r: r.working_dir, repos)
 
-        s_obj = SM(TestPerson, in_=repos)
-        self.assertEqual(s_obj.repos, [self.repo1, self.repo2])
+        s_obj = SM(TestPerson, in_=repo_workdirs)
+        self.assertEqual(
+            [r.repo_obj for r in s_obj.repos],
+            [self.repo1, self.repo2])
         self.assertEqual(s_obj.index_prefixes, [
             os.path.basename(self.repo1.working_dir),
             os.path.basename(self.repo2.working_dir)
@@ -35,8 +37,8 @@ class TestSearch(ModelBaseTest):
 
         s_obj = SM(TestPerson, in_=repo_workdirs, index_prefixes=['i1', 'i2'])
         self.assertEqual(
-            map(lambda r: r.working_dir, s_obj.repos),
-            repo_workdirs)
+            [r.repo_obj for r in s_obj.repos],
+            [self.repo1, self.repo2])
         self.assertEqual(s_obj.index_prefixes, ['i1', 'i2'])
 
     def test_get_repo_indexes(self):
@@ -46,12 +48,12 @@ class TestSearch(ModelBaseTest):
             os.path.basename(self.repo1.working_dir),
             self.repo1.active_branch.name)
 
-        s_obj = SM(TestPerson, in_=[self.repo1])
+        s_obj = SM(TestPerson, in_=[self.repo1.working_dir])
         self.assertEqual(s_obj.get_repo_indexes(), [default_index1])
 
         s_obj = SM(
             TestPerson,
-            in_=[self.repo1, self.repo2],
+            in_=[self.repo1.working_dir, self.repo2.working_dir],
             index_prefixes=[self.index_prefix1, self.index_prefix2])
         self.assertEqual(
             s_obj.get_repo_indexes(),
@@ -61,7 +63,7 @@ class TestSearch(ModelBaseTest):
             self.workspace1.im.index_name(self.repo1.active_branch.name))
 
     def test_get_indexes(self):
-        s_obj = SM(TestPerson, in_=[self.repo1])
+        s_obj = SM(TestPerson, in_=[self.repo1.working_dir])
         self.assertEqual(
             s_obj.get_indexes(),
             [index_name(
@@ -83,7 +85,7 @@ class TestSearch(ModelBaseTest):
     def test_clone(self):
         s_obj = SM(
             TestPerson,
-            in_=[self.repo1],
+            in_=[self.repo1.working_dir],
             index_prefixes=[self.index_prefix1])
         s_obj_cloned = s_obj._clone(next_step=('indexes', []))
 
@@ -139,7 +141,7 @@ class TestSearch(ModelBaseTest):
 
         objects = SM(
             TestPerson,
-            in_=[self.repo1, self.repo2],
+            in_=[self.repo1.working_dir, self.repo2.working_dir],
             index_prefixes=[self.index_prefix1, self.index_prefix2]) \
             .everything()
         self.assertEqual(len(objects), 2)
