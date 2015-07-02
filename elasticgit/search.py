@@ -172,21 +172,21 @@ class RepoHelper(object):
         if any([
                 repo_url.startswith('http://'),
                 repo_url.startswith('https://')]):
-            self.repo_obj = RemoteStorageManager(repo_url)
+            self.rsm = RemoteStorageManager(repo_url)
+            self.repo = None
         else:
-            self.repo_obj = Repo(repo_url)
+            self.rsm = None
+            self.repo = Repo(repo_url)
 
     def active_branch_name(self):
-        if isinstance(self.repo_obj, Repo):
-            return self.repo_obj.active_branch.name
-        return self.repo_obj.active_branch()
+        if self.repo:
+            return self.repo.active_branch.name
+        return self.rsm.active_branch()
 
     def default_index_prefix(self):
-        name = os.path.basename(self.repo_url)
-        name_no_ext, ext = os.path.splitext(name)
-        if ext in ('.git', '.json'):
-            return name_no_ext
-        return name
+        if self.repo:
+            return os.path.basename(self.repo_url)
+        return self.rsm.repo_name
 
 
 class SM(S):
