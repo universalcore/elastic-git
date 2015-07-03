@@ -8,6 +8,7 @@ from elasticutils import (
     ObjectSearchResults, DictSearchResults, ListSearchResults)
 
 from elasticgit.utils import introspect_properties
+from elasticgit.storage.remote import RemoteStorageManager
 
 
 def index_name(prefix, name):
@@ -163,6 +164,30 @@ class S(SBase):
         }.get(results_class)
 
 
+class RepoHelper(object):
+
+    def __init__(self, repo_url):
+        self.repo_url = repo_url
+        if any([
+                repo_url.startswith('http://'),
+                repo_url.startswith('https://')]):
+            self.rsm = RemoteStorageManager(repo_url)
+            self.repo = None
+        else:
+            self.rsm = None
+            self.repo = Repo(repo_url)
+
+    def active_branch_name(self):
+        if self.repo:
+            return self.repo.active_branch.name
+        return self.rsm.active_branch()
+
+    def default_index_prefix(self):
+        if self.repo:
+            return os.path.basename(self.repo_url)
+        return self.rsm.repo_name
+
+
 class SM(S):
     """
     A search interface similar to :py:class:`elasticutils.S` to
@@ -191,12 +216,15 @@ class SM(S):
         self.index_prefixes = index_prefixes
 
         self.repos = map(
-            lambda repo: (repo if isinstance(repo, Repo) else Repo(repo)),
+            lambda repo:
+                repo
+                if isinstance(repo, RepoHelper)
+                else RepoHelper(repo),
             self.repos)
 
         if not self.index_prefixes:
             self.index_prefixes = map(
-                lambda r: os.path.basename(r.working_dir),
+                lambda repo: repo.default_index_prefix(),
                 self.repos)
 
     def get_repo_indexes(self):
@@ -209,7 +237,7 @@ class SM(S):
             return []
 
         return map(
-            lambda (ip, r): index_name(ip, r.active_branch.name),
+            lambda (ip, r): index_name(ip, r.active_branch_name()),
             zip(self.index_prefixes, self.repos))
 
     def _clone(self, next_step=None):
