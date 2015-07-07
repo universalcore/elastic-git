@@ -89,9 +89,7 @@ class ReadWriteModelMappingType(ModelMappingTypeBase, Indexable):
 
     @classmethod
     def get_index(cls):
-        im = cls.im
-        repo = cls.sm.repo
-        return im.index_name(repo.active_branch.name)
+        return cls.im.index_name(cls.sm.active_branch())
 
     def get_object(self):
         return self.sm.get(self.model_class, self._id)
