@@ -358,6 +358,8 @@ class StorageManager(object):
         :returns: dict
         """
         config_reader = self.repo.config_reader()
+        config_reader.read()
+
         data = dict(config_reader.items(section))
         config_reader.release()
         return data
