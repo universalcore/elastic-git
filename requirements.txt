@@ -1,7 +1,7 @@
 confmodel==0.2.0
 elasticsearch==1.7.0
 elasticutils==0.10.1
-GitPython==1.0.1
+GitPython==1.0.2
 Jinja2
 Unidecode==0.04.16
 avro==1.7.7
