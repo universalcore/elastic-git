@@ -1,4 +1,5 @@
 import os
+import sys
 
 from setuptools import setup, find_packages
 
@@ -10,7 +11,6 @@ with open(os.path.join(here, 'VERSION')) as f:
     version = f.read().strip()
 
 install_requires = [
-    'avro==1.7.7',
     'confmodel==0.2.0',
     'elasticsearch==1.7.0',
     'elasticutils==0.10.1',
@@ -21,6 +21,10 @@ install_requires = [
     'Unidecode==0.04.16',
     'zope.interface',
 ]
+if sys.version_info[0] == 3:
+    install_requires.append('avro-python3==1.7.7')
+else:
+    install_requires.append('avro==1.7.7')
 
 setup(
     name='elastic-git',
