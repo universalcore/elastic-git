@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from jinja2 import Environment, PackageLoader
-from functools import partial
+from functools import partial, reduce
 import argparse
 import imp
 import json
