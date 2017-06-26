@@ -1,7 +1,9 @@
+-e .
+flake8
+mock
 pytest
 pytest-cov
 pytest-xdist
 sphinx
 sphinx_rtd_theme
 sphinx-argparse
--r requirements.txt

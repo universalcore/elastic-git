@@ -1,6 +1,12 @@
 include LICENSE
 include README.rst
 include VERSION
-include requirements.txt
-include scripts/eg-tools
-recursive-include elasticgit *.py *.txt
+include requirements-dev.txt
+
+recursive-include elasticgit/templates *
+
+recursive-include docs *
+prune docs/build
+
+global-exclude __pycache__
+global-exclude *.py[co]
