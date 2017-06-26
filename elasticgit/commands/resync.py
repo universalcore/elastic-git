@@ -3,7 +3,7 @@ import os
 import sys
 import json
 
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 
 from elasticgit import EG
 from elasticgit.commands.base import (
