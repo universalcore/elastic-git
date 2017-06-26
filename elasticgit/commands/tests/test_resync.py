@@ -1,7 +1,7 @@
 import json
 
-from StringIO import StringIO
 from ConfigParser import ConfigParser
+from six import StringIO
 
 from elasticgit.tests.base import ToolBaseTest, TestPerson
 from elasticgit.commands.resync import ResyncTool, DEFAULT_SECTION

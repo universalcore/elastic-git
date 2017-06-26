@@ -1,5 +1,6 @@
-from StringIO import StringIO
 import json
+
+from six import StringIO
 
 from elasticgit.models import version_info
 from elasticgit.tests.base import ToolBaseTest

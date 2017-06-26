@@ -3,8 +3,6 @@ import json
 import tempfile
 import shutil
 
-from StringIO import StringIO
-
 from unittest import TestCase
 
 import avro.schema
@@ -16,7 +14,7 @@ from elasticgit.utils import fqcn
 from elasticgit.commands.avro import (
     SchemaDumper, SchemaLoader, FieldMapType, RenameType)
 
-from six import exec_
+from six import exec_, StringIO
 
 
 class TestPerson(Model):

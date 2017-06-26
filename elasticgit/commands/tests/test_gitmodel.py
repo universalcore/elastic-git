@@ -1,12 +1,13 @@
-import os
 import json
-
-from StringIO import StringIO
-from uuid import uuid4
-from elasticgit.commands.gitmodel import MigrateGitModelRepo
-from elasticgit.commands import avro
-from elasticgit.tests.base import ToolBaseTest
+import os
 from contextlib import contextmanager
+from uuid import uuid4
+
+from six import StringIO
+
+from elasticgit.commands import avro
+from elasticgit.commands.gitmodel import MigrateGitModelRepo
+from elasticgit.tests.base import ToolBaseTest
 
 
 class TestMigrateGitModelRepo(ToolBaseTest):
