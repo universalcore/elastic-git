@@ -2,7 +2,7 @@ import os
 import shutil
 import logging
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from git import Repo, Actor
 from git.diff import DiffIndex
@@ -20,6 +20,7 @@ class StorageException(Exception):
     pass
 
 
+@implementer(IStorageManager)
 class StorageManager(object):
     """
     An interface to :py:class:`elasticgit.models.Model` instances stored
@@ -28,8 +29,6 @@ class StorageManager(object):
     :param git.Repo repo:
         The repository to operate on.
     """
-    implements(IStorageManager)
-
     serializer_class = JSONSerializer
 
     def __init__(self, repo):

@@ -3,7 +3,7 @@ import logging
 
 import requests
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from elasticgit.models import Model
 from elasticgit.istorage import IStorageManager
@@ -19,9 +19,8 @@ class RemoteStorageException(Exception):
     pass
 
 
+@implementer(IStorageManager)
 class RemoteStorageManager(object):
-    implements(IStorageManager)
-
     def __init__(self, repo_url):
         self.repo_url = repo_url
         parse_result = urllib.parse.urlparse(self.repo_url)
