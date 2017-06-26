@@ -457,5 +457,6 @@ class EG(object):
     def clone_repo(cls, repo_url, workdir):
         return Repo.clone_from(repo_url, workdir)
 
+
 Q
 F
