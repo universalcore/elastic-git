@@ -9,6 +9,9 @@ from confmodel.errors import ConfigError
 from confmodel.fallbacks import SingleFieldFallback
 
 
+if sys.version_info[0] == 3:
+    unicode = str
+
 version_info = {
     'language': 'python',
     'language_version_string': sys.version,

@@ -1,4 +1,5 @@
 import os
+import sys
 import warnings
 from urlparse import urljoin
 
@@ -12,6 +13,9 @@ from elasticgit.storage import StorageManager, RemoteStorageManager
 from elasticgit.search import ESManager, S
 
 import logging
+
+if sys.version_info[0] == 3:
+    unicode = str
 
 log = logging.getLogger(__name__)
 
