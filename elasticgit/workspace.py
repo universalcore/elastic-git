@@ -1,7 +1,6 @@
 import os
 import sys
 import warnings
-from urlparse import urljoin
 
 from unidecode import unidecode
 
@@ -11,6 +10,8 @@ from elasticutils import get_es, Q, F
 
 from elasticgit.storage import StorageManager, RemoteStorageManager
 from elasticgit.search import ESManager, S
+
+from six.moves import urllib
 
 import logging
 
@@ -344,7 +345,7 @@ class RemoteWorkspace(Workspace):
         """
         self.sm = RemoteStorageManager(url)
         self.index_prefix = index_prefix or self.sm.repo_name
-        self.es_settings = es or {'urls': urljoin(url, '/esapi')}
+        self.es_settings = es or {'urls': urllib.parse.urljoin(url, '/esapi')}
         self.im = ESManager(
             self.sm,
             es=get_es(**self.es_settings),

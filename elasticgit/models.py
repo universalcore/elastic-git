@@ -1,12 +1,12 @@
 import sys
 import pkg_resources
 from copy import deepcopy
-from urllib2 import urlparse
 import uuid
 
 from confmodel.config import Config, ConfigField
 from confmodel.errors import ConfigError
 from confmodel.fallbacks import SingleFieldFallback
+from six.moves import urllib
 
 
 if sys.version_info[0] == 3:
@@ -208,7 +208,7 @@ class URLField(ModelField):
         # URLs must be bytes, not unicode.
         if isinstance(value, unicode):
             value = value.encode('utf-8')
-        return urlparse.urlparse(value)
+        return urllib.parse.urlparse(value)
 
 
 class UUIDField(TextField):

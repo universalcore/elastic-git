@@ -1,8 +1,5 @@
 import os
-import urllib
 import logging
-
-from urlparse import urlparse
 
 import requests
 
@@ -11,6 +8,8 @@ from zope.interface import implements
 from elasticgit.models import Model
 from elasticgit.istorage import IStorageManager
 from elasticgit.utils import fqcn, load_class
+
+from six.moves import urllib
 
 
 log = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ class RemoteStorageManager(object):
 
     def __init__(self, repo_url):
         self.repo_url = repo_url
-        parse_result = urlparse(self.repo_url)
+        parse_result = urllib.parse.urlparse(self.repo_url)
         self.scheme = parse_result.scheme
         self.netloc = parse_result.netloc
         self.port = parse_result.port
