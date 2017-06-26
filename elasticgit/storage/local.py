@@ -124,12 +124,12 @@ class StorageManager(object):
                 raise StorageException('%r does not subclass %r' % (
                     model_class, Model))
             return model_class, uuid
-        except ValueError, e:
+        except ValueError as e:
             log.warn('%s does not look like a model file path.' % (
                 file_path,), exc_info=True)
-        except ImportError, e:
+        except ImportError as e:
             log.warn(e, exc_info=True)
-        except StorageException, e:
+        except StorageException as e:
             log.warn(e, exc_info=True)
 
     def load(self, file_path):

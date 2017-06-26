@@ -235,7 +235,7 @@ class SM(S):
             return []
 
         return map(
-            lambda (ip, r): index_name(ip, r.active_branch_name()),
+            lambda ip, r: index_name(ip, r.active_branch_name()),
             zip(self.index_prefixes, self.repos))
 
     def _clone(self, next_step=None):

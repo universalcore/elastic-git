@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 
 from elasticgit.commands.base import ToolCommand, CommandArgument
@@ -84,7 +86,7 @@ class EGShell(ToolCommand):
                     found_models = load_models(models)
                     namespace.update(found_models)
                 except ValueError:
-                    print '%s does not look like a models module.' % (models,)
+                    print('%s does not look like a models module.' % (models,))
 
         namespace.update({
             'workspace': EG.workspace(workdir),

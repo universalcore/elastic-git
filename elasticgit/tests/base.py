@@ -159,7 +159,7 @@ class ToolBaseTest(ModelBaseTest):
 
     def load_class(self, code_string, name):
         scope = {}
-        exec code_string in scope
+        exec(code_string, scope)
         return scope.pop(name)
 
     def load_class_with_field(self, field, field_mapping={}, model_renames={},

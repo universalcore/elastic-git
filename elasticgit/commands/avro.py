@@ -61,7 +61,7 @@ def deserialize(data, field_mapping={}, module_name=None):
     else:
         scope = {}
 
-    exec model_code in scope
+    exec(model_code, scope)
 
     return scope.pop(model_name)
 
