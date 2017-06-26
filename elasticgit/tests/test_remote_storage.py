@@ -1,5 +1,4 @@
 import json
-import urllib
 
 from elasticgit.tests.base import ModelBaseTest
 from elasticgit.istorage import IStorageManager
@@ -9,6 +8,8 @@ from elasticgit.tests.base import TestPerson
 from elasticgit.utils import fqcn
 
 from requests.models import Response
+
+from six.moves import urllib
 
 from mock import patch
 
@@ -136,7 +137,7 @@ class TestRemoteStorage(ModelBaseTest):
                 self.rsm.pull(branch_name='foo', remote_name='bar'), [])
             mock.assert_called_with(
                 'POST', 'http://www.example.org/repos/foo.json?%s' % (
-                    urllib.urlencode({
+                    urllib.parse.urlencode({
                         'branch': 'foo',
                         'remote': 'bar',
                     }),))

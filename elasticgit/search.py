@@ -1,11 +1,12 @@
 import os
-from urllib import quote
 
 from git import Repo
 
 from elasticutils import (
     MappingType, Indexable, S as SBase,
     ObjectSearchResults, DictSearchResults, ListSearchResults)
+
+from six.moves import urllib
 
 from elasticgit.utils import introspect_properties
 from elasticgit.storage.remote import RemoteStorageManager
@@ -23,7 +24,7 @@ def index_name(prefix, name):
         The name to use for the index.
     :returns: str
     """
-    return '-'.join(map(quote, [prefix, name]))
+    return '-'.join(map(urllib.parse.quote, [prefix, name]))
 
 
 class ModelMappingTypeBase(MappingType):
