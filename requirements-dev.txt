@@ -1,7 +1,7 @@
 -e .
 flake8
 mock
-pytest
+pytest>=2.7.0
 pytest-cov
 pytest-xdist
 sphinx
