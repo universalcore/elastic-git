@@ -14,8 +14,8 @@ install:
   - pip install -r requirements-dev.txt
   - pip install coveralls
 script:
-  - flake8
   - py.test elasticgit -s --cov ./elasticgit
+  - flake8
 after_success:
   - coveralls
 deploy:
