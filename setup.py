@@ -17,6 +17,7 @@ install_requires = [
     'GitPython==1.0.2',
     'Jinja2',
     'requests',
+    'six',
     'Unidecode==0.04.16',
     'zope.interface',
 ]

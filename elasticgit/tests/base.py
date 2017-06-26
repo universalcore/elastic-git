@@ -16,6 +16,8 @@ from elasticgit.utils import fqcn
 from elasticgit.commands.avro import (
     SchemaDumper, SchemaLoader, FieldMapType, RenameType)
 
+from six import exec_
+
 
 class TestPerson(Model):
     age = IntegerField('The Age')
@@ -159,7 +161,7 @@ class ToolBaseTest(ModelBaseTest):
 
     def load_class(self, code_string, name):
         scope = {}
-        exec(code_string, scope)
+        exec_(code_string, scope)
         return scope.pop(name)
 
     def load_class_with_field(self, field, field_mapping={}, model_renames={},

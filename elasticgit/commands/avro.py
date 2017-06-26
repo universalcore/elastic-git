@@ -20,6 +20,8 @@ from elasticgit.commands.base import (
     ToolCommand, ToolCommandError, CommandArgument)
 from elasticgit.utils import load_class
 
+from six import exec_
+
 
 def deserialize(data, field_mapping={}, module_name=None):
     """
@@ -61,7 +63,7 @@ def deserialize(data, field_mapping={}, module_name=None):
     else:
         scope = {}
 
-    exec(model_code, scope)
+    exec_(model_code, scope)
 
     return scope.pop(model_name)
 
