@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from elasticgit import EG
 from elasticgit.tests.base import TestPerson
 
@@ -23,6 +25,6 @@ if __name__ == '__main__':
     workspace.refresh_index()
 
     for person in workspace.S(TestPerson).filter(age__gte=20):
-        print person.uuid, person.name, person.age
+        print(person.uuid, person.name, person.age)
 
     workspace.destroy()
