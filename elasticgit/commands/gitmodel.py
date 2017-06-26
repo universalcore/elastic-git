@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import sys
 import warnings
 
 from elasticgit.commands.base import ToolCommand, CommandArgument
@@ -8,6 +9,9 @@ from elasticgit.commands import avro
 from elasticgit.storage import StorageManager
 
 from git import Repo
+
+if sys.version_info[0] == 3:
+    unicode = str
 
 
 class NotAGitModelException(Exception):
