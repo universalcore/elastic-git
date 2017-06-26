@@ -49,8 +49,8 @@ class TextField(ModelField):
     field_type = 'str'
 
     def clean(self, value):
-        if not isinstance(value, basestring):
-            self.raise_config_error("is not a base string.")
+        if not isinstance(value, str):
+            self.raise_config_error("is not a string.")
         return value
 
 
@@ -116,7 +116,7 @@ class BooleanField(ModelField):
     }
 
     def clean(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             return value.strip().lower() not in ('false', '0', '')
         return bool(value)
 
@@ -200,7 +200,7 @@ class URLField(ModelField):
     }
 
     def clean(self, value):
-        if not isinstance(value, basestring):
+        if not isinstance(value, str):
             self.raise_config_error("is not a URL string.")
         # URLs must be bytes, not unicode.
         if isinstance(value, unicode):

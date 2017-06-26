@@ -136,7 +136,7 @@ class TestSearch(ModelBaseTest):
         self.assertIs(person_es_data, eg_person)
         self.assertIs(original_person, person_es_data2)
         # check equality aside from datetime conversion
-        self.assertIsInstance(eg_person.pop('name'), basestring)
+        self.assertIsInstance(eg_person.pop('name'), str)
         self.assertIsInstance(original_person.pop('name'), datetime)
         self.assertEqual(eg_person, original_person)
 
