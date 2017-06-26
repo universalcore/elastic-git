@@ -1,14 +1,16 @@
+import codecs
 import os
 import sys
 
 from setuptools import setup, find_packages
 
-here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, 'README.rst')) as f:
-    README = f.read()
+HERE = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join(here, 'VERSION')) as f:
-    version = f.read().strip()
+
+def read(*parts):
+    with codecs.open(os.path.join(HERE, *parts), 'rb', 'utf-8') as f:
+        return f.read()
+
 
 install_requires = [
     'confmodel==0.2.0',
@@ -28,9 +30,9 @@ else:
 
 setup(
     name='elastic-git',
-    version=version,
+    version=read('VERSION').strip(),
     description='JSON Object storage backed by Git & Elastic Search',
-    long_description=README,
+    long_description=read('README.rst'),
     classifiers=[
         "Programming Language :: Python",
     ],
